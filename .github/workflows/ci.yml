@@ -40,7 +40,7 @@ jobs:
         run: cargo test --workspace --doc
 
       - name: Install portaki CLI
-        run: cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch fix/macro-expand-emissions --locked portaki-cli
+        run: cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch main --locked portaki-cli
 
       - name: Build and lint all modules (wasm)
         run: |
