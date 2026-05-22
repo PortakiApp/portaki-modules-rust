@@ -35,7 +35,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Install portaki CLI
-        run: cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch main --locked portaki-cli
+        run: cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch feature/phase4-sdk-hardening --locked portaki-cli
 
       - name: Build module
         working-directory: modules/${{ steps.parse.outputs.module }}
@@ -51,18 +51,26 @@ jobs:
           cargo test --lib
           cargo test --test integration
 
-      - name: Install oras
-        uses: oras-project/setup-oras@v1
-
       - name: Login to Scaleway Container Registry
         uses: docker/login-action@v3
         with:
           registry: rg.fr-par.scw.cloud
           username: nologin
-          # Scaleway registry: secret key only (not access key). Add one of these repo/org secrets.
           password: ${{ secrets.SCW_SECRET_KEY || secrets.SCALEWAY_API_KEY || secrets.SCALEWAY_REGISTRY_TOKEN }}
 
-      - name: Publish OCI artifact
+      - name: Publish OCI artifact (portaki publish)
+        id: publish
+        working-directory: modules/${{ steps.parse.outputs.module }}
+        env:
+          SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY || secrets.SCALEWAY_API_KEY || secrets.SCALEWAY_REGISTRY_TOKEN }}
+        run: portaki publish --registry "$REGISTRY"
+
+      - name: Install oras (fallback)
+        if: failure() && steps.publish.outcome == 'failure'
+        uses: oras-project/setup-oras@v1
+
+      - name: Publish OCI artifact (oras fallback)
+        if: failure() && steps.publish.outcome == 'failure'
         working-directory: modules/${{ steps.parse.outputs.module }}
         env:
           MODULE_VERSION: ${{ steps.parse.outputs.version }}
@@ -79,7 +87,7 @@ jobs:
 
           MODULE_ID=$(jq -r .id target/portaki/manifest.json)
           REF="${REGISTRY}/${MODULE_ID}:${MODULE_VERSION}"
-          echo "Pushing $REF"
+          echo "Pushing $REF (oras fallback)"
 
           ORAS_ARGS=(
             "target/portaki/manifest.json:application/vnd.portaki.manifest+json"

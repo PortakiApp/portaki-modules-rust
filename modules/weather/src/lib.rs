@@ -28,11 +28,12 @@ portaki_sdk::portaki_module!(
     author = "Syntax Labs",
 );
 
-#[portaki_sdk::capability(required)]
+#[portaki_sdk::capability(required, id = "core.storage")]
 pub const STORAGE: &str = "core.storage";
 
 #[portaki_sdk::capability(
     optional,
+    id = "external.open-weather.pool",
     purpose_key = "capability.openWeather.purpose",
     fallback_key = "capability.openWeather.fallback"
 )]
@@ -40,6 +41,7 @@ pub const OPEN_WEATHER_POOL: &str = "external.open-weather.pool";
 
 #[portaki_sdk::capability(
     optional,
+    id = "external.open-weather.byok",
     purpose_key = "capability.openWeather.byok.purpose",
     fallback_key = "capability.openWeather.byok.fallback"
 )]

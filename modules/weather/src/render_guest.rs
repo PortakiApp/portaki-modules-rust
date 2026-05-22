@@ -1,7 +1,7 @@
 //! Guest booklet surfaces.
 
 use portaki_sdk::prelude::*;
-use portaki_sdk::sdui::common::Tone;
+use portaki_sdk::sdui::common::{TempVariant, Tone};
 use portaki_sdk::sdui::primitives::{
     Badge, Card, EmptyState, Grid, Stack, Temperature, Text, WeatherIcon,
 };
@@ -53,7 +53,12 @@ fn build_home_card(current: &WeatherCurrent, units: &crate::entities::WeatherUni
             )
             .child(Component::Stack(
                 Stack::new()
-                    .child(Temperature::new().value(json!(temp)).unit(json!(unit)))
+                    .child(
+                        Temperature::new()
+                            .value(json!(temp))
+                            .unit(json!(unit))
+                            .variant(TempVariant::Hero),
+                    )
                     .child(Text::new().text(description).variant(json!("caption"))),
             )),
     )];
@@ -145,7 +150,8 @@ fn build_forecast_surface(forecast: &WeatherForecast) -> Surface {
                     .child(
                         Temperature::new()
                             .value(json!(day.display_temp_c))
-                            .unit(json!(unit)),
+                            .unit(json!(unit))
+                            .variant(TempVariant::Compact),
                     ),
             )
         })
