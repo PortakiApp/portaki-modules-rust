@@ -1,0 +1,61 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "*-v*"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse module name and version from tag
+        id: parse
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          MODULE_NAME=${TAG%-v*}
+          VERSION=${TAG#*-v}
+          echo "module=$MODULE_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Parsed tag: module=$MODULE_NAME version=$VERSION"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install portaki CLI
+        run: cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch fix/macro-expand-emissions --locked portaki-cli
+
+      - name: Build module
+        working-directory: modules/${{ steps.parse.outputs.module }}
+        run: portaki build --release
+
+      - name: Lint
+        working-directory: modules/${{ steps.parse.outputs.module }}
+        run: portaki lint
+
+      - name: Test
+        working-directory: modules/${{ steps.parse.outputs.module }}
+        run: |
+          cargo test --lib
+          cargo test --test integration
+
+      - name: Authenticate Scaleway via OIDC
+        uses: scaleway/action-auth-oidc@v1
+        with:
+          project-id: ${{ secrets.SCW_PROJECT_ID }}
+
+      - name: Publish
+        working-directory: modules/${{ steps.parse.outputs.module }}
+        run: portaki publish --registry rg.fr-par.scw.cloud/portaki-modules

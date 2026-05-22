@@ -1,0 +1,52 @@
+name: ci
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Unit tests
+        run: cargo test --workspace --lib
+
+      - name: Integration tests
+        run: cargo test --workspace --test integration
+
+      - name: Doc tests
+        run: cargo test --workspace --doc
+
+      - name: Install portaki CLI
+        run: cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch fix/macro-expand-emissions --locked portaki-cli
+
+      - name: Build and lint all modules (wasm)
+        run: |
+          for module in modules/*/; do
+            echo "=== portaki build: $module ==="
+            (cd "$module" && portaki build --release)
+            echo "=== portaki lint: $module ==="
+            (cd "$module" && portaki lint)
+          done
