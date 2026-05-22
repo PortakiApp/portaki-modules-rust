@@ -1,0 +1,152 @@
+{
+  "$schema": "https://raw.githubusercontent.com/PortakiApp/portaki-sdk/main/schema/module.v1.json",
+  "id": "weather",
+  "name": {
+    "fr": "Météo",
+    "en": "Weather"
+  },
+  "description": {
+    "fr": "Prévisions pour les prochains jours autour du logement.",
+    "en": "A few days of forecast around the property."
+  },
+  "details": {
+    "fr": "Les prévisions s'appuient sur des données météo ouvertes. Si vous ne précisez pas d'emplacement ici, Portaki utilise la position du logement lorsqu'elle est connue.\n\nLes températures et pictogrammes aident les voyageurs à prévoir veste ou parasol.",
+    "en": "Forecasts use open weather data. If you don't set a location here, Portaki uses the property's position when it's known.\n\nTemperatures and icons help guests plan jacket or sunshade."
+  },
+  "examples": [
+    {
+      "title": {
+        "fr": "Trois jours d'un coup",
+        "en": "Three days at a glance"
+      },
+      "description": {
+        "fr": "Idéal pour un week-end ou une courte semaine sans changer d'écran.",
+        "en": "Handy for a weekend or short stay without flipping screens."
+      },
+      "link": "https://github.com/PortakiApp/portaki-modules-rust/tree/main/modules/weather"
+    }
+  ],
+  "version": "0.0.0",
+  "author": {
+    "name": "Portaki",
+    "url": "https://portaki.app",
+    "type": "official"
+  },
+  "icon": "cloud-sun",
+  "type": "official",
+  "tags": [
+    "weather",
+    "forecast"
+  ],
+  "portakiVersionMin": "1.0.0",
+  "license": "AGPL-3.0",
+  "repository": "https://github.com/PortakiApp/portaki-modules-rust",
+  "screenshots": [],
+  "config": {
+    "defaults": {},
+    "globalAlert": {
+      "type": "info",
+      "message": {
+        "fr": "Données météo publiques. Si vous ne remplissez pas les coordonnées ci-dessous, on reprend celles du bien lorsqu'elles existent.",
+        "en": "Public weather data. If you leave coordinates empty, the property's location is used when available."
+      },
+      "helpUrl": "https://open-meteo.com/en/docs"
+    },
+    "fields": [
+      {
+        "key": "latitude",
+        "label": {
+          "fr": "Latitude (optionnel)",
+          "en": "Latitude (optional)"
+        },
+        "description": {
+          "fr": "Pour cadrer la météo sur un point précis ; sinon position du logement.",
+          "en": "To pin the forecast to a spot; otherwise the property location."
+        },
+        "type": "number",
+        "required": false
+      },
+      {
+        "key": "longitude",
+        "label": {
+          "fr": "Longitude (optionnel)",
+          "en": "Longitude (optional)"
+        },
+        "description": {
+          "fr": "À utiliser avec la latitude si vous voulez un secteur différent du bien.",
+          "en": "Use with latitude if you want a different area than the property."
+        },
+        "type": "number",
+        "required": false
+      },
+      {
+        "key": "location_label",
+        "label": {
+          "fr": "Titre affiché",
+          "en": "Title shown"
+        },
+        "description": {
+          "fr": "Ex. « Vue mer · secteur Mandelieu ».",
+          "en": "e.g. “Sea view · Mandelieu area”."
+        },
+        "type": "text",
+        "required": false,
+        "placeholder": {
+          "fr": "Secteur météo",
+          "en": "Forecast area"
+        }
+      },
+      {
+        "key": "forecast_days",
+        "label": {
+          "fr": "Nombre de jours (1 à 7)",
+          "en": "Number of days (1–7)"
+        },
+        "description": {
+          "fr": "Combien de jours les voyageurs voient d'un coup (maximum 7).",
+          "en": "How many days guests see at once (up to 7)."
+        },
+        "type": "number",
+        "required": false,
+        "default": 3,
+        "min": 1,
+        "max": 7
+      },
+      {
+        "key": "intro",
+        "label": {
+          "fr": "Message d'accroche (optionnel)",
+          "en": "Short intro (optional)"
+        },
+        "description": {
+          "fr": "Une phrase au-dessus des températures (ex. « Prévoir un coupe-vent »).",
+          "en": "A line above the temperatures (e.g. “Pack a windbreaker”)."
+        },
+        "type": "textarea",
+        "required": false
+      }
+    ]
+  },
+  "catalog": {
+    "tagline": {
+      "fr": "La météo des prochains jours, lisible sur mobile.",
+      "en": "The next few days' weather, readable on mobile."
+    },
+    "highlights": [
+      {
+        "fr": "Jusqu'à sept jours d'affilée",
+        "en": "Up to seven days in a row"
+      },
+      {
+        "fr": "Repli automatique sur l'emplacement du logement",
+        "en": "Falls back to the property location"
+      }
+    ]
+  },
+  "requiresHostSdk": "3.0.0",
+  "runtime": {
+    "backend": "wasm",
+    "guest": "wasm"
+  },
+  "artifacts": {}
+}
