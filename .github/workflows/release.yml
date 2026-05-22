@@ -35,7 +35,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Install portaki CLI
-        run: cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch feature/phase4-sdk-hardening --locked portaki-cli
+        run: cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch main --locked portaki-cli
 
       - name: Build module
         working-directory: modules/${{ steps.parse.outputs.module }}
