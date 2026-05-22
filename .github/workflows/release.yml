@@ -11,7 +11,6 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
-  CARGO_NET_GIT_FETCH_WITH_CLI: true
 
 jobs:
   release:
@@ -19,9 +18,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure git credentials for private portaki-sdk-rust
+      - name: Checkout portaki-sdk-rust (private)
+        uses: actions/checkout@v4
+        with:
+          repository: PortakiApp/portaki-sdk-rust
+          ref: fix/macro-expand-emissions
+          path: vendor/portaki-sdk-rust
+          token: ${{ secrets.PORTAKI_CI_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Patch workspace to use vendored SDK
         run: |
-          git config --global url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+          cat >> Cargo.toml << 'EOF'
+
+          [patch."https://github.com/PortakiApp/portaki-sdk-rust.git"]
+          portaki-sdk = { path = "vendor/portaki-sdk-rust/crates/portaki-sdk" }
+          portaki-sdk-macros = { path = "vendor/portaki-sdk-rust/crates/portaki-sdk-macros" }
+          portaki-connectors = { path = "vendor/portaki-sdk-rust/crates/portaki-connectors" }
+          portaki-test-utils = { path = "vendor/portaki-sdk-rust/crates/portaki-test-utils" }
+          EOF
 
       - name: Parse module name and version from tag
         id: parse
@@ -40,7 +54,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Install portaki CLI
-        run: cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch fix/macro-expand-emissions --locked portaki-cli
+        run: cargo install --path vendor/portaki-sdk-rust/crates/portaki-cli --locked
 
       - name: Build module
         working-directory: modules/${{ steps.parse.outputs.module }}

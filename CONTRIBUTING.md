@@ -36,6 +36,8 @@ All user-facing strings via `i18n:` keys in bundle files under `i18n/`. No inlin
 
 Workspace pins `portaki-sdk-rust` via git branch `fix/macro-expand-emissions` until [PR #2](https://github.com/PortakiApp/portaki-sdk-rust/pull/2) merges; then update root `Cargo.toml` to `branch = "main"`.
 
+CI checks out the SDK into `vendor/portaki-sdk-rust` and applies a `[patch]` (private repo — default `GITHUB_TOKEN` cannot fetch cross-repo git deps). Add org secret **`PORTAKI_CI_PAT`** (read access to `portaki-sdk-rust`) if checkout fails.
+
 ## Monorepo + portaki CLI
 
 Each module sets `target-dir = "target"` in `.cargo/config.toml` so `portaki build` / `portaki lint` find macro emissions (workspace builds otherwise use repo-root `target/`).
