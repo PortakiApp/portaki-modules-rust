@@ -17,25 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout portaki-sdk-rust (private)
-        uses: actions/checkout@v4
-        with:
-          repository: PortakiApp/portaki-sdk-rust
-          ref: fix/macro-expand-emissions
-          path: vendor/portaki-sdk-rust
-          token: ${{ secrets.PORTAKI_CI_PAT || secrets.GITHUB_TOKEN }}
-
-      - name: Patch workspace to use vendored SDK
-        run: |
-          cat >> Cargo.toml << 'EOF'
-
-          [patch."https://github.com/PortakiApp/portaki-sdk-rust.git"]
-          portaki-sdk = { path = "vendor/portaki-sdk-rust/crates/portaki-sdk" }
-          portaki-sdk-macros = { path = "vendor/portaki-sdk-rust/crates/portaki-sdk-macros" }
-          portaki-connectors = { path = "vendor/portaki-sdk-rust/crates/portaki-connectors" }
-          portaki-test-utils = { path = "vendor/portaki-sdk-rust/crates/portaki-test-utils" }
-          EOF
-
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -59,7 +40,7 @@ jobs:
         run: cargo test --workspace --doc
 
       - name: Install portaki CLI
-        run: cargo install --path vendor/portaki-sdk-rust/crates/portaki-cli --locked
+        run: cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch fix/macro-expand-emissions --locked portaki-cli
 
       - name: Lint all modules
         run: |
