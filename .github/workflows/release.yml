@@ -59,7 +59,8 @@ jobs:
         with:
           registry: rg.fr-par.scw.cloud
           username: nologin
-          password: ${{ secrets.SCW_SECRET_KEY }}
+          # Scaleway registry: secret key only (not access key). Add one of these repo/org secrets.
+          password: ${{ secrets.SCW_SECRET_KEY || secrets.SCALEWAY_API_KEY || secrets.SCALEWAY_REGISTRY_TOKEN }}
 
       - name: Publish OCI artifact
         working-directory: modules/${{ steps.parse.outputs.module }}
