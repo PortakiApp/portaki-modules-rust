@@ -1,0 +1,10 @@
+/target/
+**/target/
+**/*.rs.bk
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+portaki-out/
+dist/

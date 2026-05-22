@@ -1,0 +1,257 @@
+//! Integration-style unit tests with `portaki-test-utils`.
+
+use serial_test::serial;
+
+use portaki_sdk::sdui::component::Component;
+use portaki_sdk::sdui::surface::Surface;
+use portaki_test_utils::{MockContext, Property, SurfaceAssertions};
+use serde_json::json;
+use std::sync::atomic::Ordering;
+
+use weather::{
+    get_current, get_forecast, on_booking_confirmed, refresh_forecast, render_explore_forecast,
+    render_home_card, reset_test_harness, CONNECTOR_CURRENT_CALLS, CONNECTOR_FORECAST_CALLS,
+};
+use weather::{BookingConfirmedEvent, GetCurrentArgs, GetForecastArgs};
+
+fn sample_current_json() -> String {
+    json!({
+        "temp_c": 21.5,
+        "condition": "clear",
+        "humidity": 55
+    })
+    .to_string()
+}
+
+fn sample_forecast_json() -> String {
+    json!({
+        "days": [
+            {"date": "2026-05-22", "min_c": 16.0, "max_c": 24.0, "condition": "clear"},
+            {"date": "2026-05-23", "min_c": 17.0, "max_c": 25.0, "condition": "clouds"},
+            {"date": "2026-05-24", "min_c": 18.0, "max_c": 23.0, "condition": "rain"},
+            {"date": "2026-05-25", "min_c": 17.0, "max_c": 22.0, "condition": "clouds"},
+            {"date": "2026-05-26", "min_c": 16.0, "max_c": 21.0, "condition": "clear"}
+        ]
+    })
+    .to_string()
+}
+
+fn contains_component_type(surface: &Surface, type_name: &str) -> bool {
+    fn walk(node: &Component, type_name: &str) -> bool {
+        let matches = match node {
+            Component::Card(_) if type_name == "Card" => true,
+            Component::Temperature(_) if type_name == "Temperature" => true,
+            Component::WeatherIcon(_) if type_name == "WeatherIcon" => true,
+            Component::EmptyState(_) if type_name == "EmptyState" => true,
+            Component::Grid(_) if type_name == "Grid" => true,
+            _ => false,
+        };
+        if matches {
+            return true;
+        }
+        for child in child_components(node) {
+            if walk(child, type_name) {
+                return true;
+            }
+        }
+        false
+    }
+    walk(&surface.root, type_name)
+}
+
+fn child_components(node: &Component) -> Vec<&Component> {
+    match node {
+        Component::Stack(inner) => inner.children.iter().collect(),
+        Component::Card(inner) => inner.children.iter().collect(),
+        Component::Grid(inner) => inner.children.iter().collect(),
+        Component::EmptyState(inner) => inner.children.iter().collect(),
+        Component::Group(inner) => inner.children.iter().collect(),
+        Component::Form(inner) => inner.children.iter().collect(),
+        Component::Page(inner) => inner.children.iter().collect(),
+        _ => Vec::new(),
+    }
+}
+
+#[test]
+#[serial]
+fn home_card_renders_with_capability_pool() {
+    reset_test_harness();
+    MockContext::guest()
+        .with_property(Property::default())
+        .with_capabilities(&["core.storage", "external.open-weather.pool"])
+        .with_connector_response("open-weather", "current", sample_current_json())
+        .with_connector_response("open-weather", "forecast", sample_forecast_json())
+        .run(|ctx| {
+            let surface = render_home_card(ctx);
+            let assertions = SurfaceAssertions::new(&surface);
+            assertions.assert_contains::<portaki_sdk::sdui::primitives::Card>();
+            assert!(contains_component_type(&surface, "Temperature"));
+            assert!(contains_component_type(&surface, "WeatherIcon"));
+        });
+}
+
+#[test]
+#[serial]
+fn home_card_renders_empty_state_without_capability() {
+    reset_test_harness();
+    MockContext::guest()
+        .with_property(Property::default())
+        .with_capabilities(&["core.storage"])
+        .run(|ctx| {
+            let surface = render_home_card(ctx);
+            assert!(contains_component_type(&surface, "EmptyState"));
+        });
+}
+
+#[test]
+#[serial]
+fn get_current_uses_cache_on_second_call() {
+    reset_test_harness();
+
+    let builder = MockContext::guest()
+        .with_property(Property::default())
+        .with_capabilities(&["core.storage", "external.open-weather.pool"])
+        .with_connector_response("open-weather", "current", sample_current_json())
+        .with_connector_response("open-weather", "forecast", sample_forecast_json());
+
+    builder.clone().run(|ctx| {
+        get_current(
+            ctx,
+            GetCurrentArgs {
+                lat: None,
+                lng: None,
+            },
+        )
+        .expect("first get_current");
+    });
+
+    let calls_after_first = CONNECTOR_CURRENT_CALLS.load(Ordering::SeqCst);
+    assert_eq!(calls_after_first, 1);
+
+    builder.run(|ctx| {
+        get_current(
+            ctx,
+            GetCurrentArgs {
+                lat: None,
+                lng: None,
+            },
+        )
+        .expect("cached get_current");
+    });
+
+    let calls_after_second = CONNECTOR_CURRENT_CALLS.load(Ordering::SeqCst);
+    assert_eq!(calls_after_second, 1);
+}
+
+#[test]
+#[serial]
+fn refresh_forecast_invalidates_cache() {
+    reset_test_harness();
+
+    let builder = MockContext::guest()
+        .with_property(Property::default())
+        .with_capabilities(&["core.storage", "external.open-weather.pool"])
+        .with_connector_response("open-weather", "current", sample_current_json())
+        .with_connector_response("open-weather", "forecast", sample_forecast_json());
+
+    builder.clone().run(|ctx| {
+        get_current(
+            ctx,
+            GetCurrentArgs {
+                lat: None,
+                lng: None,
+            },
+        )
+        .expect("warm cache");
+    });
+
+    builder.clone().run(|ctx| {
+        refresh_forecast(ctx).expect("invalidate");
+    });
+
+    builder.run(|ctx| {
+        get_current(
+            ctx,
+            GetCurrentArgs {
+                lat: None,
+                lng: None,
+            },
+        )
+        .expect("refresh after invalidate");
+    });
+
+    assert_eq!(CONNECTOR_CURRENT_CALLS.load(Ordering::SeqCst), 2);
+}
+
+#[test]
+#[serial]
+fn forecast_renders_5_days() {
+    reset_test_harness();
+    MockContext::guest()
+        .with_property(Property::default())
+        .with_capabilities(&["core.storage", "external.open-weather.byok"])
+        .with_connector_response("open-weather", "current", sample_current_json())
+        .with_connector_response("open-weather", "forecast", sample_forecast_json())
+        .run(|ctx| {
+            let surface = render_explore_forecast(ctx);
+            assert!(contains_component_type(&surface, "Grid"));
+            let json = serde_json::to_string(&surface).expect("surface json");
+            assert!(json.matches("\"Temperature\"").count() >= 5);
+        });
+}
+
+#[test]
+#[serial]
+fn on_booking_confirmed_prewarms_cache() {
+    reset_test_harness();
+
+    MockContext::guest()
+        .with_property(Property::default())
+        .with_capabilities(&["core.storage", "external.open-weather.pool"])
+        .with_connector_response("open-weather", "current", sample_current_json())
+        .with_connector_response("open-weather", "forecast", sample_forecast_json())
+        .run(|ctx| {
+            on_booking_confirmed(
+                ctx,
+                BookingConfirmedEvent {
+                    id: uuid::Uuid::new_v4(),
+                    property_id: Property::default().id,
+                },
+            )
+            .expect("prewarm");
+        });
+
+    assert!(CONNECTOR_CURRENT_CALLS.load(Ordering::SeqCst) >= 1);
+    assert!(CONNECTOR_FORECAST_CALLS.load(Ordering::SeqCst) >= 1);
+}
+
+#[test]
+#[serial]
+fn get_forecast_returns_five_days() {
+    reset_test_harness();
+
+    MockContext::guest()
+        .with_property(Property::default())
+        .with_capabilities(&["core.storage", "external.open-weather.pool"])
+        .with_connector_response("open-weather", "current", sample_current_json())
+        .with_connector_response("open-weather", "forecast", sample_forecast_json())
+        .run(|ctx| {
+            let forecast = get_forecast(
+                ctx,
+                GetForecastArgs {
+                    lat: None,
+                    lng: None,
+                    days: Some(5),
+                },
+            )
+            .expect("forecast");
+            assert_eq!(forecast.days.len(), 5);
+        });
+}
+
+#[test]
+#[serial]
+#[ignore = "requires wasm32 build pipeline — run on main CI"]
+fn wasm_render_home_card_end_to_end() {
+    // Placeholder for CI wasm snapshot test (portaki build + wasmtime harness).
+}

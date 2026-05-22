@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = ["modules/*"]
+
+[workspace.package]
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/PortakiApp/portaki-modules-rust"
+authors = ["Syntax Labs <support@syntax-labs.fr>"]
+rust-version = "1.75"
+
+# Pin to fix/macro-expand-emissions until portaki-sdk-rust PR #2 merges to main.
+[workspace.dependencies]
+portaki-sdk = { git = "https://github.com/PortakiApp/portaki-sdk-rust.git", branch = "fix/macro-expand-emissions" }
+portaki-sdk-macros = { git = "https://github.com/PortakiApp/portaki-sdk-rust.git", branch = "fix/macro-expand-emissions" }
+portaki-connectors = { git = "https://github.com/PortakiApp/portaki-sdk-rust.git", branch = "fix/macro-expand-emissions" }
+portaki-test-utils = { git = "https://github.com/PortakiApp/portaki-sdk-rust.git", branch = "fix/macro-expand-emissions" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["serde", "v4", "js"] }
+chrono = { version = "0.4", features = ["serde"] }
+serial_test = "3"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
