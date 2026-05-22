@@ -10,10 +10,10 @@ authors = ["Syntax Labs <support@syntax-labs.fr>"]
 rust-version = "1.75"
 
 [workspace.dependencies]
-portaki-sdk = { git = "https://github.com/PortakiApp/portaki-sdk-rust.git", branch = "main" }
-portaki-sdk-macros = { git = "https://github.com/PortakiApp/portaki-sdk-rust.git", branch = "main" }
-portaki-connectors = { git = "https://github.com/PortakiApp/portaki-sdk-rust.git", branch = "main" }
-portaki-test-utils = { git = "https://github.com/PortakiApp/portaki-sdk-rust.git", branch = "main" }
+portaki-sdk = { git = "https://github.com/PortakiApp/portaki-sdk-rust.git", branch = "feature/phase4-sdk-hardening" }
+portaki-sdk-macros = { git = "https://github.com/PortakiApp/portaki-sdk-rust.git", branch = "feature/phase4-sdk-hardening" }
+portaki-connectors = { git = "https://github.com/PortakiApp/portaki-sdk-rust.git", branch = "feature/phase4-sdk-hardening" }
+portaki-test-utils = { git = "https://github.com/PortakiApp/portaki-sdk-rust.git", branch = "feature/phase4-sdk-hardening" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["serde", "v4", "js"] }
