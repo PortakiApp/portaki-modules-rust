@@ -37,13 +37,12 @@ jobs:
       - name: Install portaki CLI
         run: cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch main --locked portaki-cli
 
-      - name: Update Portaki SDK lockfile to latest main
-        working-directory: modules/${{ steps.parse.outputs.module }}
+      - name: Refresh Portaki SDK lockfile from main
         run: |
-          cargo update -p portaki-sdk -p portaki-sdk-macros -p portaki-connectors -p portaki-test-utils
-          grep -q 'portaki-sdk-macros' ../../Cargo.lock
+          cargo update
+          grep -q 'portaki-sdk-macros' Cargo.lock
           echo "portaki-sdk-macros revision:"
-          awk '/^name = "portaki-sdk-macros"/{getline; getline; print}' ../../Cargo.lock
+          awk '/^name = "portaki-sdk-macros"/{getline; getline; print}' Cargo.lock
 
       - name: Build module
         working-directory: modules/${{ steps.parse.outputs.module }}
