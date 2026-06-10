@@ -3,6 +3,7 @@
 mod cache;
 mod commands;
 mod config;
+mod connectors;
 mod entities;
 mod events;
 mod queries;
@@ -46,6 +47,3 @@ pub const OPEN_WEATHER_POOL: &str = "external.open-weather.pool";
     fallback_key = "capability.openWeather.byok.fallback"
 )]
 pub const OPEN_WEATHER_BYOK: &str = "external.open-weather.byok";
-
-#[portaki_sdk::connector(builtin = "open-weather")]
-pub use portaki_connectors::OpenWeather;

@@ -7,6 +7,7 @@
   "capability.openWeather.fallback": "Mettez à niveau votre offre ou ajoutez une clé OpenWeather",
   "capability.openWeather.byok.purpose": "Utilise votre clé OpenWeather (BYOK)",
   "capability.openWeather.byok.fallback": "Ajoutez une clé OpenWeather dans les identifiants du bien",
+  "connector.openWeather.name": "OpenWeather",
   "weather.description.sunny": "Ensoleillé",
   "weather.description.cloudy": "Nuageux",
   "weather.description.rainy": "Pluvieux",
