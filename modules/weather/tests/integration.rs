@@ -16,24 +16,33 @@ use weather::{BookingConfirmedEvent, GetCurrentArgs, GetForecastArgs};
 
 fn sample_current_json() -> String {
     json!({
-        "temp_c": 21.5,
-        "condition": "clear",
-        "humidity": 55
+        "main": { "temp": 21.5, "humidity": 55 },
+        "weather": [{ "main": "Clear" }]
     })
     .to_string()
 }
 
 fn sample_forecast_json() -> String {
-    json!({
-        "days": [
-            {"date": "2026-05-22", "min_c": 16.0, "max_c": 24.0, "condition": "clear"},
-            {"date": "2026-05-23", "min_c": 17.0, "max_c": 25.0, "condition": "clouds"},
-            {"date": "2026-05-24", "min_c": 18.0, "max_c": 23.0, "condition": "rain"},
-            {"date": "2026-05-25", "min_c": 17.0, "max_c": 22.0, "condition": "clouds"},
-            {"date": "2026-05-26", "min_c": 16.0, "max_c": 21.0, "condition": "clear"}
-        ]
-    })
-    .to_string()
+    let dates = [
+        "2026-05-22", "2026-05-23", "2026-05-24", "2026-05-25", "2026-05-26",
+    ];
+    let conditions = ["Clear", "Clouds", "Rain", "Clouds", "Clear"];
+    let list: Vec<serde_json::Value> = dates
+        .iter()
+        .zip(conditions.iter())
+        .enumerate()
+        .map(|(index, (date, condition))| {
+            json!({
+                "dt_txt": format!("{date} 12:00:00"),
+                "main": {
+                    "temp_min": 16.0 + index as f64,
+                    "temp_max": 24.0 + index as f64
+                },
+                "weather": [{ "main": condition }]
+            })
+        })
+        .collect();
+    json!({ "list": list }).to_string()
 }
 
 fn contains_component_type(surface: &Surface, type_name: &str) -> bool {

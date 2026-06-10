@@ -439,7 +439,7 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 [[package]]
 name = "portaki-connectors"
 version = "0.1.0"
-source = "git+https://github.com/PortakiApp/portaki-sdk-rust.git?branch=main#073d53717af0a3646e6aaacf2ab73e6711a40fb8"
+source = "git+https://github.com/PortakiApp/portaki-sdk-rust.git?branch=main#6c57701f06e61acc5f0305ef3274e5fde81e1f72"
 dependencies = [
  "portaki-sdk",
  "serde",
@@ -450,8 +450,9 @@ dependencies = [
 [[package]]
 name = "portaki-sdk"
 version = "0.1.0"
-source = "git+https://github.com/PortakiApp/portaki-sdk-rust.git?branch=main#073d53717af0a3646e6aaacf2ab73e6711a40fb8"
+source = "git+https://github.com/PortakiApp/portaki-sdk-rust.git?branch=main#6c57701f06e61acc5f0305ef3274e5fde81e1f72"
 dependencies = [
+ "base64",
  "chrono",
  "extism-pdk",
  "getrandom 0.3.4",
@@ -466,7 +467,7 @@ dependencies = [
 [[package]]
 name = "portaki-sdk-macros"
 version = "0.1.0"
-source = "git+https://github.com/PortakiApp/portaki-sdk-rust.git?branch=main#073d53717af0a3646e6aaacf2ab73e6711a40fb8"
+source = "git+https://github.com/PortakiApp/portaki-sdk-rust.git?branch=main#6c57701f06e61acc5f0305ef3274e5fde81e1f72"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -477,7 +478,7 @@ dependencies = [
 [[package]]
 name = "portaki-test-utils"
 version = "0.1.0"
-source = "git+https://github.com/PortakiApp/portaki-sdk-rust.git?branch=main#073d53717af0a3646e6aaacf2ab73e6711a40fb8"
+source = "git+https://github.com/PortakiApp/portaki-sdk-rust.git?branch=main#6c57701f06e61acc5f0305ef3274e5fde81e1f72"
 dependencies = [
  "chrono",
  "portaki-sdk",
