@@ -7,8 +7,10 @@
     base_url = "https://api.openweathermap.org",
     credential_provider_id = "open-weather"
 )]
+#[allow(dead_code)] // metadata-only; macros emit manifest emissions at compile time
 pub struct ModuleOpenWeather;
 
+#[allow(dead_code)] // metadata-only; macros emit manifest emissions at compile time
 impl ModuleOpenWeather {
     #[portaki_sdk::connector_op(method = "GET", path = "/data/2.5/weather")]
     pub fn current() {}
