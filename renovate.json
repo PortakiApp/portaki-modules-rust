@@ -1,0 +1,68 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    "group:recommended",
+    "group:rustMonorepo"
+  ],
+  "labels": ["dependencies"],
+  "timezone": "Europe/Paris",
+  "schedule": ["before 10am on monday"],
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 5,
+  "rangeStrategy": "bump",
+  "rebaseWhen": "behind-base-branch",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 5am on sunday"]
+  },
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "labels": ["dependencies", "security"],
+    "schedule": ["at any time"]
+  },
+  "packageRules": [
+    {
+      "description": "GitHub Actions — groupe hebdo",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "schedule": ["before 10am on monday"]
+    },
+    {
+      "description": "Portaki SDK (git main) — bump Cargo.lock digest",
+      "matchManagers": ["cargo"],
+      "matchDepTypes": ["git"],
+      "matchPackageNames": [
+        "portaki-sdk",
+        "portaki-sdk-macros",
+        "portaki-connectors",
+        "portaki-test-utils"
+      ],
+      "groupName": "portaki-sdk git",
+      "schedule": ["at any time"]
+    },
+    {
+      "groupName": "Serde",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["serde", "serde_json"]
+    },
+    {
+      "groupName": "Extism PDK",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["extism-pdk"]
+    },
+    {
+      "groupName": "serial_test",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["serial_test"]
+    },
+    {
+      "description": "Majors Rust — review manuelle",
+      "matchManagers": ["cargo"],
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "breaking"]
+    }
+  ]
+}
