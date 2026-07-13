@@ -10,8 +10,7 @@ portaki-modules-rust/
 ├── modules/
 │   └── weather/            # weather module (migrated from portaki-module-weather)
 └── .github/workflows/
-    ├── ci.yml              # fmt, clippy, test, portaki lint/build on PR
-    └── release.yml         # publish on tag <module>-v<semver>
+    └── ci.yml              # fmt, clippy, test, lint/build; publish to GHCR on main
 ```
 
 ## Modules
@@ -25,8 +24,7 @@ portaki-modules-rust/
 ```bash
 rustup target add wasm32-unknown-unknown
 
-# Install CLI (uses SDK branch with macro fix until PR #2 merges)
-cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch fix/macro-expand-emissions --locked portaki-cli
+cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch main --locked portaki-cli
 
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
@@ -37,20 +35,15 @@ portaki build --release
 portaki lint
 ```
 
-## Release tagging
+## Publishing
 
-Official modules use **module-prefixed tags**, not bare semver:
+Push to **`main`** with an updated `version` in `modules/<id>/Cargo.toml`. CI runs quality gates, then publishes every module to `ghcr.io/portakiapp/portaki-modules/<id>:<semver>`.
 
-```
-weather-v0.2.0
-local-guide-v1.0.0
-```
-
-The release workflow parses the tag, builds `modules/<name>/`, and runs `portaki publish --registry ghcr.io/portakiapp/portaki-modules`.
+No git tags for now — **release-please** later.
 
 ## Migration note
 
-The `weather` module was migrated from standalone [portaki-module-weather](https://github.com/PortakiApp/portaki-module-weather) (C1 pilot). Standalone repo v0.1.0 was never published; first monorepo release is `weather-v0.2.0`.
+The `weather` module was migrated from standalone [portaki-module-weather](https://github.com/PortakiApp/portaki-module-weather) (C1 pilot). Standalone repo v0.1.0 was never published.
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for adding new modules.
 

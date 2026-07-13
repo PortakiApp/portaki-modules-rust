@@ -45,9 +45,9 @@ portaki build --release
 portaki lint
 ```
 
-## Release
+## Publishing
 
-Tagged from monorepo root as `weather-v<semver>` (not `v<semver>`). See root README.
+Bump `version` in `Cargo.toml`, merge to `main` — CI publishes `ghcr.io/portakiapp/portaki-modules/weather:<semver>`. See root README.
 
 ## License
 

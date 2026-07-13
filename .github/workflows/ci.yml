@@ -10,6 +10,7 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  REGISTRY: ghcr.io/portakiapp/portaki-modules
 
 jobs:
   quality:
@@ -49,4 +50,90 @@ jobs:
             (cd "$module" && portaki build --release)
             echo "=== portaki lint: $module ==="
             (cd "$module" && portaki lint)
+          done
+
+  publish:
+    name: publish (GHCR)
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install portaki CLI
+        run: cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch main --locked portaki-cli
+
+      - name: Refresh Portaki SDK lockfile from main
+        run: |
+          cargo update
+          grep -q 'portaki-sdk-macros' Cargo.lock
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish all modules
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          publish_module() {
+            local module_dir="$1"
+            local module
+            module="$(basename "$module_dir")"
+            local version
+            version="$(grep -E '^version\s*=' "$module_dir/Cargo.toml" | head -1 | sed -E 's/.*"([^"]+)".*/\1/')"
+
+            echo "=== publish $module:$version ==="
+            cd "$module_dir"
+
+            rm -rf "target/wasm32-unknown-unknown/release/build/${module}-"* || true
+            portaki build --release
+
+            WASM="target/wasm32-unknown-unknown/release/${module}.wasm"
+            if [ ! -f "$WASM" ]; then
+              WASM="$(find target/wasm32-unknown-unknown/release -maxdepth 1 -name '*.wasm' | head -1)"
+            fi
+            if strings "$WASM" | grep -q '__wbindgen'; then
+              echo "::error::${module}: wasm contains wasm-bindgen imports"
+              exit 1
+            fi
+
+            PUBLISH_MANIFEST=target/portaki/publish-manifest.json
+            MANIFEST_ID="$(jq -r '.id' "$PUBLISH_MANIFEST")"
+            MANIFEST_VERSION="$(jq -r '.version' "$PUBLISH_MANIFEST")"
+            if [ "$MANIFEST_ID" != "$module" ]; then
+              echo "::error::${module}: publish-manifest id=$MANIFEST_ID"
+              exit 1
+            fi
+            if [ "$MANIFEST_VERSION" != "$version" ]; then
+              echo "::error::${module}: Cargo.toml version=$version manifest=$MANIFEST_VERSION"
+              exit 1
+            fi
+
+            portaki lint
+            cargo test --lib
+            cargo test --test integration
+
+            PORTAKI_PUBLISH_VERSION="$version" portaki publish --registry "$REGISTRY"
+            portaki publish --registry "$REGISTRY" --dry-run
+
+            cd - >/dev/null
+          }
+
+          for module_dir in modules/*/; do
+            publish_module "$module_dir"
           done
