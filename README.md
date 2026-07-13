@@ -1,6 +1,6 @@
 # portaki-modules-rust
 
-Official [Portaki](https://github.com/PortakiApp) module monorepo (Pattern A). Each crate under `modules/` is an independently versioned Wasm module published to Scaleway Container Registry.
+Official [Portaki](https://github.com/PortakiApp) module monorepo (Pattern A). Each crate under `modules/` is an independently versioned Wasm module published to **GitHub Container Registry** (GHCR).
 
 ## Structure
 
@@ -18,7 +18,7 @@ portaki-modules-rust/
 
 | Module | OCI image | Description |
 |--------|-----------|-------------|
-| `weather` | `rg.fr-par.scw.cloud/portaki-modules/weather:<semver>` | Current weather + 5-day forecast |
+| `weather` | `ghcr.io/portakiapp/portaki-modules/weather:<semver>` | Current weather + 5-day forecast |
 
 ## Development
 
@@ -46,7 +46,7 @@ weather-v0.2.0
 local-guide-v1.0.0
 ```
 
-The release workflow parses the tag, builds `modules/<name>/`, and runs `portaki publish --registry rg.fr-par.scw.cloud/portaki-modules`.
+The release workflow parses the tag, builds `modules/<name>/`, and runs `portaki publish --registry ghcr.io/portakiapp/portaki-modules`.
 
 ## Migration note
 

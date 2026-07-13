@@ -29,7 +29,8 @@ All user-facing strings via `i18n:` keys in bundle files under `i18n/`. No inlin
 ## Releases
 
 - Tag format: `<module-id>-v<semver>` (e.g. `weather-v0.2.0`).
-- Requires `SCW_PROJECT_ID` secret and Scaleway OIDC on the repo.
+- Requires `GITHUB_TOKEN` with `packages: write` (provided by GitHub Actions on release).
+- GHCR packages are public — runtime pulls from `ghcr.io/portakiapp/portaki-modules/<module-id>:<semver>`.
 - Operator approval required before tagging production releases.
 
 ## SDK dependency

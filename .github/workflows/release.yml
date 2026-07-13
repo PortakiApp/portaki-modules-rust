@@ -16,10 +16,11 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 env:
   CARGO_TERM_COLOR: always
-  REGISTRY: rg.fr-par.scw.cloud/portaki-modules
+  REGISTRY: ghcr.io/portakiapp/portaki-modules
 
 jobs:
   release:
@@ -113,18 +114,18 @@ jobs:
           cargo test --lib
           cargo test --test integration
 
-      - name: Login to Scaleway Container Registry
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: rg.fr-par.scw.cloud
-          username: nologin
-          password: ${{ secrets.SCW_SECRET_KEY || secrets.SCALEWAY_API_KEY || secrets.SCALEWAY_REGISTRY_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish OCI artifact (portaki publish)
         id: publish
         working-directory: modules/${{ steps.parse.outputs.module }}
         env:
-          SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY || secrets.SCALEWAY_API_KEY || secrets.SCALEWAY_REGISTRY_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PORTAKI_PUBLISH_VERSION: ${{ steps.parse.outputs.version }}
         run: portaki publish --registry "$REGISTRY"
 

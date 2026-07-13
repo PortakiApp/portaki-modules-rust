@@ -6,7 +6,7 @@ Part of [portaki-modules-rust](https://github.com/PortakiApp/portaki-modules-rus
 
 ## Module id
 
-`weather` — OCI image `rg.fr-par.scw.cloud/portaki-modules/weather:<semver>`
+`weather` — OCI image `ghcr.io/portakiapp/portaki-modules/weather:<semver>`
 
 ## Capabilities
 
