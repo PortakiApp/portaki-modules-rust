@@ -29,7 +29,7 @@ In scope:
 Out of scope:
 
 - Issues solely in [`portaki-sdk`](https://github.com/PortakiApp/portaki-sdk) (report there)
-- Issues solely in the Portaki host / orchestrator
+- Issues in the Portaki host product (outside this monorepo)
 - Denial of service requiring already-elevated host access
 
 ## Prefer responsible disclosure

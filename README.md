@@ -57,14 +57,14 @@ portaki lint
 2. Merge to **`main`**.
 3. CI publishes `ghcr.io/portakiapp/portaki-modules-<id>:<semver>`.
 
-Package visibility is **public** so the Portaki module runtime can discover and pull without private package grants. Writes still require CI `packages: write` (or a classic PAT with `write:packages` for local publish).
+Package images on GHCR are **public**. CI uses `packages: write` via `GITHUB_TOKEN` (local publish needs a classic PAT with `write:packages`).
 
 ## Related repositories
 
 | Repository | Role |
 |------------|------|
 | [portaki-sdk](https://github.com/PortakiApp/portaki-sdk) | Rust SDK + `portaki` CLI |
-| [portaki-platform](https://github.com/PortakiApp/portaki-platform) | Orchestrator + module runtime |
+| [portaki.app](https://portaki.app) | Product site |
 
 ## Contributing
 
