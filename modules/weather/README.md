@@ -20,6 +20,17 @@ OCI image: `ghcr.io/portakiapp/portaki-modules-weather:<semver>`
 
 Without pool or BYOK access, guest surfaces render an empty state with upgrade / BYOK guidance.
 
+## Connector / credentials
+
+Declared in source (`src/connectors.rs` + capabilities above):
+
+- Custom connector `open-weather` with `credential_provider_id = "open-weather"`
+- Pool + BYOK optional capabilities
+
+`portaki build` emits both into `manifest.json`. After publish, the orchestrator registry exposes `credentialBindings` for Integrations / readiness APIs. Runtime egress resolves BYOK then pool.
+
+Author guide: [portaki-sdk — connectors and credentials](https://github.com/PortakiApp/portaki-sdk/blob/main/docs/connectors-and-credentials.md).
+
 ## Surfaces
 
 | Shell | Surface id | Description |

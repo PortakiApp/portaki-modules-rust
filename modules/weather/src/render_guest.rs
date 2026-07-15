@@ -1,5 +1,6 @@
 //! Guest booklet surfaces.
 
+use portaki_sdk::host::module;
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::common::{TempVariant, Tone};
 use portaki_sdk::sdui::primitives::{
@@ -24,6 +25,9 @@ pub fn render_home_card(ctx: GuestContext) -> Surface {
 }
 
 fn render_home_card_inner(ctx: &GuestContext) -> Result<Surface> {
+    if let Some(surface) = empty_state_if_module_not_ready("home.card")? {
+        return Ok(surface);
+    }
     if !has_open_weather(ctx) {
         return Ok(empty_weather_state());
     }
@@ -103,6 +107,43 @@ fn empty_weather_state_with_id(surface_id: &str) -> Surface {
     .with_id(surface_id)
 }
 
+fn empty_config_state(surface_id: &str) -> Surface {
+    Surface::new(
+        EmptyState::new()
+            .title(json!("i18n:module.status.incomplete.title"))
+            .description(json!("i18n:module.status.incomplete.description"))
+            .icon(json!("sliders"))
+            .child(
+                Text::new()
+                    .text(json!("i18n:module.status.incomplete.hint"))
+                    .variant(json!("body")),
+            ),
+    )
+    .with_id(surface_id)
+}
+
+fn empty_inactive_state(surface_id: &str) -> Surface {
+    Surface::new(
+        EmptyState::new()
+            .title(json!("i18n:module.status.inactive.title"))
+            .description(json!("i18n:module.status.inactive.description"))
+            .icon(json!("cloud-off")),
+    )
+    .with_id(surface_id)
+}
+
+/// Returns an EmptyState when the property-module is not ready to serve guest content.
+fn empty_state_if_module_not_ready(surface_id: &str) -> Result<Option<Surface>> {
+    let status = module::status()?;
+    if !status.workspace_enabled || !status.active {
+        return Ok(Some(empty_inactive_state(surface_id)));
+    }
+    if status.incomplete {
+        return Ok(Some(empty_config_state(surface_id)));
+    }
+    Ok(None)
+}
+
 /// Guest explore section with a 5-day forecast grid.
 #[portaki_sdk::surface(guest, id = "explore.forecast")]
 pub fn render_explore_forecast(ctx: GuestContext) -> Surface {
@@ -113,6 +154,9 @@ pub fn render_explore_forecast(ctx: GuestContext) -> Surface {
 }
 
 fn render_explore_forecast_inner(ctx: &GuestContext) -> Result<Surface> {
+    if let Some(surface) = empty_state_if_module_not_ready("explore.forecast")? {
+        return Ok(surface);
+    }
     if !has_open_weather(ctx) {
         return Ok(empty_weather_state_with_id("explore.forecast"));
     }

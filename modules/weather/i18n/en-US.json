@@ -34,6 +34,11 @@
   "host.save": "Save",
   "home.card.title": "Weather",
   "home.card.unavailable": "Weather is not available for this property",
+  "module.status.incomplete.title": "Setup incomplete",
+  "module.status.incomplete.description": "Finish weather configuration in the host dashboard",
+  "module.status.incomplete.hint": "Required fields are missing — open Modules → Weather",
+  "module.status.inactive.title": "Weather module disabled",
+  "module.status.inactive.description": "This module is not active on this property",
   "explore.forecast.title": "Forecast",
   "explore.forecast.hint": "5-day outlook"
 }
