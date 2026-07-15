@@ -1,4 +1,4 @@
-# Contributing to portaki-modules-rust
+# Contributing to portaki-modules
 
 This monorepo hosts **official** Portaki modules (Pattern A in `PORTAKI_PLATFORM.md` §8.1). Third-party modules use standalone repos (Pattern B).
 
@@ -20,7 +20,7 @@ This monorepo hosts **official** Portaki modules (Pattern A in `PORTAKI_PLATFORM
 
 ## Capability IDs
 
-Use **string literals** in `#[capability]` attributes until SDK macro path resolution is fixed (see portaki-sdk-rust PR #2).
+Use **string literals** in `#[capability]` attributes until SDK macro path resolution is fixed (see portaki-sdk PR #2).
 
 ## i18n
 
@@ -35,7 +35,7 @@ All user-facing strings via `i18n:` keys in bundle files under `i18n/`. No inlin
 
 ## SDK dependency
 
-Workspace pins `portaki-sdk-rust` via git branch `fix/macro-expand-emissions` until [PR #2](https://github.com/PortakiApp/portaki-sdk-rust/pull/2) merges; then update root `Cargo.toml` to `branch = "main"`.
+Workspace pins `portaki-sdk` via git branch `fix/macro-expand-emissions` until [PR #2](https://github.com/PortakiApp/portaki-sdk/pull/2) merges; then update root `Cargo.toml` to `branch = "main"`.
 
 CI fetches SDK crates with `cargo` git dependencies (public repos). Do not patch individual SDK crate paths into this workspace — that breaks `version.workspace` inheritance on SDK members.
 

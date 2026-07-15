@@ -41,7 +41,7 @@ jobs:
         run: cargo test --workspace --doc
 
       - name: Install portaki CLI
-        run: cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch main --locked portaki-cli
+        run: cargo install --git https://github.com/PortakiApp/portaki-sdk --branch main --locked portaki-cli
 
       - name: Build and lint all modules (wasm)
         run: |
@@ -70,7 +70,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Install portaki CLI
-        run: cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch main --locked portaki-cli
+        run: cargo install --git https://github.com/PortakiApp/portaki-sdk --branch main --locked portaki-cli
 
       - name: Refresh Portaki SDK lockfile from main
         run: |
@@ -136,10 +136,12 @@ jobs:
             echo "GHCR ${package_name} visibility: ${package_visibility}"
             if [ "${package_visibility}" != "public" ]; then
               echo "Setting ${package_name} visibility to public..."
-              gh api --method PATCH "orgs/PortakiApp/packages/container/${package_name}" \
-                --field visibility=public \
-                && echo "Package ${package_name} is now public" \
-                || echo "::warning::Could not set ${package_name} visibility via API — set public in GitHub package settings"
+              if gh api --method PATCH "orgs/PortakiApp/packages/container/${package_name}" \
+                --field visibility=public; then
+                echo "Package ${package_name} is now public"
+              else
+                echo "::warning::Could not set ${package_name} visibility via API (404) — set public manually: https://github.com/orgs/PortakiApp/packages/container/package/${package_name}/settings"
+              fi
             fi
 
             cd - >/dev/null

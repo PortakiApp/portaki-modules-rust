@@ -1,11 +1,11 @@
-# portaki-modules-rust
+# portaki-modules
 
 Official [Portaki](https://github.com/PortakiApp) module monorepo (Pattern A). Each crate under `modules/` is an independently versioned Wasm module published to **GitHub Container Registry** (GHCR).
 
 ## Structure
 
 ```
-portaki-modules-rust/
+portaki-modules/
 ├── Cargo.toml              # workspace + shared SDK git deps
 ├── modules/
 │   └── weather/            # weather module (migrated from portaki-module-weather)
@@ -24,7 +24,7 @@ portaki-modules-rust/
 ```bash
 rustup target add wasm32-unknown-unknown
 
-cargo install --git https://github.com/PortakiApp/portaki-sdk-rust --branch main --locked portaki-cli
+cargo install --git https://github.com/PortakiApp/portaki-sdk --branch main --locked portaki-cli
 
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings

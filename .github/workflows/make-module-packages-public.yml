@@ -30,7 +30,10 @@ jobs:
             if [ "${visibility}" = "public" ]; then
               continue
             fi
-            gh api --method PATCH "orgs/PortakiApp/packages/container/${package_name}" \
-              --field visibility=public
-            echo "Set ${package_name} to public"
+            if gh api --method PATCH "orgs/PortakiApp/packages/container/${package_name}" \
+              --field visibility=public; then
+              echo "Set ${package_name} to public"
+            else
+              echo "::warning::API PATCH failed for ${package_name} — set public manually: https://github.com/orgs/PortakiApp/packages/container/package/${package_name}/settings"
+            fi
           done

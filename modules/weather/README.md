@@ -2,7 +2,7 @@
 
 Portaki official weather module — current conditions and 5-day forecast for guest booklets and the host dashboard.
 
-Part of [portaki-modules-rust](https://github.com/PortakiApp/portaki-modules-rust) monorepo (migrated from standalone `portaki-module-weather`).
+Part of [portaki-modules](https://github.com/PortakiApp/portaki-modules) monorepo (migrated from standalone `portaki-module-weather`).
 
 ## Module id
 
