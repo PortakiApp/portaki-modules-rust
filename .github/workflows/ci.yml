@@ -131,6 +131,17 @@ jobs:
             PORTAKI_PUBLISH_VERSION="$version" portaki publish --registry "$REGISTRY"
             portaki publish --registry "$REGISTRY" --dry-run
 
+            package_name="portaki-modules-${module}"
+            package_visibility="$(gh api "orgs/PortakiApp/packages/container/${package_name}" --jq '.visibility' 2>/dev/null || echo unknown)"
+            echo "GHCR ${package_name} visibility: ${package_visibility}"
+            if [ "${package_visibility}" != "public" ]; then
+              echo "Setting ${package_name} visibility to public..."
+              gh api --method PATCH "orgs/PortakiApp/packages/container/${package_name}" \
+                --field visibility=public \
+                && echo "Package ${package_name} is now public" \
+                || echo "::warning::Could not set ${package_name} visibility via API — set public in GitHub package settings"
+            fi
+
             cd - >/dev/null
           }
 

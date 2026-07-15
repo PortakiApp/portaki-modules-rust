@@ -1,0 +1,36 @@
+name: Make module GHCR packages public
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  public:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set portaki-modules-* packages to public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          for module_dir in modules/*/; do
+            module="$(basename "$module_dir")"
+            package_name="portaki-modules-${module}"
+            if ! gh api "orgs/PortakiApp/packages/container/${package_name}" --jq '.name' >/dev/null 2>&1; then
+              echo "Skip ${package_name} — package not found"
+              continue
+            fi
+            visibility="$(gh api "orgs/PortakiApp/packages/container/${package_name}" --jq '.visibility')"
+            echo "${package_name}: ${visibility}"
+            if [ "${visibility}" = "public" ]; then
+              continue
+            fi
+            gh api --method PATCH "orgs/PortakiApp/packages/container/${package_name}" \
+              --field visibility=public
+            echo "Set ${package_name} to public"
+          done
