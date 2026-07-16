@@ -474,9 +474,9 @@ fn build_forecast_table(
                 .variant(json!("caption"))
                 .tone(Tone::Warning),
         ));
-        cells.push(metric_value_with_icon("cloud-rain", &precip, Tone::Info));
-        cells.push(metric_value_with_icon("droplets", &humidity, Tone::Info));
-        cells.push(metric_value_with_icon("wind", &wind, Tone::Info));
+        cells.push(table_value_cell(&precip));
+        cells.push(table_value_cell(&humidity));
+        cells.push(table_value_cell(&wind));
     }
 
     Component::Grid(Grid::new().columns(json!(7)).gap(json!(10)).children(cells))
@@ -487,7 +487,7 @@ fn metric_label(icon: &str, label: &str) -> Component {
         Stack::new()
             .direction(json!("horizontal"))
             .gap(json!(6))
-            .child(Icon::new().name(json!(icon)).size(json!(16)))
+            .child(Icon::new().name(json!(icon)).size(json!(14)))
             .child(
                 Text::new()
                     .text(json!(label))
@@ -499,16 +499,6 @@ fn metric_label(icon: &str, label: &str) -> Component {
 
 fn metric_header_icon(icon: &str, label: &str) -> Component {
     metric_label(icon, label)
-}
-
-fn metric_value_with_icon(icon: &str, value: &str, tone: Tone) -> Component {
-    Component::Stack(
-        Stack::new()
-            .direction(json!("horizontal"))
-            .gap(json!(4))
-            .child(Icon::new().name(json!(icon)).size(json!(16)).tone(tone))
-            .child(Text::new().text(json!(value)).variant(json!("caption"))),
-    )
 }
 
 fn table_header_cell(label: &str) -> Component {
