@@ -7,8 +7,8 @@ use serde_json::json;
 
 use crate::entities::WeatherUnits;
 use crate::weather::{
-    convert_temp, format_day_strip_label, format_temp_label, format_wind_kmh, icon_name_for_condition,
-    WeatherForecast,
+    convert_temp, format_day_strip_label, format_temp_label, format_wind_kmh,
+    icon_name_for_condition, WeatherForecast,
 };
 
 use super::components::{metric_label, optional_pct, table_header_cell, table_value_cell};

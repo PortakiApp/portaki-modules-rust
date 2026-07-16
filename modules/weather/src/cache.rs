@@ -9,8 +9,8 @@ use uuid::Uuid;
 use crate::entities::{WeatherCache, WeatherUnits};
 use crate::weather::{
     description_key_for_condition, CachedCurrentPayload, CachedForecastPayload, WeatherCurrent,
-    WeatherForecast, CURRENT_CACHE_TTL_SECS, FORECAST_CACHE_TTL_SECS, CONNECTOR_CURRENT_CALLS,
-    CONNECTOR_FORECAST_CALLS,
+    WeatherForecast, CONNECTOR_CURRENT_CALLS, CONNECTOR_FORECAST_CALLS, CURRENT_CACHE_TTL_SECS,
+    FORECAST_CACHE_TTL_SECS,
 };
 
 use std::cell::RefCell;
@@ -123,7 +123,11 @@ pub fn read_current(
     let payload: CachedCurrentPayload =
         serde_json::from_str(&row.current_json).map_err(map_serde_error)?;
     let description_key = description_key_for_condition(&payload.condition);
-    Ok(Some(payload.into_current(units, row.fetched_at, description_key)))
+    Ok(Some(payload.into_current(
+        units,
+        row.fetched_at,
+        description_key,
+    )))
 }
 
 /// Reads cached forecast if still valid.

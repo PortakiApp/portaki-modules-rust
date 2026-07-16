@@ -29,10 +29,7 @@ impl SectionView {
     }
 }
 
-pub fn pick_locale_fields(
-    locales: &[SectionLocaleInput],
-    locale: &str,
-) -> (String, String) {
+pub fn pick_locale_fields(locales: &[SectionLocaleInput], locale: &str) -> (String, String) {
     let prefer_en = locale.to_ascii_lowercase().starts_with("en");
     let want = if prefer_en { "en" } else { "fr" };
     let fallback = if prefer_en { "fr" } else { "en" };

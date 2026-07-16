@@ -19,17 +19,19 @@ pub struct GuestWeatherData {
 }
 
 pub enum GuestLoad {
-    Ready(GuestWeatherData),
-    Empty(Surface),
+    Ready(Box<GuestWeatherData>),
+    Empty(Box<Surface>),
 }
 
 /// Shared gate + fetch for home card and explore sheet.
 pub fn load_guest_weather(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad> {
     if let Some(surface) = empty_state_if_module_not_ready(surface_id)? {
-        return Ok(GuestLoad::Empty(surface));
+        return Ok(GuestLoad::Empty(Box::new(surface)));
     }
     if !has_open_weather(ctx) {
-        return Ok(GuestLoad::Empty(empty_capability_state(surface_id)));
+        return Ok(GuestLoad::Empty(Box::new(empty_capability_state(
+            surface_id,
+        ))));
     }
 
     let config = load_config()?;
@@ -56,11 +58,11 @@ pub fn load_guest_weather(ctx: &GuestContext, surface_id: &str) -> Result<GuestL
         ctx.property.address.as_deref(),
     );
 
-    Ok(GuestLoad::Ready(GuestWeatherData {
+    Ok(GuestLoad::Ready(Box::new(GuestWeatherData {
         current,
         forecast,
         units: config.units,
         city,
         locale: ctx.locale.clone(),
-    }))
+    })))
 }

@@ -8,10 +8,6 @@ use super::home::devices_list;
 use crate::content::AppliancesPayload;
 
 pub fn build_detail_page(payload: &AppliancesPayload) -> Surface {
-    Surface::new(
-        Stack::new()
-            .gap(json!(8))
-            .children(devices_list(payload)),
-    )
-    .with_id("explore.detail")
+    Surface::new(Stack::new().gap(json!(8)).children(devices_list(payload)))
+        .with_id("explore.detail")
 }

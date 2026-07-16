@@ -47,7 +47,7 @@ fn render_with_data(
     build: fn(&load::GuestWeatherData) -> Surface,
 ) -> Result<Surface> {
     match load_guest_weather(ctx, surface_id)? {
-        GuestLoad::Empty(surface) => Ok(surface),
+        GuestLoad::Empty(surface) => Ok(*surface),
         GuestLoad::Ready(data) => Ok(build(&data)),
     }
 }

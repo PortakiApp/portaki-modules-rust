@@ -16,7 +16,11 @@ pub fn build_home_card(payload: &AppliancesPayload) -> Surface {
                 .message(json!(payload.safety_notice.clone())),
         ));
     }
-    for device in payload.devices.iter().filter(|d| !d.title.trim().is_empty()) {
+    for device in payload
+        .devices
+        .iter()
+        .filter(|d| !d.title.trim().is_empty())
+    {
         children.push(device_list_item(device));
     }
 
@@ -72,7 +76,11 @@ pub fn devices_list(payload: &AppliancesPayload) -> Vec<Component> {
                 .message(json!(payload.safety_notice.clone())),
         ));
     }
-    for device in payload.devices.iter().filter(|d| !d.title.trim().is_empty()) {
+    for device in payload
+        .devices
+        .iter()
+        .filter(|d| !d.title.trim().is_empty())
+    {
         children.push(device_list_item(device));
     }
     if children.is_empty() {

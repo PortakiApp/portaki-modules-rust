@@ -8,12 +8,9 @@ use portaki_sdk::sdui::surface::Surface;
 use serde_json::json;
 
 pub fn build_form_card() -> Surface {
-    let submit_action = serde_json::to_value(Action::command(
-        "pre-arrival-form",
-        "submit",
-        json!({}),
-    ))
-    .unwrap_or(json!({}));
+    let submit_action =
+        serde_json::to_value(Action::command("pre-arrival-form", "submit", json!({})))
+            .unwrap_or(json!({}));
 
     Surface::new(
         Card::new()
@@ -31,10 +28,7 @@ pub fn build_form_card() -> Surface {
                             .name(json!("arrivalTimeEstimated"))
                             .label(json!("i18n:form.arrival.label"))
                             .required(json!(true))
-                            .child(
-                                TimePicker::new()
-                                    .name(json!("arrivalTimeEstimated")),
-                            ),
+                            .child(TimePicker::new().name(json!("arrivalTimeEstimated"))),
                     )
                     .child(
                         Field::new()

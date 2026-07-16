@@ -16,7 +16,10 @@ pub fn build_home_card(data: &GuestData) -> Surface {
     let prompt = if data.locale.to_ascii_lowercase().starts_with("en") {
         format!("How was your stay at {}?", data.property_name)
     } else {
-        format!("Comment s'est passé votre séjour à {} ?", data.property_name)
+        format!(
+            "Comment s'est passé votre séjour à {} ?",
+            data.property_name
+        )
     };
     children.push(Component::Text(
         Text::new().text(json!(prompt)).variant(json!("title")),
@@ -41,8 +44,8 @@ pub fn build_home_card(data: &GuestData) -> Surface {
 
     if show_airbnb {
         let url = data.airbnb_url.clone().unwrap_or_default();
-        let action = serde_json::to_value(Action::External { url: url.clone() })
-            .unwrap_or(json!({}));
+        let action =
+            serde_json::to_value(Action::External { url: url.clone() }).unwrap_or(json!({}));
         children.push(Component::Button(
             Button::new()
                 .label(json!("i18n:guest.airbnbCta"))

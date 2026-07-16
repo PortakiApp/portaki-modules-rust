@@ -50,7 +50,9 @@ pub fn rule_list_item(item: &RuleItem) -> Component {
     if !item.subtitle.trim().is_empty() {
         list = list.subtitle(json!(item.subtitle.clone()));
     }
-    list = list.child(Component::Icon(Icon::new().name(json!(icon_name)).size(json!(17))));
+    list = list.child(Component::Icon(
+        Icon::new().name(json!(icon_name)).size(json!(17)),
+    ));
     Component::ListItem(list)
 }
 

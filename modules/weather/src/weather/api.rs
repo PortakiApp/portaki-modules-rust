@@ -65,12 +65,7 @@ pub fn map_forecast(
     units: WeatherUnits,
     fetched_at: DateTime<Utc>,
 ) -> WeatherForecast {
-    let days = api
-        .days
-        .into_iter()
-        .take(5)
-        .map(map_forecast_day)
-        .collect();
+    let days = api.days.into_iter().take(5).map(map_forecast_day).collect();
     WeatherForecast {
         days,
         city_name: api.city_name,

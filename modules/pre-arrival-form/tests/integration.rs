@@ -90,10 +90,7 @@ fn submit_then_status_and_thanks_card() {
 
             let after = get_status(ctx.clone()).expect("status after");
             assert!(after.completed);
-            assert_eq!(
-                after.arrival_time_estimated.as_deref(),
-                Some("17:30")
-            );
+            assert_eq!(after.arrival_time_estimated.as_deref(), Some("17:30"));
             assert_eq!(after.guest_occasion.as_deref(), Some("Anniversaire"));
 
             let surface = render_home_card(ctx);

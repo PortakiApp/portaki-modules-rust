@@ -55,23 +55,20 @@ fn resolve_coords(ctx: &Context, lat: Option<f64>, lng: Option<f64>) -> Result<Q
     })
 }
 
-fn fetch_pair(
-    coords: &QueryCoords,
-    days: u8,
-) -> Result<(WeatherCurrent, WeatherForecast)> {
-    let current = map_current(fetch_current_from_api(coords.lat, coords.lng)?, coords.units, coords.now);
+fn fetch_pair(coords: &QueryCoords, days: u8) -> Result<(WeatherCurrent, WeatherForecast)> {
+    let current = map_current(
+        fetch_current_from_api(coords.lat, coords.lng)?,
+        coords.units,
+        coords.now,
+    );
     let forecast = map_forecast(
         fetch_forecast_from_api(coords.lat, coords.lng, days)?,
         coords.units,
         coords.now,
     );
-    if let Err(error) = cache::store_current(
-        coords.lat,
-        coords.lng,
-        coords.units,
-        &current,
-        &forecast,
-    ) {
+    if let Err(error) =
+        cache::store_current(coords.lat, coords.lng, coords.units, &current, &forecast)
+    {
         log_cache_failure("weather_cache_store_failed", coords.lat, coords.lng, &error);
     }
     Ok((current, forecast))
@@ -84,7 +81,9 @@ pub fn get_current(ctx: Context, args: GetCurrentArgs) -> Result<WeatherCurrent>
     match cache::read_current(coords.lat, coords.lng, coords.units, coords.now) {
         Ok(Some(cached)) => return Ok(cached),
         Ok(None) => {}
-        Err(error) => log_cache_failure("weather_cache_read_failed", coords.lat, coords.lng, &error),
+        Err(error) => {
+            log_cache_failure("weather_cache_read_failed", coords.lat, coords.lng, &error)
+        }
     }
 
     let (current, _) = fetch_pair(&coords, 5)?;
@@ -99,7 +98,9 @@ pub fn get_forecast(ctx: Context, args: GetForecastArgs) -> Result<WeatherForeca
     match cache::read_forecast(coords.lat, coords.lng, coords.units, coords.now) {
         Ok(Some(cached)) => return Ok(cached),
         Ok(None) => {}
-        Err(error) => log_cache_failure("weather_cache_read_failed", coords.lat, coords.lng, &error),
+        Err(error) => {
+            log_cache_failure("weather_cache_read_failed", coords.lat, coords.lng, &error)
+        }
     }
 
     let (_, forecast) = fetch_pair(&coords, days)?;

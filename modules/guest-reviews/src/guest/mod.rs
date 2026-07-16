@@ -14,7 +14,7 @@ use load::{load_guest_data, GuestLoad};
 #[portaki_sdk::surface(guest, id = "home.card")]
 pub fn render_home_card(ctx: GuestContext) -> Surface {
     match load_guest_data(&ctx, "home.card") {
-        Ok(GuestLoad::Empty(surface)) => surface,
+        Ok(GuestLoad::Empty(surface)) => *surface,
         Ok(GuestLoad::Ready(data)) => build_home_card(&data),
         Err(error) => {
             log_render_failure("home.card", &error);

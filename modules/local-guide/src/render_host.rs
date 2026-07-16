@@ -17,12 +17,9 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         "spots_json": config.spots_json,
         "disclaimer": config.disclaimer,
     });
-    let save_action = serde_json::to_value(Action::command(
-        "local-guide",
-        "updateConfig",
-        submit_args,
-    ))
-    .unwrap_or(json!({}));
+    let save_action =
+        serde_json::to_value(Action::command("local-guide", "updateConfig", submit_args))
+            .unwrap_or(json!({}));
 
     Surface::new(
         Page::new()

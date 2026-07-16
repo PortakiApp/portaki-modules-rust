@@ -70,7 +70,10 @@ fn home_card_empty_for_airbnb_without_url() {
             .unwrap(),
         )
         .run(|ctx| {
-            assert!(contains_component_type(&render_home_card(ctx), "EmptyState"));
+            assert!(contains_component_type(
+                &render_home_card(ctx),
+                "EmptyState"
+            ));
         });
 }
 

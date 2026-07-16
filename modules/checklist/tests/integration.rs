@@ -3,9 +3,8 @@
 use serial_test::serial;
 
 use checklist::{
-    complete_item, list_completions, list_items, render_home_card, render_host_main,
-    replace_items, reset_test_store, uncomplete_item, ChecklistItemInput, ItemIdArgs,
-    ReplaceItemsArgs,
+    complete_item, list_completions, list_items, render_home_card, render_host_main, replace_items,
+    reset_test_store, uncomplete_item, ChecklistItemInput, ItemIdArgs, ReplaceItemsArgs,
 };
 use portaki_sdk::sdui::component::Component;
 use portaki_sdk::sdui::surface::Surface;

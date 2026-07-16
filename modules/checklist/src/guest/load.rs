@@ -9,7 +9,7 @@ use crate::entities::ChecklistItem;
 use crate::storage;
 
 pub enum GuestLoad {
-    Empty(Surface),
+    Empty(Box<Surface>),
     Ready(GuestChecklistData),
 }
 
@@ -24,12 +24,12 @@ pub struct GuestChecklistData {
 
 pub fn load_guest_checklist(ctx: &GuestContext) -> Result<GuestLoad> {
     if let Some(surface) = empty_state_if_module_not_ready("home.card")? {
-        return Ok(GuestLoad::Empty(surface));
+        return Ok(GuestLoad::Empty(Box::new(surface)));
     }
 
     let items = storage::list_items()?;
     if items.is_empty() {
-        return Ok(GuestLoad::Empty(empty_no_items_card("home.card")));
+        return Ok(GuestLoad::Empty(Box::new(empty_no_items_card("home.card"))));
     }
 
     let stay_id = ctx.guest.as_ref().map(|guest| guest.session_id);
@@ -42,11 +42,7 @@ pub fn load_guest_checklist(ctx: &GuestContext) -> Result<GuestLoad> {
         .iter()
         .filter(|item| completed.contains(&item.id))
         .count();
-    let percent = if total == 0 {
-        0
-    } else {
-        ((done * 100) / total) as u8
-    };
+    let percent = (done * 100).checked_div(total).unwrap_or(0) as u8;
 
     Ok(GuestLoad::Ready(GuestChecklistData {
         items,

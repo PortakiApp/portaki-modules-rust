@@ -62,13 +62,10 @@ pub fn build_hours_body(data: &GuestData, enriched: bool) -> Vec<Component> {
             children.push(Component::ListItem(item));
         } else {
             children.push(Component::KeyValue(
-                KeyValue::new()
-                    .key(json!(title))
-                    .value(json!(hours)),
+                KeyValue::new().key(json!(title)).value(json!(hours)),
             ));
         }
     }
 
     children
 }
-

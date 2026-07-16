@@ -67,7 +67,10 @@ fn home_card_empty_without_config() {
     MockContext::guest()
         .with_capabilities(&["core.storage"])
         .run(|ctx| {
-            assert!(contains_component_type(&render_home_card(ctx), "EmptyState"));
+            assert!(contains_component_type(
+                &render_home_card(ctx),
+                "EmptyState"
+            ));
         });
 }
 

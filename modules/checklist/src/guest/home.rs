@@ -1,9 +1,7 @@
 //! Guest home booklet card — progress + inline toggles.
 
 use portaki_sdk::sdui::action::Action;
-use portaki_sdk::sdui::primitives::{
-    Card, ChecklistItem as ChecklistItemView, Pressable, Text,
-};
+use portaki_sdk::sdui::primitives::{Card, ChecklistItem as ChecklistItemView, Pressable, Text};
 use portaki_sdk::sdui::surface::Surface;
 use serde_json::json;
 

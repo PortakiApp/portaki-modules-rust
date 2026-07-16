@@ -6,18 +6,13 @@ use serde::{Deserialize, Serialize};
 
 const CONFIG_KEY: &str = "config";
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ReviewChannel {
+    #[default]
     Airbnb,
     Portaki,
     Both,
-}
-
-impl Default for ReviewChannel {
-    fn default() -> Self {
-        Self::Airbnb
-    }
 }
 
 impl ReviewChannel {

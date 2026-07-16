@@ -49,9 +49,8 @@ impl ReplaceItemsArgs {
         if trimmed.is_empty() {
             return Ok(Vec::new());
         }
-        serde_json::from_str(trimmed).map_err(|error| {
-            PortakiError::Host(format!("invalid items_json: {error}"))
-        })
+        serde_json::from_str(trimmed)
+            .map_err(|error| PortakiError::Host(format!("invalid items_json: {error}")))
     }
 }
 

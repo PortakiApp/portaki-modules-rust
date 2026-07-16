@@ -2,7 +2,9 @@
 
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::action::Action;
-use portaki_sdk::sdui::primitives::{Button, Field, Form, Page, Select, Text, TextArea, TextInput, Toggle};
+use portaki_sdk::sdui::primitives::{
+    Button, Field, Form, Page, Select, Text, TextArea, TextInput, Toggle,
+};
 use portaki_sdk::sdui::surface::Surface;
 use serde_json::json;
 

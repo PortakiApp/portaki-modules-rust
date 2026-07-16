@@ -8,9 +8,9 @@ use portaki_sdk::sdui::surface::Surface;
 use portaki_test_utils::{MockContext, Property};
 
 use sections::{
-    delete_section, list_sections, render_explore_sheet, render_home_card, reorder, reset_test_store,
-    save_section, DeleteSectionArgs, ListSectionsArgs, ReorderArgs, SaveSectionArgs,
-    SectionLocaleInput,
+    delete_section, list_sections, render_explore_sheet, render_home_card, reorder,
+    reset_test_store, save_section, DeleteSectionArgs, ListSectionsArgs, ReorderArgs,
+    SaveSectionArgs, SectionLocaleInput,
 };
 
 fn contains_component_type(surface: &Surface, type_name: &str) -> bool {

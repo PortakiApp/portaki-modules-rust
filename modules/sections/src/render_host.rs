@@ -16,14 +16,8 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     let (title_fr, body_fr, title_en, body_en) = sections
         .first()
         .map(|section| {
-            let fr = section
-                .locales
-                .iter()
-                .find(|l| l.lang.starts_with("fr"));
-            let en = section
-                .locales
-                .iter()
-                .find(|l| l.lang.starts_with("en"));
+            let fr = section.locales.iter().find(|l| l.lang.starts_with("fr"));
+            let en = section.locales.iter().find(|l| l.lang.starts_with("en"));
             (
                 fr.map(|l| l.title.clone()).unwrap_or_default(),
                 fr.map(|l| l.body_markdown.clone()).unwrap_or_default(),
@@ -49,9 +43,8 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         "body_markdown_en": body_en,
         "locales": []
     });
-    let save_action =
-        serde_json::to_value(Action::command("sections", "saveSection", submit_args))
-            .unwrap_or(json!({}));
+    let save_action = serde_json::to_value(Action::command("sections", "saveSection", submit_args))
+        .unwrap_or(json!({}));
 
     Surface::new(
         Page::new()

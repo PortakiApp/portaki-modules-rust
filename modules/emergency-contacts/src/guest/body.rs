@@ -29,14 +29,12 @@ pub fn build_contacts_body(data: &GuestData, show_emergency_banner: bool) -> Vec
     if !data.host_phone.is_empty() {
         let action = tel_action(&data.host_phone);
         children.push(Component::Pressable(
-            Pressable::new()
-                .action(action.clone())
-                .child(
-                    ListItem::new()
-                        .title(json!("i18n:guest.host.label"))
-                        .subtitle(json!(data.host_phone.clone()))
-                        .trailing(json!("i18n:guest.call")),
-                ),
+            Pressable::new().action(action.clone()).child(
+                ListItem::new()
+                    .title(json!("i18n:guest.host.label"))
+                    .subtitle(json!(data.host_phone.clone()))
+                    .trailing(json!("i18n:guest.call")),
+            ),
         ));
     }
 
@@ -73,4 +71,3 @@ pub fn build_contacts_body(data: &GuestData, show_emergency_banner: bool) -> Vec
 
     children
 }
-

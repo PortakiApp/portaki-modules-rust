@@ -12,7 +12,7 @@ pub use commands::{save_content, SaveContentArgs};
 pub use content::{ApplianceDevice, AppliancesPayload};
 pub use entities::AppliancesContent;
 pub use guest::{render_explore_detail, render_explore_item, render_home_card};
-pub use queries::{get_content, GetContentArgs, AppliancesContentView};
+pub use queries::{get_content, AppliancesContentView, GetContentArgs};
 pub use render_host::render_host_main;
 pub use store::reset_test_store;
 

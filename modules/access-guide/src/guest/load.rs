@@ -20,18 +20,18 @@ pub struct GuestData {
 }
 
 pub enum GuestLoad {
-    Ready(GuestData),
-    Empty(Surface),
+    Ready(Box<GuestData>),
+    Empty(Box<Surface>),
 }
 
 pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad> {
     if let Some(surface) = empty_state_if_module_not_ready(surface_id)? {
-        return Ok(GuestLoad::Empty(surface));
+        return Ok(GuestLoad::Empty(Box::new(surface)));
     }
 
     let config = load_config().unwrap_or_else(|_| ModuleConfig::default());
     if config.is_empty() {
-        return Ok(GuestLoad::Empty(empty_content_state(surface_id)));
+        return Ok(GuestLoad::Empty(Box::new(empty_content_state(surface_id))));
     }
 
     let address = if config.address.trim().is_empty() {
@@ -40,7 +40,7 @@ pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad
         config.address.trim().to_string()
     };
 
-    Ok(GuestLoad::Ready(GuestData {
+    Ok(GuestLoad::Ready(Box::new(GuestData {
         steps: config.parse_steps(),
         parking_map_url: config.parking_map_url.trim().to_string(),
         arrival_video_url: config.arrival_video_url.trim().to_string(),
@@ -50,5 +50,5 @@ pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad
         keybox_code: config.keybox_code.trim().to_string(),
         parking_info: config.parking_info.trim().to_string(),
         locale: ctx.locale.clone(),
-    }))
+    })))
 }

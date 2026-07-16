@@ -42,7 +42,7 @@ fn render_with_data(
     build: fn(&load::GuestData) -> Surface,
 ) -> Result<Surface> {
     match load_guest_data(ctx, surface_id)? {
-        GuestLoad::Empty(surface) => Ok(surface),
+        GuestLoad::Empty(surface) => Ok(*surface),
         GuestLoad::Ready(data) => Ok(build(&data)),
     }
 }

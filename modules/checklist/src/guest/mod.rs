@@ -25,7 +25,7 @@ pub fn render_home_card(ctx: GuestContext) -> Surface {
 
 fn render_with_data(ctx: &GuestContext) -> Result<Surface> {
     match load_guest_checklist(ctx)? {
-        GuestLoad::Empty(surface) => Ok(surface),
+        GuestLoad::Empty(surface) => Ok(*surface),
         GuestLoad::Ready(data) => Ok(build_home_card(&data)),
     }
 }

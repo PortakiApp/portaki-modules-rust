@@ -54,4 +54,3 @@ pub fn build_bins_body(data: &GuestData, enriched: bool) -> Vec<Component> {
 
     children
 }
-

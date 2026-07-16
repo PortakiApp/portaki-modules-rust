@@ -23,12 +23,9 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         "keybox_code": config.keybox_code,
         "parking_info": config.parking_info,
     });
-    let save_action = serde_json::to_value(Action::command(
-        "access-guide",
-        "updateConfig",
-        submit_args,
-    ))
-    .unwrap_or(json!({}));
+    let save_action =
+        serde_json::to_value(Action::command("access-guide", "updateConfig", submit_args))
+            .unwrap_or(json!({}));
 
     Surface::new(
         Page::new()

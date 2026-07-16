@@ -38,20 +38,10 @@ pub struct ReorderArgs {
 pub fn save_section(_ctx: Context, args: SaveSectionArgs) -> Result<SectionView> {
     let mut locales = args.locales;
     if !args.title_fr.trim().is_empty() || !args.body_markdown_fr.trim().is_empty() {
-        upsert_locale(
-            &mut locales,
-            "fr",
-            args.title_fr,
-            args.body_markdown_fr,
-        );
+        upsert_locale(&mut locales, "fr", args.title_fr, args.body_markdown_fr);
     }
     if !args.title_en.trim().is_empty() || !args.body_markdown_en.trim().is_empty() {
-        upsert_locale(
-            &mut locales,
-            "en",
-            args.title_en,
-            args.body_markdown_en,
-        );
+        upsert_locale(&mut locales, "en", args.title_en, args.body_markdown_en);
     }
     store::save_section(args.id, args.sort_order, locales)
 }

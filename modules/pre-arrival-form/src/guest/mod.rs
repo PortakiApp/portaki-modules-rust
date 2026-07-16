@@ -25,7 +25,7 @@ pub fn render_home_card(ctx: GuestContext) -> Surface {
 
 fn render_with_data(ctx: &GuestContext) -> Result<Surface> {
     match load_guest_pre_arrival(ctx)? {
-        GuestLoad::Empty(surface) => Ok(surface),
+        GuestLoad::Empty(surface) => Ok(*surface),
         GuestLoad::Form => Ok(build_form_card()),
         GuestLoad::Completed => Ok(build_completed_card()),
     }

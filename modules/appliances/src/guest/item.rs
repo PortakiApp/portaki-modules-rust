@@ -10,12 +10,7 @@ use crate::content::{ApplianceDevice, AppliancesPayload};
 pub fn build_item_detail(payload: &AppliancesPayload, device_id: Option<&str>) -> Surface {
     let device = device_id
         .and_then(|id| payload.find_device(id))
-        .or_else(|| {
-            payload
-                .devices
-                .iter()
-                .find(|d| !d.title.trim().is_empty())
-        });
+        .or_else(|| payload.devices.iter().find(|d| !d.title.trim().is_empty()));
 
     let Some(device) = device else {
         return Surface::new(
@@ -28,18 +23,20 @@ pub fn build_item_detail(payload: &AppliancesPayload, device_id: Option<&str>) -
         .with_id("explore.item");
     };
 
-    Surface::new(Stack::new().gap(json!(12)).children(device_detail_children(device)))
-        .with_id("explore.item")
+    Surface::new(
+        Stack::new()
+            .gap(json!(12))
+            .children(device_detail_children(device)),
+    )
+    .with_id("explore.item")
 }
 
 fn device_detail_children(device: &ApplianceDevice) -> Vec<Component> {
-    let mut children = vec![
-        Component::Text(
-            Text::new()
-                .text(json!(device.title.clone()))
-                .variant(json!("title")),
-        ),
-    ];
+    let mut children = vec![Component::Text(
+        Text::new()
+            .text(json!(device.title.clone()))
+            .variant(json!("title")),
+    )];
     if !device.subtitle.trim().is_empty() {
         children.push(Component::Text(
             Text::new()

@@ -29,7 +29,8 @@ pub fn load_content() -> Result<Option<AppliancesContent>> {
         }
     }
 
-    let page = find::<AppliancesContent, AppliancesContent>(Query::<AppliancesContent>::new().limit(1))?;
+    let page =
+        find::<AppliancesContent, AppliancesContent>(Query::<AppliancesContent>::new().limit(1))?;
     Ok(page.items.into_iter().next())
 }
 

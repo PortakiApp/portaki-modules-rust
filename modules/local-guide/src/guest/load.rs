@@ -15,17 +15,17 @@ pub struct GuestData {
 
 pub enum GuestLoad {
     Ready(GuestData),
-    Empty(Surface),
+    Empty(Box<Surface>),
 }
 
 pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad> {
     if let Some(surface) = empty_state_if_module_not_ready(surface_id)? {
-        return Ok(GuestLoad::Empty(surface));
+        return Ok(GuestLoad::Empty(Box::new(surface)));
     }
 
     let config = load_config().unwrap_or_else(|_| ModuleConfig::default());
     if config.is_empty() {
-        return Ok(GuestLoad::Empty(empty_content_state(surface_id)));
+        return Ok(GuestLoad::Empty(Box::new(empty_content_state(surface_id))));
     }
 
     Ok(GuestLoad::Ready(GuestData {

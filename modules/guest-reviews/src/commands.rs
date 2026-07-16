@@ -60,8 +60,7 @@ pub fn submit_review(_ctx: Context, args: SubmitReviewArgs) -> Result<()> {
         "comment": args.comment.trim(),
     }));
 
-    let bytes = serde_json::to_vec(&entries).map_err(|error| {
-        PortakiError::Storage(format!("reviews serialize: {error}"))
-    })?;
+    let bytes = serde_json::to_vec(&entries)
+        .map_err(|error| PortakiError::Storage(format!("reviews serialize: {error}")))?;
     host::kv::set(REVIEWS_KEY, &bytes, None)
 }
