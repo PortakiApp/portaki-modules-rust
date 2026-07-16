@@ -62,28 +62,26 @@ fn build_weather_body(
     let unit = units.sdui_unit();
     let description = json!(format!("i18n:{}", current.description_key));
 
-    let mut children: Vec<Component> = vec![
-        Component::Stack(
-            Stack::new()
-                .direction(json!("horizontal"))
-                .gap(json!(14))
-                .child(
-                    Icon::new()
-                        .name(json!(icon_name_for_condition(&current.condition)))
-                        .size(json!(44)),
-                )
-                .child(Component::Stack(
-                    Stack::new()
-                        .gap(json!(4))
-                        .child(
-                            Text::new()
-                                .text(json!(format_temp_label(temp, unit, false)))
-                                .variant(json!("display")),
-                        )
-                        .child(Text::new().text(description).variant(json!("caption"))),
-                )),
-        ),
-    ];
+    let mut children: Vec<Component> = vec![Component::Stack(
+        Stack::new()
+            .direction(json!("horizontal"))
+            .gap(json!(14))
+            .child(
+                Icon::new()
+                    .name(json!(icon_name_for_condition(&current.condition)))
+                    .size(json!(44)),
+            )
+            .child(Component::Stack(
+                Stack::new()
+                    .gap(json!(4))
+                    .child(
+                        Text::new()
+                            .text(json!(format_temp_label(temp, unit, false)))
+                            .variant(json!("display")),
+                    )
+                    .child(Text::new().text(description).variant(json!("caption"))),
+            )),
+    )];
 
     if is_uv_high(current.uv_index) {
         let uv_key = current

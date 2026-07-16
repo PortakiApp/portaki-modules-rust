@@ -107,8 +107,6 @@ pub fn icon_name_for_condition(condition: &str) -> &'static str {
         "cloud-fog"
     } else if normalized.contains("clear") || normalized.contains("sun") {
         "sun"
-    } else if normalized.contains("cloud") {
-        "cloud-sun"
     } else {
         "cloud-sun"
     }
