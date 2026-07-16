@@ -32,7 +32,9 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
             .variant(json!("caption"))
             .into(),
         Text::new()
-            .text(json!("Commands: saveAppliance, deleteAppliance, reorderAppliances."))
+            .text(json!(
+                "Commands: saveAppliance, deleteAppliance, reorderAppliances."
+            ))
             .variant(json!("caption"))
             .into(),
     ];
@@ -61,12 +63,7 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
                 format!(" · {preview_snip}")
             }
         );
-        stack_children.push(
-            Text::new()
-                .text(json!(line))
-                .variant(json!("body"))
-                .into(),
-        );
+        stack_children.push(Text::new().text(json!(line)).variant(json!("body")).into());
     }
 
     Surface::new(

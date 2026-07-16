@@ -78,15 +78,13 @@ fn device_detail_children(device: &Appliance) -> Vec<Component> {
                 .text(json!("i18n:explore.item.howto"))
                 .variant(json!("caption")),
         ));
-        children.push(Component::RichText(
-            RichText::new().content(json!(html)),
-        ));
+        children.push(Component::RichText(RichText::new().content(json!(html))));
     }
 
     if !device.manual_url.trim().is_empty() {
         let url = device.manual_url.trim().to_string();
-        let action = serde_json::to_value(Action::External { url: url.clone() })
-            .unwrap_or(json!({}));
+        let action =
+            serde_json::to_value(Action::External { url: url.clone() }).unwrap_or(json!({}));
         children.push(Component::Link(
             Link::new()
                 .label(json!("i18n:explore.item.manual"))
