@@ -5,6 +5,7 @@ use portaki_connectors::open_weather::{
     CurrentArgs, CurrentWeather, ForecastArgs, ForecastDay, ForecastResponse, OpenWeather,
 };
 use portaki_sdk::prelude::*;
+use portaki_sdk::sdui::common::Tone;
 use serde::{Deserialize, Serialize};
 
 use crate::entities::WeatherUnits;
@@ -22,6 +23,10 @@ pub struct WeatherCurrent {
     pub humidity: u8,
     pub uv_index: Option<f64>,
     pub wind_speed_ms: Option<f64>,
+    pub city_name: Option<String>,
+    pub feels_like_c: Option<f64>,
+    pub pressure_hpa: Option<u16>,
+    pub cloud_pct: Option<u8>,
     pub description_key: String,
     pub units: WeatherUnits,
     pub fetched_at: DateTime<Utc>,
@@ -38,12 +43,15 @@ pub struct ForecastDayView {
     /// Midpoint temperature in Celsius (convert at render time).
     pub display_temp_c: f64,
     pub precip_chance_pct: Option<u8>,
+    pub humidity_avg: Option<u8>,
+    pub wind_speed_ms_max: Option<f64>,
 }
 
 /// Forecast bundle returned by `getForecast`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct WeatherForecast {
     pub days: Vec<ForecastDayView>,
+    pub city_name: Option<String>,
     pub units: WeatherUnits,
     pub fetched_at: DateTime<Utc>,
 }
@@ -57,12 +65,22 @@ pub struct CachedCurrentPayload {
     pub uv_index: Option<f64>,
     #[serde(default)]
     pub wind_speed_ms: Option<f64>,
+    #[serde(default)]
+    pub city_name: Option<String>,
+    #[serde(default)]
+    pub feels_like_c: Option<f64>,
+    #[serde(default)]
+    pub pressure_hpa: Option<u16>,
+    #[serde(default)]
+    pub cloud_pct: Option<u8>,
 }
 
 /// Serialized payload stored in `WeatherCache.forecast_json`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CachedForecastPayload {
     pub days: Vec<ForecastDayView>,
+    #[serde(default)]
+    pub city_name: Option<String>,
 }
 
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -167,6 +185,47 @@ pub fn format_day_strip_label(date: &str, locale: &str) -> String {
     }
 }
 
+/// Resolves a locality label — prefers OpenWeather city, then address locality.
+/// Never falls back to the property marketing name (e.g. "Vayoux").
+pub fn resolve_city_label(
+    api_city: Option<&str>,
+    address: Option<&str>,
+) -> Option<String> {
+    if let Some(city) = api_city.map(str::trim).filter(|value| !value.is_empty()) {
+        return Some(city.to_string());
+    }
+    address
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .and_then(city_from_address)
+        .map(str::to_string)
+}
+
+fn city_from_address(address: &str) -> Option<&str> {
+    let segment = address.split(',').next_back()?.trim();
+    let without_postal = segment
+        .trim_start_matches(|c: char| c.is_ascii_digit() || c == '-' || c == ' ')
+        .trim();
+    if without_postal.is_empty() {
+        None
+    } else {
+        Some(without_postal)
+    }
+}
+
+/// Tone for a Celsius temperature (cool → warm).
+pub fn tone_for_temp_c(temp_c: f64) -> Tone {
+    if temp_c < 12.0 {
+        Tone::Info
+    } else if temp_c < 22.0 {
+        Tone::Success
+    } else if temp_c < 28.0 {
+        Tone::Warning
+    } else {
+        Tone::Danger
+    }
+}
+
 /// Wind speed label in km/h for guest display.
 pub fn format_wind_kmh(wind_speed_ms: f64) -> String {
     let kmh = (wind_speed_ms * 3.6).round() as i64;
@@ -186,6 +245,10 @@ pub fn map_current(
         humidity: api.humidity,
         uv_index,
         wind_speed_ms: api.wind_speed_ms,
+        city_name: api.city_name,
+        feels_like_c: api.feels_like_c,
+        pressure_hpa: api.pressure_hpa,
+        cloud_pct: api.cloud_pct,
         description_key: description_key_for_condition(&api.condition),
         units,
         fetched_at,
@@ -206,6 +269,7 @@ pub fn map_forecast(
         .collect();
     WeatherForecast {
         days,
+        city_name: api.city_name,
         units,
         fetched_at,
     }
@@ -221,6 +285,8 @@ fn map_forecast_day(day: ForecastDay, _units: WeatherUnits) -> ForecastDayView {
         condition: day.condition,
         display_temp_c: midpoint_c,
         precip_chance_pct: day.precip_chance_pct,
+        humidity_avg: day.humidity_avg,
+        wind_speed_ms_max: day.wind_speed_ms_max,
     }
 }
 
@@ -316,5 +382,35 @@ mod tests {
     #[test]
     fn formats_english_strip_label() {
         assert_eq!(format_day_strip_label("2026-07-16", "en-US"), "Thu 16");
+    }
+
+    #[test]
+    fn resolve_city_prefers_api_over_address() {
+        assert_eq!(
+            resolve_city_label(Some("Cannes"), Some("12 rue X, 06400 Vayoux")),
+            Some("Cannes".to_string())
+        );
+    }
+
+    #[test]
+    fn resolve_city_from_address_locality() {
+        assert_eq!(
+            resolve_city_label(None, Some("12 rue des Lilas, 06400 Antibes")),
+            Some("Antibes".to_string())
+        );
+    }
+
+    #[test]
+    fn resolve_city_skips_empty() {
+        assert_eq!(resolve_city_label(Some("  "), None), None);
+        assert_eq!(resolve_city_label(None, None), None);
+    }
+
+    #[test]
+    fn tone_for_temp_bands() {
+        assert_eq!(tone_for_temp_c(8.0), Tone::Info);
+        assert_eq!(tone_for_temp_c(18.0), Tone::Success);
+        assert_eq!(tone_for_temp_c(25.0), Tone::Warning);
+        assert_eq!(tone_for_temp_c(32.0), Tone::Danger);
     }
 }

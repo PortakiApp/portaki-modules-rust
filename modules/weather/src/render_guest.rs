@@ -13,7 +13,8 @@ use crate::config::load_config;
 use crate::queries::{get_current, get_forecast, GetCurrentArgs, GetForecastArgs};
 use crate::weather::{
     convert_temp, format_day_strip_label, format_temp_label, format_wind_kmh, has_open_weather,
-    icon_name_for_condition, is_uv_high, uv_label_key, WeatherCurrent, WeatherForecast,
+    icon_name_for_condition, is_uv_high, resolve_city_label, tone_for_temp_c, uv_label_key,
+    WeatherCurrent, WeatherForecast,
 };
 
 /// Guest home booklet card with current conditions.
@@ -56,22 +57,23 @@ fn render_home_card_inner(ctx: &GuestContext) -> Result<Surface> {
         &current,
         &forecast,
         &config.units,
-        property_city(ctx),
+        location_label(ctx, &current, &forecast),
         &ctx.locale,
     ))
 }
 
-fn property_city(ctx: &GuestContext) -> &str {
-    let name = ctx.property.name.trim();
-    if !name.is_empty() && name != "Property" {
-        return name;
-    }
-    ctx.property
-        .address
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .unwrap_or(name)
+fn location_label(
+    ctx: &GuestContext,
+    current: &WeatherCurrent,
+    forecast: &WeatherForecast,
+) -> Option<String> {
+    resolve_city_label(
+        current
+            .city_name
+            .as_deref()
+            .or(forecast.city_name.as_deref()),
+        ctx.property.address.as_deref(),
+    )
 }
 
 /// Same glance body as the card (now + 5-day strip) — shared with the sheet surface.
@@ -79,7 +81,7 @@ fn build_weather_body(
     current: &WeatherCurrent,
     forecast: &WeatherForecast,
     units: &crate::entities::WeatherUnits,
-    city: &str,
+    city: Option<&str>,
     locale: &str,
 ) -> Vec<Component> {
     let mut children = vec![build_current_hero(current, units, city)];
@@ -104,11 +106,22 @@ fn build_weather_body(
 fn build_current_hero(
     current: &WeatherCurrent,
     units: &crate::entities::WeatherUnits,
-    city: &str,
+    city: Option<&str>,
 ) -> Component {
     let temp = convert_temp(current.temp_c, *units);
     let unit = units.sdui_unit();
     let description = json!(format!("i18n:{}", current.description_key));
+
+    let mut text_stack = Stack::new().gap(json!(4)).child(
+        Text::new()
+            .text(json!(format_temp_label(temp, unit, false)))
+            .variant(json!("display"))
+            .tone(tone_for_temp_c(current.temp_c)),
+    );
+    text_stack = text_stack.child(Text::new().text(description).variant(json!("caption")));
+    if let Some(city) = city {
+        text_stack = text_stack.child(Text::new().text(json!(city)).variant(json!("caption")));
+    }
 
     Component::Stack(
         Stack::new()
@@ -119,17 +132,7 @@ fn build_current_hero(
                     .name(json!(icon_name_for_condition(&current.condition)))
                     .size(json!(56)),
             )
-            .child(Component::Stack(
-                Stack::new()
-                    .gap(json!(4))
-                    .child(
-                        Text::new()
-                            .text(json!(format_temp_label(temp, unit, false)))
-                            .variant(json!("display")),
-                    )
-                    .child(Text::new().text(description).variant(json!("caption")))
-                    .child(Text::new().text(json!(city)).variant(json!("caption"))),
-            )),
+            .child(Component::Stack(text_stack)),
     )
 }
 
@@ -137,7 +140,7 @@ fn build_home_card(
     current: &WeatherCurrent,
     forecast: &WeatherForecast,
     units: &crate::entities::WeatherUnits,
-    city: &str,
+    city: Option<String>,
     locale: &str,
 ) -> Surface {
     Surface::new(
@@ -153,7 +156,13 @@ fn build_home_card(
                     "title": "i18n:home.card.title"
                 }
             }))
-            .children(build_weather_body(current, forecast, units, city, locale)),
+            .children(build_weather_body(
+                current,
+                forecast,
+                units,
+                city.as_deref(),
+                locale,
+            )),
     )
     .with_id("home.card")
 }
@@ -182,7 +191,8 @@ fn build_forecast_day_column(
                 Text::new()
                     .text(json!(format_temp_label(display_temp, unit, false)))
                     .variant(json!("caption"))
-                    .emphasis(Emphasis::Strong),
+                    .emphasis(Emphasis::Strong)
+                    .tone(tone_for_temp_c(day.display_temp_c)),
             ),
     )
 }
@@ -321,7 +331,7 @@ fn render_explore_forecast_inner(ctx: &GuestContext) -> Result<Surface> {
         &current,
         &forecast,
         &config.units,
-        property_city(ctx),
+        location_label(ctx, &current, &forecast),
         &ctx.locale,
     ))
 }
@@ -331,10 +341,10 @@ fn build_sheet_surface(
     current: &WeatherCurrent,
     forecast: &WeatherForecast,
     units: &crate::entities::WeatherUnits,
-    city: &str,
+    city: Option<String>,
     locale: &str,
 ) -> Surface {
-    let mut children = vec![build_current_hero(current, units, city)];
+    let mut children = vec![build_current_hero(current, units, city.as_deref())];
     if is_uv_high(current.uv_index) {
         let uv_key = current
             .uv_index
@@ -347,7 +357,7 @@ fn build_sheet_surface(
         ));
     }
     children.push(Component::Divider(Divider::new()));
-    children.push(build_current_details(current));
+    children.push(build_current_details(current, units));
     children.push(Component::Divider(Divider::new()));
     children.push(Component::Text(
         Text::new()
@@ -365,25 +375,50 @@ fn build_sheet_surface(
     Surface::new(Stack::new().gap(json!(12)).children(children)).with_id("explore.forecast")
 }
 
-fn build_current_details(current: &WeatherCurrent) -> Component {
+fn build_current_details(
+    current: &WeatherCurrent,
+    units: &crate::entities::WeatherUnits,
+) -> Component {
+    let unit = units.sdui_unit();
     let mut cells: Vec<Component> = vec![
-        table_header_cell("i18n:weather.humidity"),
+        metric_label("droplets", "i18n:weather.humidity"),
         table_value_cell(&format!("{}%", current.humidity)),
     ];
 
+    if let Some(feels) = current.feels_like_c {
+        cells.push(metric_label("thermometer", "i18n:weather.feelsLike"));
+        cells.push(Component::Text(
+            Text::new()
+                .text(json!(format_temp_label(
+                    convert_temp(feels, *units),
+                    unit,
+                    false
+                )))
+                .variant(json!("caption"))
+                .tone(tone_for_temp_c(feels)),
+        ));
+    }
     if let Some(uv) = current.uv_index {
-        cells.push(table_header_cell("i18n:weather.uv"));
+        cells.push(metric_label("sun", "i18n:weather.uv"));
         cells.push(table_value_cell(&format!("i18n:{}", uv_label_key(uv))));
     }
     if let Some(wind) = current.wind_speed_ms {
-        cells.push(table_header_cell("i18n:weather.wind"));
+        cells.push(metric_label("wind", "i18n:weather.wind"));
         cells.push(table_value_cell(&format_wind_kmh(wind)));
+    }
+    if let Some(pressure) = current.pressure_hpa {
+        cells.push(metric_label("gauge", "i18n:weather.pressure"));
+        cells.push(table_value_cell(&format!("{pressure} hPa")));
+    }
+    if let Some(clouds) = current.cloud_pct {
+        cells.push(metric_label("cloud", "i18n:weather.clouds"));
+        cells.push(table_value_cell(&format!("{clouds}%")));
     }
 
     Component::Grid(Grid::new().columns(json!(2)).gap(json!(8)).children(cells))
 }
 
-/// 4-column forecast table: day · icon · temps · precip.
+/// Forecast table: day · icon · min · max · rain · humidity · wind (scrolls when wide).
 fn build_forecast_table(
     forecast: &WeatherForecast,
     units: &crate::entities::WeatherUnits,
@@ -393,8 +428,11 @@ fn build_forecast_table(
     let mut cells: Vec<Component> = vec![
         table_header_cell("i18n:weather.col.day"),
         table_header_cell(""),
-        table_header_cell("i18n:weather.col.temp"),
-        table_header_cell("i18n:weather.col.precip"),
+        table_header_cell("i18n:weather.col.min"),
+        table_header_cell("i18n:weather.col.max"),
+        metric_header_icon("cloud-rain", "i18n:weather.col.precip"),
+        metric_header_icon("droplets", "i18n:weather.col.humidity"),
+        metric_header_icon("wind", "i18n:weather.col.wind"),
     ];
 
     for day in &forecast.days {
@@ -403,6 +441,14 @@ fn build_forecast_table(
         let precip = day
             .precip_chance_pct
             .map(|pct| format!("{pct}%"))
+            .unwrap_or_else(|| "—".to_string());
+        let humidity = day
+            .humidity_avg
+            .map(|pct| format!("{pct}%"))
+            .unwrap_or_else(|| "—".to_string());
+        let wind = day
+            .wind_speed_ms_max
+            .map(format_wind_kmh)
             .unwrap_or_else(|| "—".to_string());
 
         cells.push(Component::Text(
@@ -418,15 +464,51 @@ fn build_forecast_table(
         ));
         cells.push(Component::Text(
             Text::new()
-                .text(json!(format!("{min} / {max}")))
-                .variant(json!("caption")),
+                .text(json!(min))
+                .variant(json!("caption"))
+                .tone(Tone::Success),
         ));
         cells.push(Component::Text(
-            Text::new().text(json!(precip)).variant(json!("caption")),
+            Text::new()
+                .text(json!(max))
+                .variant(json!("caption"))
+                .tone(Tone::Warning),
         ));
+        cells.push(metric_value_with_icon("cloud-rain", &precip, Tone::Info));
+        cells.push(metric_value_with_icon("droplets", &humidity, Tone::Info));
+        cells.push(metric_value_with_icon("wind", &wind, Tone::Info));
     }
 
-    Component::Grid(Grid::new().columns(json!(4)).gap(json!(10)).children(cells))
+    Component::Grid(Grid::new().columns(json!(7)).gap(json!(10)).children(cells))
+}
+
+fn metric_label(icon: &str, label: &str) -> Component {
+    Component::Stack(
+        Stack::new()
+            .direction(json!("horizontal"))
+            .gap(json!(6))
+            .child(Icon::new().name(json!(icon)).size(json!(16)))
+            .child(
+                Text::new()
+                    .text(json!(label))
+                    .variant(json!("caption"))
+                    .emphasis(Emphasis::Strong),
+            ),
+    )
+}
+
+fn metric_header_icon(icon: &str, label: &str) -> Component {
+    metric_label(icon, label)
+}
+
+fn metric_value_with_icon(icon: &str, value: &str, tone: Tone) -> Component {
+    Component::Stack(
+        Stack::new()
+            .direction(json!("horizontal"))
+            .gap(json!(4))
+            .child(Icon::new().name(json!(icon)).size(json!(16)).tone(tone))
+            .child(Text::new().text(json!(value)).variant(json!("caption"))),
+    )
 }
 
 fn table_header_cell(label: &str) -> Component {

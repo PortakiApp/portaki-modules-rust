@@ -55,7 +55,7 @@ pub fn get_current(ctx: Context, args: GetCurrentArgs) -> Result<WeatherCurrent>
 
     let forecast_api = fetch_forecast_from_api(lat, lng, 5)?;
     let forecast = map_forecast(forecast_api, config.units, now);
-    if let Err(error) = cache::store_current(lat, lng, config.units, &current, &forecast.days) {
+    if let Err(error) = cache::store_current(lat, lng, config.units, &current, &forecast) {
         log_cache_failure("weather_cache_store_failed", lat, lng, &error);
     }
 
@@ -87,7 +87,7 @@ pub fn get_forecast(ctx: Context, args: GetForecastArgs) -> Result<WeatherForeca
 
     let current_api = fetch_current_from_api(lat, lng)?;
     let current = map_current(current_api, config.units, now);
-    if let Err(error) = cache::store_current(lat, lng, config.units, &current, &forecast.days) {
+    if let Err(error) = cache::store_current(lat, lng, config.units, &current, &forecast) {
         log_cache_failure("weather_cache_store_failed", lat, lng, &error);
     }
 

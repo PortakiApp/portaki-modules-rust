@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::entities::{WeatherCache, WeatherUnits};
 use crate::weather::{
-    CachedCurrentPayload, CachedForecastPayload, ForecastDayView, WeatherCurrent, WeatherForecast,
+    CachedCurrentPayload, CachedForecastPayload, WeatherCurrent, WeatherForecast,
     CURRENT_CACHE_TTL_SECS, FORECAST_CACHE_TTL_SECS,
 };
 
@@ -127,6 +127,10 @@ pub fn read_current(
         humidity: payload.humidity,
         uv_index: payload.uv_index,
         wind_speed_ms: payload.wind_speed_ms,
+        city_name: payload.city_name,
+        feels_like_c: payload.feels_like_c,
+        pressure_hpa: payload.pressure_hpa,
+        cloud_pct: payload.cloud_pct,
         description_key: crate::weather::description_key_for_condition(&condition),
         units,
         fetched_at: row.fetched_at,
@@ -147,6 +151,7 @@ pub fn read_forecast(
         serde_json::from_str(&row.forecast_json).map_err(map_serde_error)?;
     Ok(Some(WeatherForecast {
         days: payload.days,
+        city_name: payload.city_name,
         units,
         fetched_at: row.fetched_at,
     }))
@@ -158,7 +163,7 @@ pub fn store_current(
     lng: f64,
     units: WeatherUnits,
     current: &WeatherCurrent,
-    forecast_days: &[ForecastDayView],
+    forecast: &WeatherForecast,
 ) -> Result<()> {
     let now = time::now()?;
     let current_expires = now + Duration::seconds(CURRENT_CACHE_TTL_SECS);
@@ -169,9 +174,14 @@ pub fn store_current(
         humidity: current.humidity,
         uv_index: current.uv_index,
         wind_speed_ms: current.wind_speed_ms,
+        city_name: current.city_name.clone(),
+        feels_like_c: current.feels_like_c,
+        pressure_hpa: current.pressure_hpa,
+        cloud_pct: current.cloud_pct,
     };
     let forecast_payload = CachedForecastPayload {
-        days: forecast_days.to_vec(),
+        days: forecast.days.clone(),
+        city_name: forecast.city_name.clone().or_else(|| current.city_name.clone()),
     };
     upsert(
         lat,
