@@ -354,8 +354,6 @@ fn render_list_item_body(item: &Value, out: &mut String) {
                 out.push_str("<br/>");
             }
             render_inline_children(child, out);
-        } else if child_type == "bulletList" || child_type == "orderedList" {
-            render_block(child, out);
         } else {
             render_block(child, out);
         }
