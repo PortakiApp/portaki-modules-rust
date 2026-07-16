@@ -181,7 +181,10 @@ pub fn store_current(
     };
     let forecast_payload = CachedForecastPayload {
         days: forecast.days.clone(),
-        city_name: forecast.city_name.clone().or_else(|| current.city_name.clone()),
+        city_name: forecast
+            .city_name
+            .clone()
+            .or_else(|| current.city_name.clone()),
     };
     upsert(
         lat,

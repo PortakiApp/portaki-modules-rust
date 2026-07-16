@@ -187,10 +187,7 @@ pub fn format_day_strip_label(date: &str, locale: &str) -> String {
 
 /// Resolves a locality label — prefers OpenWeather city, then address locality.
 /// Never falls back to the property marketing name (e.g. "Vayoux").
-pub fn resolve_city_label(
-    api_city: Option<&str>,
-    address: Option<&str>,
-) -> Option<String> {
+pub fn resolve_city_label(api_city: Option<&str>, address: Option<&str>) -> Option<String> {
     if let Some(city) = api_city.map(str::trim).filter(|value| !value.is_empty()) {
         return Some(city.to_string());
     }
