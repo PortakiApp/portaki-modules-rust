@@ -380,42 +380,55 @@ fn build_current_details(
     units: &crate::entities::WeatherUnits,
 ) -> Component {
     let unit = units.sdui_unit();
-    let mut cells: Vec<Component> = vec![
-        metric_label("droplets", "i18n:weather.humidity"),
-        table_value_cell(&format!("{}%", current.humidity)),
-    ];
+    let mut tiles: Vec<Component> = vec![metric_tile(
+        "droplets",
+        "i18n:weather.humidity",
+        &format!("{}%", current.humidity),
+        None,
+    )];
 
     if let Some(feels) = current.feels_like_c {
-        cells.push(metric_label("thermometer", "i18n:weather.feelsLike"));
-        cells.push(Component::Text(
-            Text::new()
-                .text(json!(format_temp_label(
-                    convert_temp(feels, *units),
-                    unit,
-                    false
-                )))
-                .variant(json!("caption"))
-                .tone(tone_for_temp_c(feels)),
+        tiles.push(metric_tile(
+            "thermometer",
+            "i18n:weather.feelsLike",
+            &format_temp_label(convert_temp(feels, *units), unit, false),
+            Some(tone_for_temp_c(feels)),
         ));
     }
     if let Some(uv) = current.uv_index {
-        cells.push(metric_label("sun", "i18n:weather.uv"));
-        cells.push(table_value_cell(&format!("i18n:{}", uv_label_key(uv))));
+        tiles.push(metric_tile(
+            "sun",
+            "i18n:weather.uv",
+            &format!("i18n:{}", uv_label_key(uv)),
+            None,
+        ));
     }
     if let Some(wind) = current.wind_speed_ms {
-        cells.push(metric_label("wind", "i18n:weather.wind"));
-        cells.push(table_value_cell(&format_wind_kmh(wind)));
+        tiles.push(metric_tile(
+            "wind",
+            "i18n:weather.wind",
+            &format_wind_kmh(wind),
+            None,
+        ));
     }
     if let Some(pressure) = current.pressure_hpa {
-        cells.push(metric_label("gauge", "i18n:weather.pressure"));
-        cells.push(table_value_cell(&format!("{pressure} hPa")));
+        tiles.push(metric_tile(
+            "gauge",
+            "i18n:weather.pressure",
+            &format!("{pressure} hPa"),
+            None,
+        ));
     }
     if let Some(clouds) = current.cloud_pct {
-        cells.push(metric_label("cloud", "i18n:weather.clouds"));
-        cells.push(table_value_cell(&format!("{clouds}%")));
+        tiles.push(metric_tile(
+            "cloud",
+            "i18n:weather.clouds",
+            &format!("{clouds}%"),
+            None,
+        ));
     }
 
-    Component::Grid(Grid::new().columns(json!(2)).gap(json!(8)).children(cells))
+    Component::Grid(Grid::new().columns(json!(2)).gap(json!(12)).children(tiles))
 }
 
 /// Forecast table: day · icon · min · max · rain · humidity · wind (scrolls when wide).
@@ -494,6 +507,20 @@ fn metric_label(icon: &str, label: &str) -> Component {
                     .variant(json!("caption"))
                     .emphasis(Emphasis::Strong),
             ),
+    )
+}
+
+/// One metric tile: icon + label on top, value below — two tiles per grid row.
+fn metric_tile(icon: &str, label: &str, value: &str, value_tone: Option<Tone>) -> Component {
+    let mut value_text = Text::new().text(json!(value)).variant(json!("caption"));
+    if let Some(tone) = value_tone {
+        value_text = value_text.tone(tone);
+    }
+    Component::Stack(
+        Stack::new()
+            .gap(json!(2))
+            .child(metric_label(icon, label))
+            .child(Component::Text(value_text)),
     )
 }
 
