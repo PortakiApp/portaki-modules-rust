@@ -44,8 +44,10 @@ pub fn get_current(ctx: Context, args: GetCurrentArgs) -> Result<WeatherCurrent>
     let lng = args.lng.unwrap_or(ctx.property.lng);
     let now = time::now()?;
 
-    if let Some(cached) = cache::read_current(lat, lng, config.units, now)? {
-        return Ok(cached);
+    match cache::read_current(lat, lng, config.units, now) {
+        Ok(Some(cached)) => return Ok(cached),
+        Ok(None) => {}
+        Err(error) => log_cache_failure("weather_cache_read_failed", lat, lng, &error),
     }
 
     let api = fetch_current_from_api(lat, lng)?;
@@ -53,7 +55,9 @@ pub fn get_current(ctx: Context, args: GetCurrentArgs) -> Result<WeatherCurrent>
 
     let forecast_api = fetch_forecast_from_api(lat, lng, 5)?;
     let forecast = map_forecast(forecast_api, config.units, now);
-    cache::store_current(lat, lng, config.units, &current, &forecast.days)?;
+    if let Err(error) = cache::store_current(lat, lng, config.units, &current, &forecast.days) {
+        log_cache_failure("weather_cache_store_failed", lat, lng, &error);
+    }
 
     Ok(current)
 }
@@ -72,8 +76,10 @@ pub fn get_forecast(ctx: Context, args: GetForecastArgs) -> Result<WeatherForeca
     let days = args.days.unwrap_or(5);
     let now = time::now()?;
 
-    if let Some(cached) = cache::read_forecast(lat, lng, config.units, now)? {
-        return Ok(cached);
+    match cache::read_forecast(lat, lng, config.units, now) {
+        Ok(Some(cached)) => return Ok(cached),
+        Ok(None) => {}
+        Err(error) => log_cache_failure("weather_cache_read_failed", lat, lng, &error),
     }
 
     let forecast_api = fetch_forecast_from_api(lat, lng, days)?;
@@ -81,7 +87,17 @@ pub fn get_forecast(ctx: Context, args: GetForecastArgs) -> Result<WeatherForeca
 
     let current_api = fetch_current_from_api(lat, lng)?;
     let current = map_current(current_api, config.units, now);
-    cache::store_current(lat, lng, config.units, &current, &forecast.days)?;
+    if let Err(error) = cache::store_current(lat, lng, config.units, &current, &forecast.days) {
+        log_cache_failure("weather_cache_store_failed", lat, lng, &error);
+    }
 
     Ok(forecast)
+}
+
+fn log_cache_failure(event: &str, lat: f64, lng: f64, error: &PortakiError) {
+    let mut fields = portaki_sdk::host::log::Fields::new();
+    fields.insert("lat", &lat);
+    fields.insert("lng", &lng);
+    fields.insert("error", &error.to_string());
+    let _ = portaki_sdk::host::log::warn(event, &fields);
 }

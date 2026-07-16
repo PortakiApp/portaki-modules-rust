@@ -1,6 +1,6 @@
 //! Guest booklet surfaces.
 
-use portaki_sdk::host::module;
+use portaki_sdk::host::{log, module};
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::common::{Emphasis, Tone};
 use portaki_sdk::sdui::primitives::{
@@ -21,7 +21,10 @@ use crate::weather::{
 pub fn render_home_card(ctx: GuestContext) -> Surface {
     match render_home_card_inner(&ctx) {
         Ok(surface) => surface,
-        Err(_error) => empty_weather_state(),
+        Err(error) => {
+            log_render_failure("home.card", &error);
+            empty_runtime_error_state("home.card")
+        }
     }
 }
 
@@ -30,7 +33,7 @@ fn render_home_card_inner(ctx: &GuestContext) -> Result<Surface> {
         return Ok(surface);
     }
     if !has_open_weather(ctx) {
-        return Ok(empty_weather_state());
+        return Ok(empty_capability_state("home.card"));
     }
 
     let config = load_config()?;
@@ -170,15 +173,26 @@ fn build_forecast_strip(
     )
 }
 
-fn empty_weather_state() -> Surface {
-    empty_weather_state_with_id("home.card")
-}
-
-fn empty_weather_state_with_id(surface_id: &str) -> Surface {
+fn empty_capability_state(surface_id: &str) -> Surface {
     Surface::new(
         EmptyState::new()
             .title(json!("i18n:capability.openWeather.fallback"))
             .description(json!("i18n:capability.openWeather.byok.fallback"))
+            .icon(json!("cloud-off"))
+            .child(
+                Text::new()
+                    .text(json!("i18n:home.card.unavailable"))
+                    .variant(json!("body")),
+            ),
+    )
+    .with_id(surface_id)
+}
+
+fn empty_runtime_error_state(surface_id: &str) -> Surface {
+    Surface::new(
+        EmptyState::new()
+            .title(json!("i18n:home.card.error.title"))
+            .description(json!("i18n:home.card.error.description"))
             .icon(json!("cloud-off"))
             .child(
                 Text::new()
@@ -214,6 +228,13 @@ fn empty_inactive_state(surface_id: &str) -> Surface {
     .with_id(surface_id)
 }
 
+fn log_render_failure(surface_id: &str, error: &PortakiError) {
+    let mut fields = log::Fields::new();
+    fields.insert("surfaceId", &surface_id);
+    fields.insert("error", &error.to_string());
+    let _ = log::error("weather_guest_render_failed", &fields);
+}
+
 /// Returns an EmptyState when the property-module is not ready to serve guest content.
 fn empty_state_if_module_not_ready(surface_id: &str) -> Result<Option<Surface>> {
     let status = module::status()?;
@@ -231,7 +252,10 @@ fn empty_state_if_module_not_ready(surface_id: &str) -> Result<Option<Surface>> 
 pub fn render_explore_forecast(ctx: GuestContext) -> Surface {
     match render_explore_forecast_inner(&ctx) {
         Ok(surface) => surface,
-        Err(_) => empty_weather_state_with_id("explore.forecast"),
+        Err(error) => {
+            log_render_failure("explore.forecast", &error);
+            empty_runtime_error_state("explore.forecast")
+        }
     }
 }
 
@@ -240,7 +264,7 @@ fn render_explore_forecast_inner(ctx: &GuestContext) -> Result<Surface> {
         return Ok(surface);
     }
     if !has_open_weather(ctx) {
-        return Ok(empty_weather_state_with_id("explore.forecast"));
+        return Ok(empty_capability_state("explore.forecast"));
     }
 
     let config = load_config()?;

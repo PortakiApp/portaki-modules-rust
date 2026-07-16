@@ -34,6 +34,8 @@
   "host.save": "Enregistrer",
   "home.card.title": "Météo",
   "home.card.unavailable": "Météo indisponible sur ce bien",
+  "home.card.error.title": "Météo temporairement indisponible",
+  "home.card.error.description": "Les conditions n'ont pas pu être chargées. Réessayez dans un instant.",
   "module.status.incomplete.title": "Configuration incomplète",
   "module.status.incomplete.description": "Finalisez la configuration météo dans le tableau de bord hôte",
   "module.status.incomplete.hint": "Champs requis manquants — ouvrez Modules → Météo",
