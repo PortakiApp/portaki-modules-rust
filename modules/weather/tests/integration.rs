@@ -215,9 +215,10 @@ fn forecast_renders_5_days() {
         .run(|ctx| {
             let surface = render_explore_forecast(ctx);
             assert!(contains_component_type(&surface, "Grid"));
-            assert!(contains_component_type(&surface, "InfoBanner"));
-            assert!(contains_component_type(&surface, "Button"));
             let json = serde_json::to_string(&surface).expect("surface json");
+            assert!(json.contains("explore.forecast.hint"));
+            assert!(!json.contains("sheet.assistant.tip"));
+            assert!(!json.contains("sheet.contactHost"));
             // now icon + 5 day icons
             assert!(json.matches("\"Icon\"").count() >= 6);
         });

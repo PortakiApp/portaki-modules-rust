@@ -3,9 +3,7 @@
 use portaki_sdk::host::{log, module};
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::common::{Emphasis, Tone};
-use portaki_sdk::sdui::primitives::{
-    Badge, Button, Card, Divider, EmptyState, Grid, Icon, InfoBanner, Stack, Text,
-};
+use portaki_sdk::sdui::primitives::{Badge, Card, Divider, EmptyState, Grid, Icon, Stack, Text};
 use portaki_sdk::sdui::surface::Surface;
 use serde_json::json;
 
@@ -362,15 +360,9 @@ fn build_sheet_surface(
     children.push(Component::Text(
         Text::new()
             .text(json!("i18n:explore.forecast.hint"))
-            .variant(json!("caption")),
+            .variant(json!("title")),
     ));
     children.push(build_forecast_table(forecast, units, locale));
-    children.push(Component::InfoBanner(
-        InfoBanner::new().message(json!("i18n:sheet.assistant.tip")),
-    ));
-    children.push(Component::Button(
-        Button::new().label(json!("i18n:sheet.contactHost")),
-    ));
 
     Surface::new(Stack::new().gap(json!(12)).children(children)).with_id("explore.forecast")
 }
