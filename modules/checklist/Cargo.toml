@@ -1,0 +1,27 @@
+[package]
+name = "checklist"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Portaki checkout checklist module — guest toggles and host item editor"
+repository.workspace = true
+homepage.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+portaki-sdk = { workspace = true }
+portaki-sdk-macros = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+extism-pdk = { workspace = true }
+
+[dev-dependencies]
+portaki-test-utils = { workspace = true }
+serial_test = { workspace = true }

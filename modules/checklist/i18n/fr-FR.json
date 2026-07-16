@@ -1,0 +1,20 @@
+{
+  "module.displayName": "Checklist départ",
+  "module.description": "Liste à cocher pour le jour du départ, avec progression par séjour",
+  "surface.host.main.title": "Checklist départ",
+  "surface.host.main.subtitle": "Définissez les tâches affichées aux voyageurs le jour du départ",
+  "host.items.label": "Tâches (JSON)",
+  "host.items.placeholder": "[{\"labelFr\":\"…\",\"labelEn\":\"…\",\"sortOrder\":0}]",
+  "host.main.help": "Chaque objet : labelFr, labelEn, sortOrder. Remplace toute la liste à l'enregistrement.",
+  "host.save": "Enregistrer",
+  "home.card.title": "Checklist de départ",
+  "home.card.empty": "Aucune tâche configurée pour ce logement.",
+  "home.card.unavailable": "Checklist indisponible",
+  "home.card.error.title": "Checklist temporairement indisponible",
+  "home.card.error.description": "Les tâches n'ont pas pu être chargées. Réessayez dans un instant.",
+  "module.status.incomplete.title": "Configuration incomplète",
+  "module.status.incomplete.description": "Finalisez la checklist dans le tableau de bord hôte",
+  "module.status.incomplete.hint": "Ouvrez Modules → Checklist départ",
+  "module.status.inactive.title": "Module checklist désactivé",
+  "module.status.inactive.description": "Ce module n’est pas actif sur ce logement"
+}

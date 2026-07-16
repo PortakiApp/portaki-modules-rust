@@ -1,0 +1,20 @@
+{
+  "module.displayName": "Checkout checklist",
+  "module.description": "Checkout-day checklist with per-stay progress",
+  "surface.host.main.title": "Checkout checklist",
+  "surface.host.main.subtitle": "Define the tasks guests see on checkout day",
+  "host.items.label": "Tasks (JSON)",
+  "host.items.placeholder": "[{\"labelFr\":\"…\",\"labelEn\":\"…\",\"sortOrder\":0}]",
+  "host.main.help": "Each object: labelFr, labelEn, sortOrder. Saving replaces the full list.",
+  "host.save": "Save",
+  "home.card.title": "Checkout checklist",
+  "home.card.empty": "No tasks configured for this property.",
+  "home.card.unavailable": "Checklist unavailable",
+  "home.card.error.title": "Checklist temporarily unavailable",
+  "home.card.error.description": "Tasks could not be loaded. Try again in a moment.",
+  "module.status.incomplete.title": "Incomplete configuration",
+  "module.status.incomplete.description": "Finish the checklist in the host dashboard",
+  "module.status.incomplete.hint": "Open Modules → Checkout checklist",
+  "module.status.inactive.title": "Checklist module disabled",
+  "module.status.inactive.description": "This module is not active on this property"
+}

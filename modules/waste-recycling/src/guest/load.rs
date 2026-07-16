@@ -1,0 +1,36 @@
+//! Load config for guest surfaces.
+
+use portaki_sdk::prelude::*;
+use portaki_sdk::sdui::surface::Surface;
+
+use crate::config::{load_config, BinRow, ModuleConfig};
+
+use super::empty::{empty_content_state, empty_state_if_module_not_ready};
+
+pub struct GuestData {
+    pub bins: Vec<BinRow>,
+    pub collection_schedule: String,
+    pub locale: String,
+}
+
+pub enum GuestLoad {
+    Ready(GuestData),
+    Empty(Surface),
+}
+
+pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad> {
+    if let Some(surface) = empty_state_if_module_not_ready(surface_id)? {
+        return Ok(GuestLoad::Empty(surface));
+    }
+
+    let config = load_config().unwrap_or_else(|_| ModuleConfig::default());
+    if config.is_empty() {
+        return Ok(GuestLoad::Empty(empty_content_state(surface_id)));
+    }
+
+    Ok(GuestLoad::Ready(GuestData {
+        bins: config.parse_bins(),
+        collection_schedule: config.collection_schedule.trim().to_string(),
+        locale: ctx.locale.clone(),
+    }))
+}

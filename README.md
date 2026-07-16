@@ -49,6 +49,17 @@ On every push to **`main`**, CI builds and publishes:
 
 | Module | OCI image | Description |
 |--------|-----------|-------------|
+| [`access-guide`](./modules/access-guide) | `ghcr.io/portakiapp/portaki-modules-access-guide:<semver>` | Arrival steps, codes, and parking |
+| [`appliances`](./modules/appliances) | `ghcr.io/portakiapp/portaki-modules-appliances:<semver>` | Device guides and safety notice |
+| [`checklist`](./modules/checklist) | `ghcr.io/portakiapp/portaki-modules-checklist:<semver>` | Checkout checklist with guest toggles |
+| [`emergency-contacts`](./modules/emergency-contacts) | `ghcr.io/portakiapp/portaki-modules-emergency-contacts:<semver>` | Useful numbers and host line |
+| [`facility-hours`](./modules/facility-hours) | `ghcr.io/portakiapp/portaki-modules-facility-hours:<semver>` | Pool, spa, and shared amenity schedules |
+| [`guest-reviews`](./modules/guest-reviews) | `ghcr.io/portakiapp/portaki-modules-guest-reviews:<semver>` | Post-stay thank-you and review CTAs |
+| [`local-guide`](./modules/local-guide) | `ghcr.io/portakiapp/portaki-modules-local-guide:<semver>` | Nearby spots and host picks |
+| [`pre-arrival-form`](./modules/pre-arrival-form) | `ghcr.io/portakiapp/portaki-modules-pre-arrival-form:<semver>` | ETA, occasion, allergies, message to host |
+| [`rules`](./modules/rules) | `ghcr.io/portakiapp/portaki-modules-rules:<semver>` | Structured bilingual house rules |
+| [`sections`](./modules/sections) | `ghcr.io/portakiapp/portaki-modules-sections:<semver>` | Editorial title + markdown body blocks |
+| [`waste-recycling`](./modules/waste-recycling) | `ghcr.io/portakiapp/portaki-modules-waste-recycling:<semver>` | Bins and collection schedule |
 | [`weather`](./modules/weather) | `ghcr.io/portakiapp/portaki-modules-weather:<semver>` | Current weather and 5-day forecast |
 
 ## Structure
@@ -57,6 +68,17 @@ On every push to **`main`**, CI builds and publishes:
 portaki-modules/
 ├── Cargo.toml                 # workspace + shared SDK git deps
 ├── modules/
+│   ├── access-guide/
+│   ├── appliances/
+│   ├── checklist/
+│   ├── emergency-contacts/
+│   ├── facility-hours/
+│   ├── guest-reviews/
+│   ├── local-guide/
+│   ├── pre-arrival-form/
+│   ├── rules/
+│   ├── sections/
+│   ├── waste-recycling/
 │   └── weather/
 └── .github/workflows/
     └── ci.yml                 # quality gates; publish to GHCR on main

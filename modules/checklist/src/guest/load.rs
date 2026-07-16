@@ -1,0 +1,59 @@
+//! Load checklist data for guest surfaces.
+
+use portaki_sdk::prelude::*;
+use portaki_sdk::sdui::surface::Surface;
+use uuid::Uuid;
+
+use super::empty::{empty_no_items_card, empty_state_if_module_not_ready};
+use crate::entities::ChecklistItem;
+use crate::storage;
+
+pub enum GuestLoad {
+    Empty(Surface),
+    Ready(GuestChecklistData),
+}
+
+pub struct GuestChecklistData {
+    pub items: Vec<ChecklistItem>,
+    pub completed: Vec<Uuid>,
+    pub locale: String,
+    pub done: usize,
+    pub total: usize,
+    pub percent: u8,
+}
+
+pub fn load_guest_checklist(ctx: &GuestContext) -> Result<GuestLoad> {
+    if let Some(surface) = empty_state_if_module_not_ready("home.card")? {
+        return Ok(GuestLoad::Empty(surface));
+    }
+
+    let items = storage::list_items()?;
+    if items.is_empty() {
+        return Ok(GuestLoad::Empty(empty_no_items_card("home.card")));
+    }
+
+    let stay_id = ctx.guest.as_ref().map(|guest| guest.session_id);
+    let completed = match stay_id {
+        Some(id) => storage::list_completed_item_ids(id)?,
+        None => Vec::new(),
+    };
+    let total = items.len();
+    let done = items
+        .iter()
+        .filter(|item| completed.contains(&item.id))
+        .count();
+    let percent = if total == 0 {
+        0
+    } else {
+        ((done * 100) / total) as u8
+    };
+
+    Ok(GuestLoad::Ready(GuestChecklistData {
+        items,
+        completed,
+        locale: ctx.locale.clone(),
+        done,
+        total,
+        percent,
+    }))
+}

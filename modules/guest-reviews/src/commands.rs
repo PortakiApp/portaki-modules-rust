@@ -1,0 +1,67 @@
+//! Module commands — configuration and Portaki review submit.
+
+use portaki_sdk::host;
+use portaki_sdk::prelude::*;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+
+use crate::config::{save_config, ModuleConfig, ReviewChannel};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateConfigArgs {
+    #[serde(default)]
+    pub review_channel: String,
+    #[serde(default = "default_true")]
+    pub show_qr_code: bool,
+    #[serde(default)]
+    pub airbnb_review_url: String,
+    #[serde(default)]
+    pub thank_you_message: String,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+#[portaki_sdk::command(name = "updateConfig")]
+pub fn update_config(_ctx: Context, args: UpdateConfigArgs) -> Result<()> {
+    save_config(&ModuleConfig {
+        review_channel: ReviewChannel::parse(&args.review_channel),
+        show_qr_code: args.show_qr_code,
+        airbnb_review_url: args.airbnb_review_url,
+        thank_you_message: args.thank_you_message,
+    })
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubmitReviewArgs {
+    pub rating: u8,
+    #[serde(default)]
+    pub comment: String,
+}
+
+const REVIEWS_KEY: &str = "reviews";
+
+#[portaki_sdk::command(name = "submitReview")]
+pub fn submit_review(_ctx: Context, args: SubmitReviewArgs) -> Result<()> {
+    if !(1..=5).contains(&args.rating) {
+        return Err(PortakiError::Host(format!(
+            "rating must be 1-5, got {}",
+            args.rating
+        )));
+    }
+
+    let mut entries: Vec<serde_json::Value> = host::kv::get(REVIEWS_KEY)?
+        .and_then(|bytes| serde_json::from_slice(&bytes).ok())
+        .unwrap_or_default();
+
+    entries.push(json!({
+        "rating": args.rating,
+        "comment": args.comment.trim(),
+    }));
+
+    let bytes = serde_json::to_vec(&entries).map_err(|error| {
+        PortakiError::Storage(format!("reviews serialize: {error}"))
+    })?;
+    host::kv::set(REVIEWS_KEY, &bytes, None)
+}

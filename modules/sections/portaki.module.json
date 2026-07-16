@@ -1,0 +1,34 @@
+{
+  "$schema": "https://raw.githubusercontent.com/PortakiApp/portaki-sdk/main/schema/module.v1.json",
+  "id": "sections",
+  "name": {
+    "fr": "Sections éditoriales",
+    "en": "Editorial sections"
+  },
+  "description": {
+    "fr": "Blocs de contenu markdown pour le carnet d'accueil invité.",
+    "en": "Markdown content blocks for the guest welcome book."
+  },
+  "version": "0.1.0",
+  "author": {
+    "name": "Syntax Labs",
+    "url": "https://syntax-labs.fr",
+    "type": "official"
+  },
+  "icon": "home",
+  "type": "official",
+  "hostSurfaces": [
+    {
+      "type": "property-workspace-tab",
+      "pathSegment": "sections",
+      "label": {
+        "fr": "Sections",
+        "en": "Sections"
+      },
+      "icon": "file-text",
+      "hostUi": {
+        "designId": "sections-editor-v1"
+      }
+    }
+  ]
+}

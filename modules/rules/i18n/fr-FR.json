@@ -1,0 +1,23 @@
+{
+  "module.displayName": "Règlement intérieur",
+  "module.description": "Règles de la maison structurées pour le livret invité",
+  "surface.host.main.title": "Règlement intérieur",
+  "surface.host.main.subtitle": "Éditez les règles bilingues en JSON structuré",
+  "host.contentFr.label": "Règles (français)",
+  "host.contentEn.label": "Règles (anglais)",
+  "host.content.placeholder": "{\"items\":[{\"icon\":\"clock-circle\",\"title\":\"…\",\"subtitle\":\"…\"}]}",
+  "host.main.help": "Chaque item a icon, title et subtitle optionnel. Pas de TipTap — JSON structuré uniquement.",
+  "host.save": "Enregistrer",
+  "home.card.title": "Règlement intérieur",
+  "home.card.empty.title": "Aucun règlement pour le moment",
+  "home.card.empty.description": "L'hôte n'a pas encore publié de règles pour ce logement.",
+  "home.card.empty.hint": "Ouvrez l'onglet Règlement dans le tableau de bord hôte pour ajouter des items.",
+  "home.card.error.title": "Règlement temporairement indisponible",
+  "home.card.error.description": "Impossible de charger le règlement. Réessayez dans un instant.",
+  "home.card.error.hint": "Si le problème persiste, contactez votre hôte.",
+  "module.status.incomplete.title": "Configuration incomplète",
+  "module.status.incomplete.description": "Terminez la configuration du règlement dans le tableau de bord hôte",
+  "module.status.incomplete.hint": "Ouvrez Modules → Règlement",
+  "module.status.inactive.title": "Règlement désactivé",
+  "module.status.inactive.description": "Ce module n'est pas actif sur ce logement"
+}
