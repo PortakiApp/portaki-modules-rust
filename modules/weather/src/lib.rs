@@ -6,16 +6,16 @@ mod config;
 mod connectors;
 mod entities;
 mod events;
+mod guest;
 mod queries;
-mod render_guest;
 mod render_host;
 mod weather;
 
 pub use commands::{refresh_forecast, update_config};
 pub use entities::{WeatherCache, WeatherUnits};
 pub use events::{on_booking_confirmed, BookingConfirmedEvent};
+pub use guest::{render_explore_forecast, render_home_card};
 pub use queries::{get_current, get_forecast, GetCurrentArgs, GetForecastArgs};
-pub use render_guest::{render_explore_forecast, render_home_card};
 pub use render_host::render_host_main;
 pub use weather::{has_open_weather, WeatherCurrent, WeatherForecast};
 

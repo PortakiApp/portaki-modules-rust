@@ -8,11 +8,13 @@ use uuid::Uuid;
 
 use crate::entities::{WeatherCache, WeatherUnits};
 use crate::weather::{
-    CachedCurrentPayload, CachedForecastPayload, WeatherCurrent, WeatherForecast,
-    CURRENT_CACHE_TTL_SECS, FORECAST_CACHE_TTL_SECS,
+    description_key_for_condition, CachedCurrentPayload, CachedForecastPayload, WeatherCurrent,
+    WeatherForecast, CURRENT_CACHE_TTL_SECS, FORECAST_CACHE_TTL_SECS, CONNECTOR_CURRENT_CALLS,
+    CONNECTOR_FORECAST_CALLS,
 };
 
 use std::cell::RefCell;
+use std::sync::atomic::Ordering;
 
 thread_local! {
     static TEST_CACHE_ROWS: RefCell<Vec<WeatherCache>> = const { RefCell::new(Vec::new()) };
@@ -28,8 +30,8 @@ pub fn reset_test_cache() {
 #[allow(dead_code)]
 pub fn reset_test_harness() {
     reset_test_cache();
-    crate::weather::CONNECTOR_CURRENT_CALLS.store(0, std::sync::atomic::Ordering::SeqCst);
-    crate::weather::CONNECTOR_FORECAST_CALLS.store(0, std::sync::atomic::Ordering::SeqCst);
+    CONNECTOR_CURRENT_CALLS.store(0, Ordering::SeqCst);
+    CONNECTOR_FORECAST_CALLS.store(0, Ordering::SeqCst);
 }
 
 fn test_store_rows() -> Vec<WeatherCache> {
@@ -120,21 +122,8 @@ pub fn read_current(
     };
     let payload: CachedCurrentPayload =
         serde_json::from_str(&row.current_json).map_err(map_serde_error)?;
-    let condition = payload.condition.clone();
-    Ok(Some(WeatherCurrent {
-        temp_c: payload.temp_c,
-        condition: condition.clone(),
-        humidity: payload.humidity,
-        uv_index: payload.uv_index,
-        wind_speed_ms: payload.wind_speed_ms,
-        city_name: payload.city_name,
-        feels_like_c: payload.feels_like_c,
-        pressure_hpa: payload.pressure_hpa,
-        cloud_pct: payload.cloud_pct,
-        description_key: crate::weather::description_key_for_condition(&condition),
-        units,
-        fetched_at: row.fetched_at,
-    }))
+    let description_key = description_key_for_condition(&payload.condition);
+    Ok(Some(payload.into_current(units, row.fetched_at, description_key)))
 }
 
 /// Reads cached forecast if still valid.
@@ -149,15 +138,10 @@ pub fn read_forecast(
     };
     let payload: CachedForecastPayload =
         serde_json::from_str(&row.forecast_json).map_err(map_serde_error)?;
-    Ok(Some(WeatherForecast {
-        days: payload.days,
-        city_name: payload.city_name,
-        units,
-        fetched_at: row.fetched_at,
-    }))
+    Ok(Some(payload.into_forecast(units, row.fetched_at)))
 }
 
-/// Writes current payload with a 1h TTL boundary.
+/// Writes current + forecast payloads with TTL boundaries.
 pub fn store_current(
     lat: f64,
     lng: f64,
@@ -168,30 +152,12 @@ pub fn store_current(
     let now = time::now()?;
     let current_expires = now + Duration::seconds(CURRENT_CACHE_TTL_SECS);
     let forecast_expires = now + Duration::seconds(FORECAST_CACHE_TTL_SECS);
-    let current_payload = CachedCurrentPayload {
-        temp_c: current.temp_c,
-        condition: current.condition.clone(),
-        humidity: current.humidity,
-        uv_index: current.uv_index,
-        wind_speed_ms: current.wind_speed_ms,
-        city_name: current.city_name.clone(),
-        feels_like_c: current.feels_like_c,
-        pressure_hpa: current.pressure_hpa,
-        cloud_pct: current.cloud_pct,
-    };
-    let forecast_payload = CachedForecastPayload {
-        days: forecast.days.clone(),
-        city_name: forecast
-            .city_name
-            .clone()
-            .or_else(|| current.city_name.clone()),
-    };
     upsert(
         lat,
         lng,
         units,
-        &current_payload,
-        &forecast_payload,
+        &CachedCurrentPayload::from_current(current),
+        &CachedForecastPayload::from_forecast(forecast, current.city_name.clone()),
         current_expires,
         forecast_expires,
     )
