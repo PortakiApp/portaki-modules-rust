@@ -958,7 +958,7 @@ dependencies = [
 
 [[package]]
 name = "weather"
-version = "0.3.16"
+version = "0.3.17"
 dependencies = [
  "chrono",
  "extism-pdk",

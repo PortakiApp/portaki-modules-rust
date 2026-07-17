@@ -8,7 +8,7 @@ use serde_json::json;
 use crate::entities::WeatherUnits;
 use crate::weather::{
     convert_temp, format_day_strip_label, format_temp_label, icon_name_for_condition,
-    ForecastDayView, WeatherCurrent, WeatherForecast,
+    tone_for_temp_c, ForecastDayView, WeatherCurrent, WeatherForecast,
 };
 
 /// Glance body for the home card: hero + forecast strip (design: no UV chip).
@@ -32,14 +32,14 @@ pub fn build_current_hero(
     city: Option<&str>,
 ) -> Component {
     let temp = convert_temp(current.temp_c, *units);
-    let unit = units.sdui_unit();
     let description = json!(format!("i18n:{}", current.description_key));
 
     let mut text_stack = Stack::new().gap(json!(4)).child(
         Temperature::new()
             .value(json!(temp.round() as i64))
-            .unit(json!(unit))
-            .variant(TempVariant::Hero),
+            .unit(json!("C"))
+            .variant(TempVariant::Hero)
+            .tone(tone_for_temp_c(current.temp_c)),
     );
     text_stack = text_stack.child(Text::new().text(description).variant(json!("caption")));
     if let Some(city) = city {
@@ -83,7 +83,8 @@ fn build_forecast_day_column(
                 Text::new()
                     .text(json!(format_temp_label(display_temp, unit, false)))
                     .variant(json!("caption"))
-                    .emphasis(Emphasis::Strong),
+                    .emphasis(Emphasis::Strong)
+                    .tone(tone_for_temp_c(day.display_temp_c)),
             ),
     )
 }
