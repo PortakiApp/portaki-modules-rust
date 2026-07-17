@@ -259,6 +259,7 @@ fn migrates_legacy_payload_on_read() {
             assert_eq!(view.devices[0].emoji, "📺");
             assert!(!view.devices[0].featured);
             assert!(view.devices[0].description.contains("bulletList"));
+            assert!(view.safety_notice.contains("Coupez l'eau"));
             let card = render_home_card(ctx);
             // featured=false after migration → empty featured card children, still Card
             assert!(contains_component_type(&card, "Card"));

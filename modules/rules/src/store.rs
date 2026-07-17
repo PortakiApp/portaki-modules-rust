@@ -70,6 +70,8 @@ fn persist(row: RulesContent) -> Result<()> {
         });
         return Ok(());
     }
+    // Typed repo has no update — INSERT alone conflicts on PK / unique(property_id).
+    let _ = repo::delete::<RulesContent>(row.id)?;
     let _ = repo::create::<RulesContent, RulesContent, RulesContent>(row)?;
     Ok(())
 }

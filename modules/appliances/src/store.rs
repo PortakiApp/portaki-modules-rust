@@ -84,6 +84,8 @@ fn persist(row: AppliancesContent) -> Result<()> {
         });
         return Ok(());
     }
+    // Typed repo has no update — INSERT alone conflicts on PK / unique(property_id).
+    let _ = repo::delete::<AppliancesContent>(row.id)?;
     let _ = repo::create::<AppliancesContent, AppliancesContent, AppliancesContent>(row)?;
     Ok(())
 }

@@ -9,8 +9,8 @@ mod render_host;
 mod store;
 
 pub use commands::{
-    delete_appliance, reorder_appliances, save_appliance, DeleteApplianceArgs,
-    ReorderAppliancesArgs, SaveApplianceArgs,
+    delete_appliance, reorder_appliances, save_appliance, save_safety_notice, DeleteApplianceArgs,
+    ReorderAppliancesArgs, SaveApplianceArgs, SaveSafetyNoticeArgs,
 };
 pub use content::{Appliance, ApplianceStatus, AppliancesPayload, MAX_APPLIANCES, MAX_FEATURED};
 pub use entities::AppliancesContent;

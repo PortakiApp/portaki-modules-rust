@@ -46,6 +46,9 @@ pub struct Appliance {
 pub struct AppliancesPayload {
     #[serde(default)]
     pub devices: Vec<Appliance>,
+    /// Global TipTap JSON safety notice (shown above the guest device list).
+    #[serde(default, rename = "safetyNotice", alias = "safety_notice")]
+    pub safety_notice: String,
 }
 
 impl AppliancesPayload {
@@ -120,12 +123,13 @@ pub fn load_from_locale_slots(content_fr: &str, content_en: &str) -> AppliancesP
 }
 
 fn looks_legacy(value: &Value) -> bool {
-    if value.get("safety_notice").is_some() {
-        return true;
-    }
     let Some(devices) = value.get("devices").and_then(|d| d.as_array()) else {
-        return false;
+        // Legacy empty payload that only carried a snake_case safety_notice.
+        return value.get("safety_notice").is_some() && value.get("safetyNotice").is_none();
     };
+    if devices.is_empty() {
+        return value.get("safety_notice").is_some() && value.get("safetyNotice").is_none();
+    }
     devices.iter().any(|device| {
         let has_title = device.get("title").is_some();
         let has_name = device.get("name").is_some();
@@ -181,7 +185,26 @@ fn migrate_legacy(value: &Value) -> AppliancesPayload {
         });
     }
 
-    AppliancesPayload { devices: migrated }
+    let legacy_safety = string_field(value, "safety_notice");
+    AppliancesPayload {
+        devices: migrated,
+        safety_notice: plain_text_to_tiptap(&legacy_safety),
+    }
+}
+
+fn plain_text_to_tiptap(text: &str) -> String {
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        return String::new();
+    }
+    json!({
+        "type": "doc",
+        "content": [{
+            "type": "paragraph",
+            "content": [{ "type": "text", "text": trimmed }]
+        }]
+    })
+    .to_string()
 }
 
 /// Lucide-style names stay empty; emoji / other glyphs are kept.
@@ -509,11 +532,14 @@ mod tests {
         assert!(payload.devices[0].description.contains("Remote on stand"));
         assert_eq!(payload.devices[1].emoji, "");
         assert_eq!(payload.devices[1].order, 1);
+        assert!(payload.safety_notice.contains("Coupez l'eau."));
+        assert!(payload.safety_notice.contains("paragraph"));
     }
 
     #[test]
     fn parses_v2_without_migration() {
         let raw = r#"{
+            "safetyNotice": "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Global\"}]}]}",
             "devices": [{
                 "id": "a1",
                 "name": "Oven",
@@ -532,6 +558,7 @@ mod tests {
         assert_eq!(payload.devices[0].name, "Oven");
         assert!(payload.devices[0].featured);
         assert_eq!(payload.devices[0].manual_url, "https://example.com");
+        assert!(payload.safety_notice.contains("Global"));
     }
 
     #[test]
@@ -555,6 +582,7 @@ mod tests {
                     ..Default::default()
                 },
             ],
+            ..Default::default()
         };
         let guest = payload.guest_devices();
         assert_eq!(guest.len(), 1);

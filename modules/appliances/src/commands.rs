@@ -40,6 +40,12 @@ pub struct ReorderAppliancesArgs {
     pub ordered_ids: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SaveSafetyNoticeArgs {
+    #[serde(default, rename = "safetyNotice", alias = "safety_notice")]
+    pub safety_notice: String,
+}
+
 #[portaki_sdk::command(name = "saveAppliance")]
 pub fn save_appliance(_ctx: Context, args: SaveApplianceArgs) -> Result<Appliance> {
     let name = args.name.trim().to_string();
@@ -142,6 +148,14 @@ pub fn reorder_appliances(_ctx: Context, args: ReorderAppliancesArgs) -> Result<
         }
     }
     payload.sort_by_order();
+    let _ = store::save_payload(&payload)?;
+    Ok(())
+}
+
+#[portaki_sdk::command(name = "saveSafetyNotice")]
+pub fn save_safety_notice(_ctx: Context, args: SaveSafetyNoticeArgs) -> Result<()> {
+    let mut payload = store::load_payload()?;
+    payload.safety_notice = normalize_description(&args.safety_notice);
     let _ = store::save_payload(&payload)?;
     Ok(())
 }

@@ -16,6 +16,9 @@ pub struct GetContentArgs {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct AppliancesContentView {
     pub devices: Vec<Appliance>,
+    /// Global TipTap JSON safety notice.
+    #[serde(rename = "safetyNotice")]
+    pub safety_notice: String,
     /// Canonical JSON (single language).
     pub content: String,
     /// Legacy slots — kept for host tooling during transition.
@@ -37,6 +40,7 @@ pub fn get_content(ctx: Context, args: GetContentArgs) -> Result<AppliancesConte
         .unwrap_or_else(|_| content_fr.clone());
     Ok(AppliancesContentView {
         devices: payload.devices,
+        safety_notice: payload.safety_notice,
         content,
         content_fr,
         content_en,
