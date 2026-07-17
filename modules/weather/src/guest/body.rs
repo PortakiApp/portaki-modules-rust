@@ -1,17 +1,17 @@
-//! Shared weather body pieces (hero, UV badge, 5-day strip).
+//! Shared weather body pieces (hero, 5-day strip).
 
 use portaki_sdk::prelude::*;
-use portaki_sdk::sdui::common::{Emphasis, Tone};
-use portaki_sdk::sdui::primitives::{Badge, Divider, Grid, Icon, Stack, Text};
+use portaki_sdk::sdui::common::{Emphasis, TempVariant};
+use portaki_sdk::sdui::primitives::{Divider, Grid, Icon, Stack, Temperature, Text};
 use serde_json::json;
 
 use crate::entities::WeatherUnits;
 use crate::weather::{
-    convert_temp, format_day_strip_label, format_temp_label, icon_name_for_condition, is_uv_high,
-    tone_for_temp_c, uv_label_key, ForecastDayView, WeatherCurrent, WeatherForecast,
+    convert_temp, format_day_strip_label, format_temp_label, icon_name_for_condition,
+    ForecastDayView, WeatherCurrent, WeatherForecast,
 };
 
-/// Glance body for the home card: hero + optional UV + forecast strip.
+/// Glance body for the home card: hero + forecast strip (design: no UV chip).
 pub fn build_weather_glance(
     current: &WeatherCurrent,
     forecast: &WeatherForecast,
@@ -19,13 +19,11 @@ pub fn build_weather_glance(
     city: Option<&str>,
     locale: &str,
 ) -> Vec<Component> {
-    let mut children = vec![build_current_hero(current, units, city)];
-    if let Some(badge) = uv_warning_badge(current) {
-        children.push(badge);
-    }
-    children.push(Component::Divider(Divider::new()));
-    children.push(build_forecast_strip(forecast, units, locale));
-    children
+    vec![
+        build_current_hero(current, units, city),
+        Component::Divider(Divider::new()),
+        build_forecast_strip(forecast, units, locale),
+    ]
 }
 
 pub fn build_current_hero(
@@ -38,10 +36,10 @@ pub fn build_current_hero(
     let description = json!(format!("i18n:{}", current.description_key));
 
     let mut text_stack = Stack::new().gap(json!(4)).child(
-        Text::new()
-            .text(json!(format_temp_label(temp, unit, false)))
-            .variant(json!("display"))
-            .tone(tone_for_temp_c(current.temp_c)),
+        Temperature::new()
+            .value(json!(temp.round() as i64))
+            .unit(json!(unit))
+            .variant(TempVariant::Hero),
     );
     text_stack = text_stack.child(Text::new().text(description).variant(json!("caption")));
     if let Some(city) = city {
@@ -59,21 +57,6 @@ pub fn build_current_hero(
             )
             .child(Component::Stack(text_stack)),
     )
-}
-
-pub fn uv_warning_badge(current: &WeatherCurrent) -> Option<Component> {
-    if !is_uv_high(current.uv_index) {
-        return None;
-    }
-    let uv_key = current
-        .uv_index
-        .map(uv_label_key)
-        .unwrap_or("weather.uv.high");
-    Some(Component::Badge(
-        Badge::new()
-            .label(json!(format!("i18n:{uv_key}")))
-            .tone(Tone::Warning),
-    ))
 }
 
 fn build_forecast_day_column(
@@ -100,8 +83,7 @@ fn build_forecast_day_column(
                 Text::new()
                     .text(json!(format_temp_label(display_temp, unit, false)))
                     .variant(json!("caption"))
-                    .emphasis(Emphasis::Strong)
-                    .tone(tone_for_temp_c(day.display_temp_c)),
+                    .emphasis(Emphasis::Strong),
             ),
     )
 }

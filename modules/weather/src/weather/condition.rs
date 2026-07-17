@@ -38,11 +38,6 @@ pub fn uv_label_key(uv_index: f64) -> &'static str {
     }
 }
 
-/// Whether to show the UV warning badge.
-pub fn is_uv_high(uv_index: Option<f64>) -> bool {
-    uv_index.is_some_and(|value| value >= 6.0)
-}
-
 /// Rough UV estimate when the connector does not provide one.
 pub fn estimate_uv_index(condition: &str) -> Option<f64> {
     match classify(condition) {
