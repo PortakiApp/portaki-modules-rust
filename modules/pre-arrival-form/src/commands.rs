@@ -34,7 +34,7 @@ pub fn submit(ctx: Context, args: SubmitArgs) -> Result<()> {
         message.clone(),
     )?;
 
-    let _ = events::emit(
+    events::emit(
         "pre-arrival.completed",
         &json!({
             "arrivalTimeEstimated": arrival_time,
@@ -42,7 +42,7 @@ pub fn submit(ctx: Context, args: SubmitArgs) -> Result<()> {
             "guestAllergies": allergies,
             "messageToHost": message,
         }),
-    );
+    )?;
     Ok(())
 }
 

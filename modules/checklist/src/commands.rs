@@ -106,12 +106,12 @@ fn require_stay_id(ctx: &Context) -> Result<Uuid> {
 
 fn emit_progress(stay_id: Uuid) -> Result<()> {
     let percentage = storage::progress_percent(stay_id)?;
-    let _ = events::emit(
+    events::emit(
         "checklist.progress-updated",
         &json!({ "percentage": percentage }),
-    );
+    )?;
     if percentage == 100 {
-        let _ = events::emit("checklist.completed", &json!({ "stayId": stay_id }));
+        events::emit("checklist.completed", &json!({ "stayId": stay_id }))?;
     }
     Ok(())
 }
