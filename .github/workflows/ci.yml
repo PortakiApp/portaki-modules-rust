@@ -184,12 +184,12 @@ jobs:
         if: steps.cache-cli.outputs.cache-hit != 'true'
         run: cargo install --git https://github.com/PortakiApp/portaki-sdk --branch main --locked portaki-cli
 
+      # upload-artifact roots at modules/<mod>/target (LCA of wasm + portaki/).
       - name: Download wasm artifact
         uses: actions/download-artifact@v4
         with:
           name: wasm-${{ matrix.module }}
-          path: .
-
+          path: modules/${{ matrix.module }}/target
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:

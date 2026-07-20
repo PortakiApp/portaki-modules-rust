@@ -24,12 +24,15 @@ echo "=== publish ${MODULE}:${version} (from_artifact=${FROM_ARTIFACT}) ==="
 cd "$MODULE_DIR"
 
 resolve_wasm() {
-  local wasm="target/wasm32-unknown-unknown/release/${MODULE}.wasm"
-  if [[ ! -f "$wasm" ]]; then
-    wasm="$(find target/wasm32-unknown-unknown/release -maxdepth 1 -name '*.wasm' | head -1)"
+  local release_dir="target/wasm32-unknown-unknown/release"
+  local wasm="${release_dir}/${MODULE}.wasm"
+  if [[ ! -f "$wasm" && -d "$release_dir" ]]; then
+    wasm="$(find "$release_dir" -maxdepth 1 -name '*.wasm' | head -1 || true)"
   fi
-  if [[ -z "$wasm" || ! -f "$wasm" ]]; then
-    echo "::error::${MODULE}: wasm artifact missing under target/wasm32-unknown-unknown/release/"
+  if [[ -z "${wasm:-}" || ! -f "$wasm" ]]; then
+    echo "::error::${MODULE}: wasm artifact missing under ${release_dir}/"
+    ls -la target 2>/dev/null || true
+    ls -la "$release_dir" 2>/dev/null || true
     exit 1
   fi
   printf '%s' "$wasm"
