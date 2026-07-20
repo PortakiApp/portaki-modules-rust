@@ -1,9 +1,22 @@
 name: ci
 
+# Quality on pull_request; push main = publish path only (avoids feature push + PR double bill).
 on:
   push:
-    branches: [main, "feature/**"]
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".github/CI.md"
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".github/CI.md"
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -40,48 +53,26 @@ jobs:
         id: detect
         run: bash .github/scripts/changed-modules.sh "${{ steps.base.outputs.ref }}"
 
-  fmt:
-    name: fmt
+  # fmt + clippy + test on one runner (setup cost ×3 was burning minutes).
+  rust:
+    name: rust
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
 
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt
+          components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
 
       - name: Format
         run: cargo fmt --all -- --check
 
-  clippy:
-    name: clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-          targets: wasm32-unknown-unknown
-
-      - uses: Swatinem/rust-cache@v2
-
+      # Host targets only — wasm32 is for the wasm matrix job.
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
-
-  test:
-    name: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
-      - uses: Swatinem/rust-cache@v2
 
       - name: Unit tests
         run: cargo test --workspace --lib
@@ -99,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 2
       matrix:
         module: ${{ fromJson(needs.changes.outputs.modules) }}
     steps:
@@ -163,7 +154,7 @@ jobs:
       packages: write
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 2
       matrix:
         module: ${{ fromJson(needs.changes.outputs.modules) }}
     steps:
@@ -190,6 +181,7 @@ jobs:
         with:
           name: wasm-${{ matrix.module }}
           path: modules/${{ matrix.module }}/target
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v4
         with:
@@ -205,7 +197,7 @@ jobs:
 
   quality:
     name: quality
-    needs: [changes, fmt, clippy, test, wasm, publish]
+    needs: [changes, rust, wasm, publish]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 1
@@ -213,9 +205,7 @@ jobs:
       - name: Quality gate
         env:
           ANY: ${{ needs.changes.outputs.any }}
-          FMT: ${{ needs.fmt.result }}
-          CLIPPY: ${{ needs.clippy.result }}
-          TEST: ${{ needs.test.result }}
+          RUST: ${{ needs.rust.result }}
           WASM: ${{ needs.wasm.result }}
           PUBLISH: ${{ needs.publish.result }}
           EVENT: ${{ github.event_name }}
@@ -223,13 +213,10 @@ jobs:
         run: |
           set -euo pipefail
 
-          for job in FMT CLIPPY TEST; do
-            result="$(eval echo \$$job)"
-            if [ "$result" != "success" ]; then
-              echo "Quality gate failed: $job=$result"
-              exit 1
-            fi
-          done
+          if [ "$RUST" != "success" ]; then
+            echo "Quality gate failed: RUST=$RUST"
+            exit 1
+          fi
 
           if [ "$ANY" = "true" ]; then
             if [ "$WASM" != "success" ]; then

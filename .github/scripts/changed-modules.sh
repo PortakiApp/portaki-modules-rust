@@ -48,8 +48,9 @@ if [[ ! -s "$CHANGED_FILE" ]]; then
   exit 0
 fi
 
-# Workspace / toolchain / CI / SDK lock → rebuild every module.
-SHARED_REGEX='^(Cargo\.toml|Cargo\.lock|\.cargo/|rust-toolchain|rust-toolchain\.toml|\.github/workflows/ci\.yml|\.github/scripts/)'
+# Workspace / toolchain / lock → rebuild every module.
+# CI workflow/script-only edits must NOT fan out the wasm/publish matrix (minutes).
+SHARED_REGEX='^(Cargo\.toml|Cargo\.lock|\.cargo/|rust-toolchain|rust-toolchain\.toml)'
 while IFS= read -r path; do
   [[ -z "$path" ]] && continue
   if [[ "$path" =~ $SHARED_REGEX ]]; then
