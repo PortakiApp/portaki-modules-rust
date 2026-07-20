@@ -21,12 +21,12 @@
       "extra-files": [
         {
           "type": "toml",
-          "path": "modules/access-guide/Cargo.toml",
+          "path": "Cargo.toml",
           "jsonpath": "$.package.version"
         },
         {
           "type": "json",
-          "path": "modules/access-guide/portaki.module.json",
+          "path": "portaki.module.json",
           "jsonpath": "$.version"
         }
       ],
@@ -95,12 +95,12 @@
       "extra-files": [
         {
           "type": "toml",
-          "path": "modules/appliances/Cargo.toml",
+          "path": "Cargo.toml",
           "jsonpath": "$.package.version"
         },
         {
           "type": "json",
-          "path": "modules/appliances/portaki.module.json",
+          "path": "portaki.module.json",
           "jsonpath": "$.version"
         }
       ],
@@ -169,12 +169,12 @@
       "extra-files": [
         {
           "type": "toml",
-          "path": "modules/rules/Cargo.toml",
+          "path": "Cargo.toml",
           "jsonpath": "$.package.version"
         },
         {
           "type": "json",
-          "path": "modules/rules/portaki.module.json",
+          "path": "portaki.module.json",
           "jsonpath": "$.version"
         }
       ],
@@ -243,12 +243,12 @@
       "extra-files": [
         {
           "type": "toml",
-          "path": "modules/sections/Cargo.toml",
+          "path": "Cargo.toml",
           "jsonpath": "$.package.version"
         },
         {
           "type": "json",
-          "path": "modules/sections/portaki.module.json",
+          "path": "portaki.module.json",
           "jsonpath": "$.version"
         }
       ],
@@ -317,12 +317,12 @@
       "extra-files": [
         {
           "type": "toml",
-          "path": "modules/train/Cargo.toml",
+          "path": "Cargo.toml",
           "jsonpath": "$.package.version"
         },
         {
           "type": "json",
-          "path": "modules/train/portaki.module.json",
+          "path": "portaki.module.json",
           "jsonpath": "$.version"
         }
       ],
@@ -391,12 +391,12 @@
       "extra-files": [
         {
           "type": "toml",
-          "path": "modules/weather/Cargo.toml",
+          "path": "Cargo.toml",
           "jsonpath": "$.package.version"
         },
         {
           "type": "json",
-          "path": "modules/weather/portaki.module.json",
+          "path": "portaki.module.json",
           "jsonpath": "$.version"
         }
       ],

@@ -145,15 +145,17 @@ for mod_id, ver in modules:
         "include-component-in-tag": True,
         "include-v-in-tag": True,
         "include-v-in-release-name": True,
+        # Paths are relative to the package directory; release-please
+        # prefixes them with the package path itself.
         "extra-files": [
             {
                 "type": "toml",
-                "path": f"{pkg_path}/Cargo.toml",
+                "path": "Cargo.toml",
                 "jsonpath": "$.package.version",
             },
             {
                 "type": "json",
-                "path": f"{pkg_path}/portaki.module.json",
+                "path": "portaki.module.json",
                 "jsonpath": "$.version",
             },
         ],
