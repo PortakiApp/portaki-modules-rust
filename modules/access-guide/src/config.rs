@@ -42,8 +42,12 @@ pub enum StaffKind {
 #[serde(rename_all = "snake_case")]
 pub enum RevealPolicy {
     Always,
+    /// Wire: `hours_before_24`. Alias keeps legacy `hours_before24` (`rename_all` form).
+    #[serde(rename = "hours_before_24", alias = "hours_before24")]
     HoursBefore24,
+    /// Wire: `day_before_16h`. Alias keeps legacy `day_before16h` (`rename_all` form).
     #[default]
+    #[serde(rename = "day_before_16h", alias = "day_before16h")]
     DayBefore16h,
     AtCheckin,
 }
@@ -688,6 +692,7 @@ pub fn config_from_update_parts(raw: RawConfig) -> ModuleConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn migrate_keybox_wins_and_gate_becomes_building_access() {
@@ -761,6 +766,35 @@ mod tests {
     fn default_reveal_policy_is_day_before_16h() {
         assert_eq!(
             ModuleConfig::default().reveal_policy,
+            RevealPolicy::DayBefore16h
+        );
+    }
+
+    #[test]
+    fn reveal_policy_wire_names_and_legacy_aliases() {
+        assert_eq!(
+            serde_json::to_value(RevealPolicy::HoursBefore24).unwrap(),
+            json!("hours_before_24")
+        );
+        assert_eq!(
+            serde_json::to_value(RevealPolicy::DayBefore16h).unwrap(),
+            json!("day_before_16h")
+        );
+        assert_eq!(
+            serde_json::from_value::<RevealPolicy>(json!("hours_before_24")).unwrap(),
+            RevealPolicy::HoursBefore24
+        );
+        assert_eq!(
+            serde_json::from_value::<RevealPolicy>(json!("day_before_16h")).unwrap(),
+            RevealPolicy::DayBefore16h
+        );
+        // Legacy rename_all snake_case (no underscore before digits).
+        assert_eq!(
+            serde_json::from_value::<RevealPolicy>(json!("hours_before24")).unwrap(),
+            RevealPolicy::HoursBefore24
+        );
+        assert_eq!(
+            serde_json::from_value::<RevealPolicy>(json!("day_before16h")).unwrap(),
             RevealPolicy::DayBefore16h
         );
     }
