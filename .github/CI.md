@@ -25,3 +25,37 @@ GitHub bills **job-minutes**. Parallel matrix jobs multiply cost.
 - Artifacts: `retention-days: 1`.
 
 Local Cursor mirror (gitignored): `.cursor/rules/github-actions-ci.mdc`.
+
+## Release please
+
+Workflow: [`.github/workflows/release-please.yml`](./workflows/release-please.yml).
+
+### Dynamic packages
+
+`scripts/generate-release-please-config.sh` scans `modules/*/Cargo.toml` + `portaki.module.json` and writes:
+
+- `release-please-config.json` — one package path per module (`modules/<id>`)
+- `.release-please-manifest.json` — last released versions (new modules seeded from Cargo.toml)
+
+Do not maintain a static list of module ids by hand. The generator is the source of truth for package paths.
+
+`googleapis/release-please-action@v5` loads those files via the **GitHub API** from the tip of `main` (local checkout alone is ignored). The workflow therefore:
+
+1. Regenerates the two files on every run
+2. Commits and pushes if they drifted (e.g. a new module landed without regenerating)
+3. Runs release-please against the tip
+
+When adding a module locally, still run the script in the PR so review sees the config.
+
+### Token (CI App)
+
+Requires repository secrets `CI_APP_ID` and `CI_APP_PRIVATE_KEY` (same App as dashboard/sdk).
+
+Plain `GITHUB_TOKEN` limitations if you ever fall back:
+
+- May lack permission to open/update release PRs depending on org defaults
+- Commits/tags created with `GITHUB_TOKEN` **do not** trigger other workflows — so a merged release PR would not run `ci` publish
+
+### After merge
+
+Release PR merge bumps module versions on `main` → existing `ci` `publish` matrix builds/publishes GHCR from Cargo.toml. Tags / GitHub Releases are optional extras from release-please.

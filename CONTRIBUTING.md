@@ -13,11 +13,19 @@ cargo install --git https://github.com/PortakiApp/portaki-sdk --branch main --lo
 
 ## Adding a module
 
-1. Create `modules/<module-id>/` with `Cargo.toml`, `src/`, `i18n/`, and `tests/`.
-2. Depend on workspace SDK crates (`portaki-sdk`, `portaki-connectors`, …).
-3. Annotate the crate with `#[portaki_module(id = "…")]` in `lib.rs`.
-4. Add per-module `.cargo/config.toml` with `target-dir = "target"` so `portaki build` / `portaki lint` find macro emissions (workspace builds otherwise use the repo-root `target/`).
-5. Run quality gates from the repo root:
+1. Create `modules/<module-id>/` with `Cargo.toml`, `portaki.module.json`, `src/`, `i18n/`, and `tests/`.
+2. Keep `version` in sync between `Cargo.toml` and `portaki.module.json` (same SemVer string).
+3. Depend on workspace SDK crates (`portaki-sdk`, `portaki-connectors`, …).
+4. Annotate the crate with `#[portaki_module(id = "…")]` in `lib.rs`.
+5. Add per-module `.cargo/config.toml` with `target-dir = "target"` so `portaki build` / `portaki lint` find macro emissions (workspace builds otherwise use the repo-root `target/`).
+6. Regenerate release-please package discovery (required — do not hand-edit package paths):
+
+   ```bash
+   ./scripts/generate-release-please-config.sh
+   ```
+
+   Commit the updated `release-please-config.json` and `.release-please-manifest.json` in the same PR. The release-please workflow also regenerates on `main` and commits drift if a module was added without running the script.
+7. Run quality gates from the repo root:
 
    ```bash
    cargo fmt --all -- --check
@@ -26,7 +34,7 @@ cargo install --git https://github.com/PortakiApp/portaki-sdk --branch main --lo
    cd modules/<module-id> && portaki build --release && portaki lint
    ```
 
-6. Open a PR to **`main`**. Do not push directly to `main`.
+8. Open a PR to **`main`**. Do not push directly to `main`.
 
 ## Capability IDs
 
@@ -38,10 +46,20 @@ All user-facing copy must go through `i18n:` keys in bundles under `i18n/`. No h
 
 ## Publishing
 
-- Bump `version` in `modules/<module-id>/Cargo.toml`, then merge to **`main`**.
-- CI publishes `ghcr.io/portakiapp/portaki-modules-<module-id>:<semver>` (`packages: write` via `GITHUB_TOKEN`).
-- Module GHCR packages are **public**.
-- Git tags / release-please — planned later.
+Versions are managed by **release-please** (multi-package, one entry per `modules/<id>/` that has both `Cargo.toml` and `portaki.module.json`).
+
+1. Land conventional commits on **`main`** scoped to a module (`feat(access-guide): …`, `fix(weather): …`).
+2. The `Release please` workflow opens/updates a draft release PR that bumps:
+   - `modules/<id>/Cargo.toml` `package.version`
+   - `modules/<id>/portaki.module.json` `version`
+   - `modules/<id>/CHANGELOG.md`
+   - `.release-please-manifest.json`
+3. Merge the release PR. That push to `main` runs existing `ci` publish (GHCR) from the bumped Cargo.toml version.
+4. release-please also creates GitHub Releases / tags (`<module-id>-vX.Y.Z`) — nice-to-have; GHCR is the publish path that matters.
+
+Do **not** hand-bump versions for routine releases. Do **not** hand-edit package paths in `release-please-config.json` — run `./scripts/generate-release-please-config.sh` instead.
+
+Details: [`.github/CI.md`](./.github/CI.md).
 
 ## SDK dependency
 
