@@ -13,7 +13,34 @@ env:
   REGISTRY: ghcr.io/portakiapp
 
 jobs:
+  changes:
+    name: detect changed modules
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.detect.outputs.modules }}
+      any: ${{ steps.detect.outputs.any }}
+      reason: ${{ steps.detect.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve diff base
+        id: base
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "ref=${{ github.event.pull_request.base.sha }}" >>"$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ github.event.before }}" >>"$GITHUB_OUTPUT"
+          fi
+
+      - name: Detect changed modules
+        id: detect
+        run: bash .github/scripts/changed-modules.sh "${{ steps.base.outputs.ref }}"
+
   quality:
+    name: quality
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,26 +67,20 @@ jobs:
       - name: Doc tests
         run: cargo test --workspace --doc
 
-      - name: Install portaki CLI
-        run: cargo install --git https://github.com/PortakiApp/portaki-sdk --branch main --locked portaki-cli
-
-      - name: Build and lint all modules (wasm)
-        run: |
-          for module in modules/*/; do
-            echo "=== portaki build: $module ==="
-            (cd "$module" && portaki build --release)
-            echo "=== portaki lint: $module ==="
-            (cd "$module" && portaki lint)
-          done
-
-  publish:
-    name: publish (GHCR)
-    needs: quality
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  # Matrix: only modules touched by the push/PR (or all if workspace/CI shared).
+  module:
+    name: module (${{ matrix.module }})
+    needs: [changes, quality]
+    if: needs.changes.outputs.any == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        module: ${{ fromJson(needs.changes.outputs.modules) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -68,85 +89,48 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: modules/${{ matrix.module }} -> target
+          shared-key: module-${{ matrix.module }}
+
+      - name: Cache portaki CLI
+        id: cache-cli
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/portaki
+          key: portaki-cli-${{ runner.os }}-sdk-main
 
       - name: Install portaki CLI
+        if: steps.cache-cli.outputs.cache-hit != 'true'
         run: cargo install --git https://github.com/PortakiApp/portaki-sdk --branch main --locked portaki-cli
 
       - name: Refresh Portaki SDK lockfile from main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           cargo update
           grep -q 'portaki-sdk-macros' Cargo.lock
 
       - name: Login to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and publish all modules
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # PR / feature branches: build+lint only. main: publish script rebuilds once.
+      - name: Build and lint (wasm)
+        if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
         run: |
           set -euo pipefail
+          module="${{ matrix.module }}"
+          echo "=== portaki build: modules/${module} ==="
+          (cd "modules/${module}" && portaki build --release)
+          echo "=== portaki lint: modules/${module} ==="
+          (cd "modules/${module}" && portaki lint)
 
-          publish_module() {
-            local module_dir="$1"
-            local module
-            module="$(basename "$module_dir")"
-            local version
-            version="$(grep -E '^version\s*=' "$module_dir/Cargo.toml" | head -1 | sed -E 's/.*"([^"]+)".*/\1/')"
-
-            echo "=== publish $module:$version ==="
-            cd "$module_dir"
-
-            rm -rf "target/wasm32-unknown-unknown/release/build/${module}-"* || true
-            portaki build --release
-
-            WASM="target/wasm32-unknown-unknown/release/${module}.wasm"
-            if [ ! -f "$WASM" ]; then
-              WASM="$(find target/wasm32-unknown-unknown/release -maxdepth 1 -name '*.wasm' | head -1)"
-            fi
-            if strings "$WASM" | grep -q '__wbindgen'; then
-              echo "::error::${module}: wasm contains wasm-bindgen imports"
-              exit 1
-            fi
-
-            PUBLISH_MANIFEST=target/portaki/publish-manifest.json
-            MANIFEST_ID="$(jq -r '.id' "$PUBLISH_MANIFEST")"
-            MANIFEST_VERSION="$(jq -r '.version' "$PUBLISH_MANIFEST")"
-            if [ "$MANIFEST_ID" != "$module" ]; then
-              echo "::error::${module}: publish-manifest id=$MANIFEST_ID"
-              exit 1
-            fi
-            if [ "$MANIFEST_VERSION" != "$version" ]; then
-              echo "::error::${module}: Cargo.toml version=$version manifest=$MANIFEST_VERSION"
-              exit 1
-            fi
-
-            portaki lint
-            cargo test --lib
-            cargo test --test integration
-
-            PORTAKI_PUBLISH_VERSION="$version" portaki publish --registry "$REGISTRY"
-            portaki publish --registry "$REGISTRY" --dry-run
-
-            package_name="portaki-modules-${module}"
-            package_visibility="$(gh api "orgs/PortakiApp/packages/container/${package_name}" --jq '.visibility' 2>/dev/null || echo unknown)"
-            echo "GHCR ${package_name} visibility: ${package_visibility}"
-            if [ "${package_visibility}" != "public" ]; then
-              echo "Setting ${package_name} visibility to public..."
-              if gh api --method PATCH "orgs/PortakiApp/packages/container/${package_name}" \
-                --field visibility=public; then
-                echo "Package ${package_name} is now public"
-              else
-                echo "::warning::Could not set ${package_name} visibility via API (404) — set public manually: https://github.com/orgs/PortakiApp/packages/container/package/${package_name}/settings"
-              fi
-            fi
-
-            cd - >/dev/null
-          }
-
-          for module_dir in modules/*/; do
-            publish_module "$module_dir"
-          done
+      - name: Publish to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .github/scripts/publish-module.sh "${{ matrix.module }}"
