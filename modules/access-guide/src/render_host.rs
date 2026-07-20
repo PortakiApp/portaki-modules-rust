@@ -56,12 +56,10 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     );
 
     {
-        let mut method_kids = vec![
-            Text::new()
-                .text(json!("i18n:host.section.methodDetails.help"))
-                .variant(json!("caption"))
-                .into(),
-        ];
+        let mut method_kids = vec![Text::new()
+            .text(json!("i18n:host.section.methodDetails.help"))
+            .variant(json!("caption"))
+            .into()];
         method_kids.extend(method_detail_children(draft_method, &config));
         form_children.push(
             Card::new()
@@ -75,12 +73,10 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     form_children.push(layer_card_parking(parking_enabled, &config));
 
     {
-        let mut arrival_kids = vec![
-            Text::new()
-                .text(json!("i18n:host.section.arrival.help"))
-                .variant(json!("caption"))
-                .into(),
-        ];
+        let mut arrival_kids = vec![Text::new()
+            .text(json!("i18n:host.section.arrival.help"))
+            .variant(json!("caption"))
+            .into()];
         arrival_kids.extend(arrival_children(&config, steps_count));
         form_children.push(
             Card::new()
@@ -336,13 +332,17 @@ fn push_keybox_fields(children: &mut Vec<Component>, config: &ModuleConfig) {
         "i18n:host.keybox.location",
         location,
     ));
-    children.push(FieldHint::new().text(json!("i18n:host.keybox.location.hint")).into());
-    children.push(secret_field(
-        "keybox_code",
-        "i18n:host.keybox.code",
-        code,
-    ));
-    children.push(FieldHint::new().text(json!("i18n:host.keybox.code.hint")).into());
+    children.push(
+        FieldHint::new()
+            .text(json!("i18n:host.keybox.location.hint"))
+            .into(),
+    );
+    children.push(secret_field("keybox_code", "i18n:host.keybox.code", code));
+    children.push(
+        FieldHint::new()
+            .text(json!("i18n:host.keybox.code.hint"))
+            .into(),
+    );
     children.push(rich_text_field(
         "keybox_instructions",
         "i18n:host.keybox.instructions",
@@ -379,9 +379,17 @@ fn push_door_code_fields(children: &mut Vec<Component>, config: &ModuleConfig) {
             )
             .into(),
     );
-    children.push(FieldHint::new().text(json!("i18n:host.doorCode.target.hint")).into());
+    children.push(
+        FieldHint::new()
+            .text(json!("i18n:host.doorCode.target.hint"))
+            .into(),
+    );
     children.push(secret_field("door_code", "i18n:host.doorCode.code", code));
-    children.push(FieldHint::new().text(json!("i18n:host.doorCode.code.hint")).into());
+    children.push(
+        FieldHint::new()
+            .text(json!("i18n:host.doorCode.code.hint"))
+            .into(),
+    );
     children.push(rich_text_field(
         "door_code_instructions",
         "i18n:host.doorCode.instructions",
@@ -405,7 +413,11 @@ fn push_smart_lock_fields(children: &mut Vec<Component>, config: &ModuleConfig) 
         "i18n:host.smartLock.manualCode",
         manual_code,
     ));
-    children.push(FieldHint::new().text(json!("i18n:host.smartLock.manualCode.hint")).into());
+    children.push(
+        FieldHint::new()
+            .text(json!("i18n:host.smartLock.manualCode.hint"))
+            .into(),
+    );
     children.push(rich_text_field(
         "smart_lock_instructions",
         "i18n:host.smartLock.instructions",
