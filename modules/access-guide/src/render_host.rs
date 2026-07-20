@@ -4,7 +4,7 @@ use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::common::Tone;
 use portaki_sdk::sdui::primitives::{
-    AddressMapPicker, Button, Card, ChoiceList, Field, FieldHint, Form, InlineNotice, Page,
+    AddressMapPicker, Button, Card, ChoiceList, Field, FieldHint, Form, Grid, InlineNotice, Page,
     RichTextEditor, SecretInput, Select, Stack, StepList, Text, TextInput, ToggleRow,
 };
 use portaki_sdk::sdui::surface::Surface;
@@ -45,57 +45,47 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     form_children.push(
         Card::new()
             .title(json!("i18n:host.section.primary"))
+            .subtitle(json!("i18n:host.section.primary.help"))
+            .icon(json!("key"))
+            .children(vec![method_choice_list(draft_method).into()])
+            .into(),
+    );
+
+    form_children.push(
+        Card::new()
+            .title(json!("i18n:host.section.methodDetails"))
+            .subtitle(json!("i18n:host.section.methodDetails.help"))
+            .icon(json!("lock"))
+            .children(method_detail_children(draft_method, &config))
+            .into(),
+    );
+
+    form_children.push(
+        Grid::new()
+            .columns(json!(2))
+            .gap(json!(16))
             .children(vec![
-                Text::new()
-                    .text(json!("i18n:host.section.primary.help"))
-                    .variant(json!("caption"))
-                    .into(),
-                method_choice_list(draft_method).into(),
+                layer_card_building(building_enabled, &config),
+                layer_card_parking(parking_enabled, &config),
             ])
             .into(),
     );
 
-    {
-        let mut method_kids = vec![Text::new()
-            .text(json!("i18n:host.section.methodDetails.help"))
-            .variant(json!("caption"))
-            .into()];
-        method_kids.extend(method_detail_children(draft_method, &config));
-        form_children.push(
-            Card::new()
-                .title(json!("i18n:host.section.methodDetails"))
-                .children(method_kids)
-                .into(),
-        );
-    }
-
-    form_children.push(layer_card_building(building_enabled, &config));
-    form_children.push(layer_card_parking(parking_enabled, &config));
-
-    {
-        let mut arrival_kids = vec![Text::new()
-            .text(json!("i18n:host.section.arrival.help"))
-            .variant(json!("caption"))
-            .into()];
-        arrival_kids.extend(arrival_children(&config, steps_count));
-        form_children.push(
-            Card::new()
-                .title(json!("i18n:host.section.arrival"))
-                .children(arrival_kids)
-                .into(),
-        );
-    }
+    form_children.push(
+        Card::new()
+            .title(json!("i18n:host.section.arrival"))
+            .subtitle(json!("i18n:host.section.arrival.help"))
+            .icon(json!("map-pin"))
+            .children(arrival_children(&config, steps_count))
+            .into(),
+    );
 
     form_children.push(
         Card::new()
             .title(json!("i18n:host.section.reveal"))
-            .children(vec![
-                Text::new()
-                    .text(json!("i18n:host.section.reveal.help"))
-                    .variant(json!("caption"))
-                    .into(),
-                reveal_choice_list(config.reveal_policy).into(),
-            ])
+            .subtitle(json!("i18n:host.section.reveal.help"))
+            .icon(json!("clock-circle"))
+            .children(vec![reveal_choice_list(config.reveal_policy).into()])
             .into(),
     );
 
@@ -119,7 +109,7 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
             .child(
                 Text::new()
                     .text(json!("i18n:surface.host.main.subtitle"))
-                    .variant(json!("body")),
+                    .variant(json!("caption")),
             )
             .child(Form::new().children(form_children)),
     )
@@ -217,48 +207,49 @@ fn method_choice_list(selected: PrimaryMethod) -> ChoiceList {
         .name(json!("primary_method"))
         .value(json!(primary_method_str(selected)))
         .emitOnChange(json!(true))
+        .layout(json!("cards"))
         .choices(json!([
             {
                 "value": "keybox",
                 "label": "i18n:host.method.keybox",
                 "description": "i18n:host.method.keybox.desc",
-                "icon": "🔑"
+                "icon": "key"
             },
             {
                 "value": "door_code",
                 "label": "i18n:host.method.door_code",
                 "description": "i18n:host.method.door_code.desc",
-                "icon": "🔢"
+                "icon": "grid"
             },
             {
                 "value": "smart_lock",
                 "label": "i18n:host.method.smart_lock",
                 "description": "i18n:host.method.smart_lock.desc",
-                "icon": "🔒"
+                "icon": "lock"
             },
             {
                 "value": "in_person",
                 "label": "i18n:host.method.in_person",
                 "description": "i18n:host.method.in_person.desc",
-                "icon": "🤝"
+                "icon": "users"
             },
             {
                 "value": "building_staff",
                 "label": "i18n:host.method.building_staff",
                 "description": "i18n:host.method.building_staff.desc",
-                "icon": "🏢"
+                "icon": "building"
             },
             {
                 "value": "host_greets",
                 "label": "i18n:host.method.host_greets",
                 "description": "i18n:host.method.host_greets.desc",
-                "icon": "👋"
+                "icon": "smile"
             },
             {
                 "value": "other",
                 "label": "i18n:host.method.other",
                 "description": "i18n:host.method.other.desc",
-                "icon": "…"
+                "icon": "more-horizontal"
             }
         ]))
 }
@@ -267,30 +258,31 @@ fn reveal_choice_list(policy: RevealPolicy) -> ChoiceList {
     ChoiceList::new()
         .name(json!("reveal_policy"))
         .value(json!(reveal_policy_str(policy)))
+        .layout(json!("compact"))
         .choices(json!([
             {
                 "value": "always",
                 "label": "i18n:host.reveal.always",
                 "description": "i18n:host.reveal.always.desc",
-                "icon": "⏱"
+                "icon": "clock-circle"
             },
             {
                 "value": "hours_before_24",
                 "label": "i18n:host.reveal.hoursBefore24",
                 "description": "i18n:host.reveal.hoursBefore24.desc",
-                "icon": "⏱"
+                "icon": "clock-circle"
             },
             {
                 "value": "day_before_16h",
                 "label": "i18n:host.reveal.dayBefore16h",
                 "description": "i18n:host.reveal.dayBefore16h.desc",
-                "icon": "⏱"
+                "icon": "clock-circle"
             },
             {
                 "value": "at_checkin",
                 "label": "i18n:host.reveal.atCheckin",
                 "description": "i18n:host.reveal.atCheckin.desc",
-                "icon": "⏱"
+                "icon": "clock-circle"
             }
         ]))
 }
@@ -596,17 +588,11 @@ fn push_other_fields(children: &mut Vec<Component>, config: &ModuleConfig) {
 // ── Layers ───────────────────────────────────────────────────────────────────
 
 fn layer_card_building(enabled: bool, config: &ModuleConfig) -> Component {
-    let mut children: Vec<Component> = vec![
-        Text::new()
-            .text(json!("i18n:host.section.building.help"))
-            .variant(json!("caption"))
-            .into(),
-        ToggleRow::new()
-            .name(json!("building_access_enabled"))
-            .label(json!("i18n:host.building.enabled"))
-            .checked(json!(enabled))
-            .into(),
-    ];
+    let mut children: Vec<Component> = vec![ToggleRow::new()
+        .name(json!("building_access_enabled"))
+        .label(json!("i18n:host.building.enabled"))
+        .checked(json!(enabled))
+        .into()];
     if enabled {
         let gate = config
             .building_access
@@ -648,22 +634,18 @@ fn layer_card_building(enabled: bool, config: &ModuleConfig) -> Component {
     }
     Card::new()
         .title(json!("i18n:host.section.building"))
+        .subtitle(json!("i18n:host.section.building.help"))
+        .icon(json!("building"))
         .children(children)
         .into()
 }
 
 fn layer_card_parking(enabled: bool, config: &ModuleConfig) -> Component {
-    let mut children: Vec<Component> = vec![
-        Text::new()
-            .text(json!("i18n:host.section.parking.help"))
-            .variant(json!("caption"))
-            .into(),
-        ToggleRow::new()
-            .name(json!("parking_enabled"))
-            .label(json!("i18n:host.parking.enabled"))
-            .checked(json!(enabled))
-            .into(),
-    ];
+    let mut children: Vec<Component> = vec![ToggleRow::new()
+        .name(json!("parking_enabled"))
+        .label(json!("i18n:host.parking.enabled"))
+        .checked(json!(enabled))
+        .into()];
     if enabled {
         let info = config
             .parking
@@ -701,6 +683,8 @@ fn layer_card_parking(enabled: bool, config: &ModuleConfig) -> Component {
     }
     Card::new()
         .title(json!("i18n:host.section.parking"))
+        .subtitle(json!("i18n:host.section.parking.help"))
+        .icon(json!("car"))
         .children(children)
         .into()
 }
