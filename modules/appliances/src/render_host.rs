@@ -32,18 +32,14 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
                 .direction(json!("horizontal"))
                 .gap(json!(24))
                 .children(vec![
-                    Component::Stack(
-                        Stack::new()
-                            .gap(json!(12))
-                            .children(vec![
+                    Component::Stack(Stack::new().gap(json!(12)).children(vec![
                                 Component::Text(
                                     Text::new()
                                         .text(json!("i18n:host.list.title"))
                                         .variant(json!("caption")),
                                 ),
                                 list_panel,
-                            ]),
-                    ),
+                            ])),
                     Component::Stack(
                         Stack::new()
                             .gap(json!(16))
@@ -160,35 +156,21 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
         })
         .unwrap_or("active");
 
-    let save_action = serde_json::to_value(Action::command(
-        "appliances",
-        "saveAppliance",
-        json!({}),
-    ))
-    .unwrap_or(json!({}));
+    let save_action =
+        serde_json::to_value(Action::command("appliances", "saveAppliance", json!({})))
+            .unwrap_or(json!({}));
 
     let mut form_children: Vec<Component> = vec![
-        TextInput::new()
-            .name(json!("id"))
-            .value(json!(id))
-            .into(),
+        TextInput::new().name(json!("id")).value(json!(id)).into(),
         Field::new()
             .name(json!("name"))
             .label(json!("i18n:host.device.name"))
-            .child(
-                TextInput::new()
-                    .name(json!("name"))
-                    .value(json!(name)),
-            )
+            .child(TextInput::new().name(json!("name")).value(json!(name)))
             .into(),
         Field::new()
             .name(json!("emoji"))
             .label(json!("i18n:host.device.emoji"))
-            .child(
-                TextInput::new()
-                    .name(json!("emoji"))
-                    .value(json!(emoji)),
-            )
+            .child(TextInput::new().name(json!("emoji")).value(json!(emoji)))
             .into(),
         Field::new()
             .name(json!("location"))
@@ -275,18 +257,14 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
 }
 
 fn build_safety_card(safety_notice: &str) -> Component {
-    let save_action = serde_json::to_value(Action::command(
-        "appliances",
-        "saveSafetyNotice",
-        json!({}),
-    ))
-    .unwrap_or(json!({}));
+    let save_action =
+        serde_json::to_value(Action::command("appliances", "saveSafetyNotice", json!({})))
+            .unwrap_or(json!({}));
 
     Component::Card(
         Card::new()
             .title(json!("i18n:host.safety"))
-            .child(
-                Form::new().children(vec![
+            .child(Form::new().children(vec![
                     Field::new()
                         .name(json!("safetyNotice"))
                         .label(json!("i18n:host.safety"))
@@ -300,8 +278,7 @@ fn build_safety_card(safety_notice: &str) -> Component {
                         .label(json!("i18n:host.safety.save"))
                         .action(save_action)
                         .into(),
-                ]),
-            ),
+                ])),
     )
 }
 
