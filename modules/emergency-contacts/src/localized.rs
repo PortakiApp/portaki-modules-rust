@@ -2,8 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use serde::de::Error as DeError;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// N-language string map. Legacy `{fr,en}` deserializes as-is; extra langs via flatten.
@@ -116,12 +115,4 @@ impl Localized {
             _ => Self::default(),
         }
     }
-}
-
-pub fn deserialize_localized_field<'de, D>(deserializer: D) -> Result<Localized, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value = Value::deserialize(deserializer).map_err(DeError::custom)?;
-    Ok(Localized::from_value(&value))
 }

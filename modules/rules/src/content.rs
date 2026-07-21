@@ -156,8 +156,3 @@ impl RulesBundle {
         RulesPayload::default()
     }
 }
-
-/// Legacy helper — prefer [`RulesBundle::pick`].
-pub fn pick_locale(content_fr: &str, content_en: &str, locale: &str) -> RulesPayload {
-    RulesBundle::from_row(content_fr, content_en).pick(locale, "fr")
-}

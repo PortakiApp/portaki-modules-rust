@@ -114,11 +114,6 @@ impl AppliancesPayload {
     }
 }
 
-/// Prefer canonical `content_fr`; fall back to `content_en` for legacy EN-only rows.
-pub fn load_from_locale_slots(content_fr: &str, content_en: &str) -> AppliancesPayload {
-    AppliancesBundle::from_row(content_fr, content_en).pick("fr", "fr")
-}
-
 /// N-language storage written into `content_fr` (`content_en` cleared after migrate).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct AppliancesBundle {

@@ -22,23 +22,21 @@ pub fn lang_code(locale: &str) -> String {
 
 pub fn labels_from_item(item: &ChecklistItem) -> BTreeMap<String, String> {
     let trimmed = item.label_fr.trim();
-    if let Ok(value) = serde_json::from_str::<Value>(trimmed) {
-        if let Value::Object(map) = value {
-            let mut out = BTreeMap::new();
-            for (key, val) in map {
-                if let Some(s) = val.as_str() {
-                    if !s.trim().is_empty() {
-                        out.insert(lang_code(&key), s.trim().to_string());
-                    }
+    if let Ok(Value::Object(map)) = serde_json::from_str::<Value>(trimmed) {
+        let mut out = BTreeMap::new();
+        for (key, val) in map {
+            if let Some(s) = val.as_str() {
+                if !s.trim().is_empty() {
+                    out.insert(lang_code(&key), s.trim().to_string());
                 }
             }
-            if !out.is_empty() {
-                if !item.label_en.trim().is_empty() {
-                    out.entry("en".into())
-                        .or_insert_with(|| item.label_en.trim().to_string());
-                }
-                return out;
+        }
+        if !out.is_empty() {
+            if !item.label_en.trim().is_empty() {
+                out.entry("en".into())
+                    .or_insert_with(|| item.label_en.trim().to_string());
             }
+            return out;
         }
     }
     let mut out = BTreeMap::new();

@@ -260,7 +260,7 @@ fn method_detail_children(
     children
 }
 
-fn method_instructions<'a>(texts: &'a ModuleTexts) -> &'a str {
+fn method_instructions(texts: &ModuleTexts) -> &str {
     texts.method_instructions.as_deref().unwrap_or("")
 }
 

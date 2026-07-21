@@ -68,16 +68,6 @@ pub fn list_completed_item_ids(stay_id: Uuid) -> Result<Vec<Uuid>> {
         .collect())
 }
 
-/// Replaces all property checklist items.
-pub fn replace_items(items: Vec<(String, String, i32)>) -> Result<()> {
-    replace_items_preserving_ids(
-        items
-            .into_iter()
-            .map(|(label_fr, label_en, sort_order)| (None, label_fr, label_en, sort_order))
-            .collect(),
-    )
-}
-
 /// Replace items while keeping IDs when provided (preserves stay completions + other langs).
 pub fn replace_items_preserving_ids(items: Vec<(Option<Uuid>, String, String, i32)>) -> Result<()> {
     let existing = list_items()?;

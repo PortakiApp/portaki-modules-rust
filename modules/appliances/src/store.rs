@@ -43,19 +43,11 @@ pub fn load_bundle() -> Result<AppliancesBundle> {
     })
 }
 
-pub fn load_payload() -> Result<AppliancesPayload> {
-    load_payload_for("fr", "fr")
-}
-
 pub fn load_payload_for(locale: &str, property_locale: &str) -> Result<AppliancesPayload> {
     Ok(load_bundle()?.pick(locale, property_locale))
 }
 
 /// Persist payload for one language; merge into N-lang bundle and sync shared fields.
-pub fn save_payload(payload: &AppliancesPayload) -> Result<AppliancesContent> {
-    save_payload_for("fr", payload)
-}
-
 pub fn save_payload_for(locale: &str, payload: &AppliancesPayload) -> Result<AppliancesContent> {
     let mut bundle = load_bundle()?;
     bundle.set(locale, payload.clone());
