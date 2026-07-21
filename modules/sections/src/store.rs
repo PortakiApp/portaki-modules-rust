@@ -6,7 +6,7 @@ use portaki_sdk::prelude::*;
 use uuid::Uuid;
 
 use crate::entities::{SectionItem, SectionItemLocale};
-use crate::model::{pick_locale_fields, SectionLocaleInput, SectionView};
+use crate::model::{lang_code, pick_locale_fields, SectionLocaleInput, SectionView};
 
 use std::cell::RefCell;
 
@@ -24,7 +24,7 @@ fn in_memory_enabled() -> bool {
     cfg!(test) || cfg!(debug_assertions)
 }
 
-pub fn list_all(locale: &str) -> Result<Vec<SectionView>> {
+pub fn list_all(locale: &str, property_locale: &str) -> Result<Vec<SectionView>> {
     let mut items = load_items()?;
     items.sort_by_key(|item| item.sort_order);
     let locales = load_locales()?;
@@ -40,7 +40,8 @@ pub fn list_all(locale: &str) -> Result<Vec<SectionView>> {
                     body_markdown: l.body_markdown.clone(),
                 })
                 .collect();
-            let (title, body_markdown) = pick_locale_fields(&item_locales, locale);
+            let (title, body_markdown) =
+                pick_locale_fields(&item_locales, locale, property_locale);
             SectionView {
                 id: item.id,
                 sort_order: item.sort_order,
@@ -52,6 +53,7 @@ pub fn list_all(locale: &str) -> Result<Vec<SectionView>> {
         .collect())
 }
 
+/// Upsert one section and merge provided locale rows (other langs kept).
 pub fn save_section(
     id: Option<Uuid>,
     sort_order: Option<i32>,
@@ -84,30 +86,53 @@ pub fn save_section(
     };
     persist_item(item.clone())?;
 
-    // Replace locales for this section.
-    delete_locales_for(section_id)?;
     for locale in &locales {
-        let lang = normalize_lang(&locale.lang);
+        let lang = lang_code(&locale.lang);
         if lang.is_empty() {
             continue;
         }
-        let row = SectionItemLocale {
-            id: Uuid::new_v4(),
+        upsert_locale_row(
             section_id,
-            lang,
-            title: locale.title.clone(),
-            body_markdown: locale.body_markdown.clone(),
-            created_at: now,
-            updated_at: now,
-        };
-        persist_locale(row)?;
+            &lang,
+            locale.title.clone(),
+            locale.body_markdown.clone(),
+            now,
+        )?;
     }
 
-    let views = list_all("fr-FR")?;
+    let views = list_all("fr-FR", "fr-FR")?;
     views
         .into_iter()
         .find(|v| v.id == section_id)
         .ok_or_else(|| PortakiError::Storage("section missing after save".into()))
+}
+
+fn upsert_locale_row(
+    section_id: Uuid,
+    lang: &str,
+    title: String,
+    body_markdown: String,
+    now: chrono::DateTime<chrono::Utc>,
+) -> Result<()> {
+    let existing = load_locales()?
+        .into_iter()
+        .find(|row| row.section_id == section_id && lang_code(&row.lang) == lang);
+    if let Some(mut row) = existing {
+        row.title = title;
+        row.body_markdown = body_markdown;
+        row.updated_at = now;
+        persist_locale(row)?;
+        return Ok(());
+    }
+    persist_locale(SectionItemLocale {
+        id: Uuid::new_v4(),
+        section_id,
+        lang: lang.to_string(),
+        title,
+        body_markdown,
+        created_at: now,
+        updated_at: now,
+    })
 }
 
 pub fn delete_section(id: Uuid) -> Result<()> {
@@ -131,17 +156,6 @@ pub fn reorder(ordered_ids: Vec<Uuid>) -> Result<()> {
         }
     }
     Ok(())
-}
-
-fn normalize_lang(lang: &str) -> String {
-    let lower = lang.trim().to_ascii_lowercase();
-    if lower.starts_with("en") {
-        "en".into()
-    } else if lower.starts_with("fr") {
-        "fr".into()
-    } else {
-        lower.chars().take(2).collect()
-    }
 }
 
 fn load_items() -> Result<Vec<SectionItem>> {

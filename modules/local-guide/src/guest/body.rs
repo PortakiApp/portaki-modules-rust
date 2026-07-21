@@ -19,7 +19,9 @@ pub fn build_spots_body(data: &GuestData, enriched: bool) -> Vec<Component> {
     }
 
     for spot in &data.spots {
-        let title = spot.title.pick(&data.locale);
+        let title = spot
+            .title
+            .pick_with_fallback(&data.locale, &data.property_locale);
         let mut subtitle_parts = Vec::new();
         if let Some(cat) = spot.category.as_deref().filter(|c| !c.trim().is_empty()) {
             subtitle_parts.push(cat.to_string());
@@ -38,13 +40,13 @@ pub fn build_spots_body(data: &GuestData, enriched: bool) -> Vec<Component> {
         }
         if enriched {
             if let Some(note) = spot.note.as_ref() {
-                let text = note.pick(&data.locale);
+                let text = note.pick_with_fallback(&data.locale, &data.property_locale);
                 if !text.trim().is_empty() {
                     item = item.child(Text::new().text(json!(text)).variant(json!("caption")));
                 }
             }
             if let Some(detail) = spot.detail.as_ref() {
-                let text = detail.pick(&data.locale);
+                let text = detail.pick_with_fallback(&data.locale, &data.property_locale);
                 if !text.trim().is_empty() {
                     item = item.child(Text::new().text(json!(text)).variant(json!("body")));
                 }

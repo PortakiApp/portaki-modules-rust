@@ -6,41 +6,52 @@ use portaki_sdk::sdui::primitives::{Button, Field, Form, Page, Text, TextArea, T
 use portaki_sdk::sdui::surface::Surface;
 use serde_json::json;
 
+use crate::model::lang_code;
 use crate::store;
 
-/// Host editor form — create/update one section (workspace tab `sections`).
+/// Host editor form — create/update one section for the active `ctx.locale`.
 #[portaki_sdk::surface(host, id = "main")]
 pub fn render_host_main(ctx: HostContext) -> Surface {
-    let _ = ctx;
-    let sections = store::list_all("fr-FR").unwrap_or_default();
-    let (title_fr, body_fr, title_en, body_en) = sections
+    let lang = lang_code(&ctx.locale);
+    let property_locale = ctx.property.locale.clone();
+    let sections = store::list_all(&ctx.locale, &property_locale).unwrap_or_default();
+    let (title, body) = sections
         .first()
         .map(|section| {
-            let fr = section.locales.iter().find(|l| l.lang.starts_with("fr"));
-            let en = section.locales.iter().find(|l| l.lang.starts_with("en"));
+            let row = section
+                .locales
+                .iter()
+                .find(|l| lang_code(&l.lang) == lang);
             (
-                fr.map(|l| l.title.clone()).unwrap_or_default(),
-                fr.map(|l| l.body_markdown.clone()).unwrap_or_default(),
-                en.map(|l| l.title.clone()).unwrap_or_default(),
-                en.map(|l| l.body_markdown.clone()).unwrap_or_default(),
+                row.map(|l| l.title.clone())
+                    .filter(|t| !t.trim().is_empty())
+                    .unwrap_or_else(|| section.title.clone()),
+                row.map(|l| l.body_markdown.clone())
+                    .filter(|t| !t.trim().is_empty())
+                    .unwrap_or_else(|| section.body_markdown.clone()),
             )
         })
         .unwrap_or_else(|| {
-            (
-                "Bienvenue".into(),
-                "Bienvenue à L'Islette ! Toute l'équipe vous souhaite un excellent séjour.".into(),
-                "Welcome".into(),
-                "Welcome to L'Islette! The whole team wishes you a great stay.".into(),
-            )
+            if lang == "en" {
+                (
+                    "Welcome".into(),
+                    "Welcome to L'Islette! The whole team wishes you a great stay.".into(),
+                )
+            } else {
+                (
+                    "Bienvenue".into(),
+                    "Bienvenue à L'Islette ! Toute l'équipe vous souhaite un excellent séjour."
+                        .into(),
+                )
+            }
         });
 
     let section_id = sections.first().map(|s| s.id);
     let submit_args = json!({
         "id": section_id,
-        "title_fr": title_fr,
-        "title_en": title_en,
-        "body_markdown_fr": body_fr,
-        "body_markdown_en": body_en,
+        "title": title,
+        "body_markdown": body,
+        "lang": lang,
         "locales": []
     });
     let save_action = serde_json::to_value(Action::command("sections", "saveSection", submit_args))
@@ -58,42 +69,18 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
                 Form::new()
                     .child(
                         Field::new()
-                            .name(json!("title_fr"))
-                            .label(json!("i18n:host.titleFr.label"))
-                            .child(
-                                TextInput::new()
-                                    .name(json!("title_fr"))
-                                    .value(json!(title_fr)),
-                            ),
+                            .name(json!("title"))
+                            .label(json!("i18n:host.title.label"))
+                            .child(TextInput::new().name(json!("title")).value(json!(title))),
                     )
                     .child(
                         Field::new()
-                            .name(json!("body_markdown_fr"))
-                            .label(json!("i18n:host.bodyFr.label"))
+                            .name(json!("body_markdown"))
+                            .label(json!("i18n:host.body.label"))
                             .child(
                                 TextArea::new()
-                                    .name(json!("body_markdown_fr"))
-                                    .value(json!(body_fr)),
-                            ),
-                    )
-                    .child(
-                        Field::new()
-                            .name(json!("title_en"))
-                            .label(json!("i18n:host.titleEn.label"))
-                            .child(
-                                TextInput::new()
-                                    .name(json!("title_en"))
-                                    .value(json!(title_en)),
-                            ),
-                    )
-                    .child(
-                        Field::new()
-                            .name(json!("body_markdown_en"))
-                            .label(json!("i18n:host.bodyEn.label"))
-                            .child(
-                                TextArea::new()
-                                    .name(json!("body_markdown_en"))
-                                    .value(json!(body_en)),
+                                    .name(json!("body_markdown"))
+                                    .value(json!(body)),
                             ),
                     )
                     .child(

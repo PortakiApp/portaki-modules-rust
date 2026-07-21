@@ -14,6 +14,7 @@ use crate::config::{
     load_config, AccessStep, DoorCodeTarget, MethodFields, ModuleConfig, PrimaryMethod,
     RevealPolicy, StaffKind,
 };
+use crate::texts::{load_texts_for_host, ModuleTexts};
 
 const STEP_SLOTS: usize = 8;
 const EMIT_SURFACE_INPUT: &str = "host.surface.input";
@@ -21,13 +22,18 @@ const EMIT_SURFACE_INPUT: &str = "host.surface.input";
 #[portaki_sdk::surface(host, id = "main")]
 pub fn render_host_main(ctx: HostContext) -> Surface {
     let config = load_config().unwrap_or_default();
+    let texts = load_texts_for_host(&ctx.locale).unwrap_or_default();
     let draft_method = draft_primary_method(&ctx.input, &config);
     let building_enabled = draft_flag(
         &ctx.input,
         "building_access_enabled",
-        config.building_access.is_some(),
+        config.building_access.is_some() || texts.building_note.is_some(),
     );
-    let parking_enabled = draft_flag(&ctx.input, "parking_enabled", config.parking.is_some());
+    let parking_enabled = draft_flag(
+        &ctx.input,
+        "parking_enabled",
+        config.parking.is_some() || !texts.parking_info.trim().is_empty(),
+    );
     let steps_count = draft_steps_count(&ctx.input, &config);
 
     let submit_args = json!({
@@ -51,21 +57,21 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
             .title(json!("i18n:host.section.methodDetails"))
             .subtitle(json!("i18n:host.section.methodDetails.help"))
             .icon(json!("lock"))
-            .children(method_detail_children(draft_method, &config))
+            .children(method_detail_children(draft_method, &config, &texts))
             .into(),
         Grid::new()
             .columns(json!(2))
             .gap(json!(16))
             .children(vec![
-                layer_card_building(building_enabled, &config),
-                layer_card_parking(parking_enabled, &config),
+                layer_card_building(building_enabled, &config, &texts),
+                layer_card_parking(parking_enabled, &config, &texts),
             ])
             .into(),
         Card::new()
             .title(json!("i18n:host.section.arrival"))
             .subtitle(json!("i18n:host.section.arrival.help"))
             .icon(json!("map-pin"))
-            .children(arrival_children(&config, steps_count))
+            .children(arrival_children(&config, &texts, steps_count))
             .into(),
         Card::new()
             .title(json!("i18n:host.section.reveal"))
@@ -84,17 +90,7 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
             .into(),
     ];
 
-    Surface::new(
-        Page::new()
-            .title(json!("i18n:surface.host.main.title"))
-            .child(
-                Text::new()
-                    .text(json!("i18n:surface.host.main.subtitle"))
-                    .variant(json!("caption")),
-            )
-            .child(Form::new().children(form_children)),
-    )
-    .with_id("main")
+    Surface::new(Page::new().child(Form::new().children(form_children))).with_id("main")
 }
 
 // ── Draft helpers ────────────────────────────────────────────────────────────
@@ -243,35 +239,44 @@ fn reveal_choice_list(policy: RevealPolicy) -> ChoiceList {
 
 // ── Method details ───────────────────────────────────────────────────────────
 
-fn method_detail_children(method: PrimaryMethod, config: &ModuleConfig) -> Vec<Component> {
+fn method_detail_children(
+    method: PrimaryMethod,
+    config: &ModuleConfig,
+    texts: &ModuleTexts,
+) -> Vec<Component> {
     let mut children = Vec::new();
     match method {
-        PrimaryMethod::Keybox => push_keybox_fields(&mut children, config),
-        PrimaryMethod::DoorCode => push_door_code_fields(&mut children, config),
+        PrimaryMethod::Keybox => push_keybox_fields(&mut children, config, texts),
+        PrimaryMethod::DoorCode => push_door_code_fields(&mut children, config, texts),
         PrimaryMethod::SmartLock => {
             push_smart_lock_binding(&mut children, config);
-            push_smart_lock_fields(&mut children, config);
+            push_smart_lock_fields(&mut children, config, texts);
         }
         PrimaryMethod::InPerson => push_in_person_fields(&mut children, config),
         PrimaryMethod::BuildingStaff => push_building_staff_fields(&mut children, config),
         PrimaryMethod::HostGreets => push_host_greets_fields(&mut children, config),
-        PrimaryMethod::Other => push_other_fields(&mut children, config),
+        PrimaryMethod::Other => push_other_fields(&mut children, texts),
     }
     children
 }
 
-fn push_keybox_fields(children: &mut Vec<Component>, config: &ModuleConfig) {
-    let (location, code, instructions) = match &config.method {
-        MethodFields::Keybox {
-            location,
-            code,
-            instructions,
-        } => (
-            location.as_str(),
-            code.as_deref().unwrap_or(""),
-            instructions.as_deref().unwrap_or(""),
-        ),
-        _ => ("", "", ""),
+fn method_instructions<'a>(texts: &'a ModuleTexts) -> &'a str {
+    texts
+        .method_instructions
+        .as_deref()
+        .unwrap_or("")
+}
+
+fn push_keybox_fields(
+    children: &mut Vec<Component>,
+    config: &ModuleConfig,
+    texts: &ModuleTexts,
+) {
+    let (location, code) = match &config.method {
+        MethodFields::Keybox { location, code } => {
+            (location.as_str(), code.as_deref().unwrap_or(""))
+        }
+        _ => ("", ""),
     };
     children.push(text_field(
         "keybox_location",
@@ -292,22 +297,18 @@ fn push_keybox_fields(children: &mut Vec<Component>, config: &ModuleConfig) {
     children.push(rich_text_field(
         "keybox_instructions",
         "i18n:host.keybox.instructions",
-        instructions,
+        method_instructions(texts),
     ));
 }
 
-fn push_door_code_fields(children: &mut Vec<Component>, config: &ModuleConfig) {
-    let (target, code, instructions) = match &config.method {
-        MethodFields::DoorCode {
-            target,
-            code,
-            instructions,
-        } => (
-            *target,
-            code.as_str(),
-            instructions.as_deref().unwrap_or(""),
-        ),
-        _ => (DoorCodeTarget::Building, "", ""),
+fn push_door_code_fields(
+    children: &mut Vec<Component>,
+    config: &ModuleConfig,
+    texts: &ModuleTexts,
+) {
+    let (target, code) = match &config.method {
+        MethodFields::DoorCode { target, code } => (*target, code.as_str()),
+        _ => (DoorCodeTarget::Building, ""),
     };
     children.push(
         Field::new()
@@ -339,20 +340,18 @@ fn push_door_code_fields(children: &mut Vec<Component>, config: &ModuleConfig) {
     children.push(rich_text_field(
         "door_code_instructions",
         "i18n:host.doorCode.instructions",
-        instructions,
+        method_instructions(texts),
     ));
 }
 
-fn push_smart_lock_fields(children: &mut Vec<Component>, config: &ModuleConfig) {
-    let (instructions, manual_code) = match &config.method {
-        MethodFields::SmartLock {
-            instructions,
-            manual_code,
-        } => (
-            instructions.as_deref().unwrap_or(""),
-            manual_code.as_deref().unwrap_or(""),
-        ),
-        _ => ("", ""),
+fn push_smart_lock_fields(
+    children: &mut Vec<Component>,
+    config: &ModuleConfig,
+    texts: &ModuleTexts,
+) {
+    let manual_code = match &config.method {
+        MethodFields::SmartLock { manual_code } => manual_code.as_deref().unwrap_or(""),
+        _ => "",
     };
     children.push(secret_field(
         "smart_lock_manual_code",
@@ -367,7 +366,7 @@ fn push_smart_lock_fields(children: &mut Vec<Component>, config: &ModuleConfig) 
     children.push(rich_text_field(
         "smart_lock_instructions",
         "i18n:host.smartLock.instructions",
-        instructions,
+        method_instructions(texts),
     ));
 }
 
@@ -376,6 +375,8 @@ fn push_smart_lock_binding(children: &mut Vec<Component>, config: &ModuleConfig)
         .smart_lock_provider_module_id
         .as_deref()
         .unwrap_or("");
+    let peers = host::module::list_by_capability(portaki_sdk::capability::access::SMART_LOCK)
+        .unwrap_or_default();
     children.push(
         Field::new()
             .name(json!("smart_lock_provider_module_id"))
@@ -388,7 +389,24 @@ fn push_smart_lock_binding(children: &mut Vec<Component>, config: &ModuleConfig)
                             "value": "",
                             "label": "i18n:host.smartLock.provider.manual"
                         })];
-                        if !provider.is_empty() {
+                        let mut seen = std::collections::BTreeSet::new();
+                        for peer in &peers {
+                            if peer.module_id.trim().is_empty() || !seen.insert(peer.module_id.clone())
+                            {
+                                continue;
+                            }
+                            let label = if peer.display_name.trim().is_empty() {
+                                peer.module_id.clone()
+                            } else {
+                                peer.display_name.clone()
+                            };
+                            opts.push(json!({
+                                "value": peer.module_id,
+                                "label": label
+                            }));
+                        }
+                        // Keep a previously saved id selectable even if not installed yet.
+                        if !provider.is_empty() && !seen.contains(provider) {
                             opts.push(json!({
                                 "value": provider,
                                 "label": provider
@@ -406,7 +424,7 @@ fn push_smart_lock_binding(children: &mut Vec<Component>, config: &ModuleConfig)
         "i18n:host.smartLock.provider.notice.linked"
     };
     let mut banner = InlineNotice::new().message(json!(notice));
-    if !provider.is_empty() {
+    if !provider.is_empty() && peers.iter().all(|p| p.module_id != provider) {
         banner = banner.tone(Tone::Warning);
     }
     children.push(banner.into());
@@ -527,21 +545,21 @@ fn push_host_greets_fields(children: &mut Vec<Component>, config: &ModuleConfig)
     ));
 }
 
-fn push_other_fields(children: &mut Vec<Component>, config: &ModuleConfig) {
-    let instructions = match &config.method {
-        MethodFields::Other { instructions } => instructions.as_str(),
-        _ => "",
-    };
+fn push_other_fields(children: &mut Vec<Component>, texts: &ModuleTexts) {
     children.push(rich_text_field(
         "other_instructions",
         "i18n:host.other.instructions",
-        instructions,
+        method_instructions(texts),
     ));
 }
 
 // ── Layers ───────────────────────────────────────────────────────────────────
 
-fn layer_card_building(enabled: bool, config: &ModuleConfig) -> Component {
+fn layer_card_building(
+    enabled: bool,
+    config: &ModuleConfig,
+    texts: &ModuleTexts,
+) -> Component {
     let mut children: Vec<Component> = vec![ToggleRow::new()
         .name(json!("building_access_enabled"))
         .label(json!("i18n:host.building.enabled"))
@@ -558,11 +576,7 @@ fn layer_card_building(enabled: bool, config: &ModuleConfig) -> Component {
             .as_ref()
             .and_then(|b| b.intercom.as_deref())
             .unwrap_or("");
-        let note = config
-            .building_access
-            .as_ref()
-            .and_then(|b| b.note.as_deref())
-            .unwrap_or("");
+        let note = texts.building_note.as_deref().unwrap_or("");
         children.push(secret_field(
             "building_access_gate_code",
             "i18n:host.building.gateCode",
@@ -594,18 +608,18 @@ fn layer_card_building(enabled: bool, config: &ModuleConfig) -> Component {
         .into()
 }
 
-fn layer_card_parking(enabled: bool, config: &ModuleConfig) -> Component {
+fn layer_card_parking(
+    enabled: bool,
+    config: &ModuleConfig,
+    texts: &ModuleTexts,
+) -> Component {
     let mut children: Vec<Component> = vec![ToggleRow::new()
         .name(json!("parking_enabled"))
         .label(json!("i18n:host.parking.enabled"))
         .checked(json!(enabled))
         .into()];
     if enabled {
-        let info = config
-            .parking
-            .as_ref()
-            .map(|p| p.info.as_str())
-            .unwrap_or("");
+        let info = texts.parking_info.as_str();
         let map_url = config
             .parking
             .as_ref()
@@ -645,7 +659,11 @@ fn layer_card_parking(enabled: bool, config: &ModuleConfig) -> Component {
 
 // ── Arrival ──────────────────────────────────────────────────────────────────
 
-fn arrival_children(config: &ModuleConfig, steps_count: usize) -> Vec<Component> {
+fn arrival_children(
+    config: &ModuleConfig,
+    texts: &ModuleTexts,
+    steps_count: usize,
+) -> Vec<Component> {
     let mut children: Vec<Component> = Vec::new();
     children.push(
         AddressMapPicker::new()
@@ -661,7 +679,9 @@ fn arrival_children(config: &ModuleConfig, steps_count: usize) -> Vec<Component>
     let steps = config.parse_steps();
     let mut step_rows: Vec<Component> = Vec::new();
     for index in 0..steps_count {
-        step_rows.push(step_row(index, steps.get(index)));
+        let skeleton = steps.get(index);
+        let text = skeleton.and_then(|s| texts.step_by_id(&s.id));
+        step_rows.push(step_row(index, skeleton, text));
     }
 
     children.push(
@@ -688,23 +708,19 @@ fn arrival_children(config: &ModuleConfig, steps_count: usize) -> Vec<Component>
     children.push(rich_text_field(
         "global_note",
         "i18n:host.note.label",
-        &config.arrival.global_note,
+        &texts.global_note,
     ));
     children
 }
 
-fn step_row(index: usize, step: Option<&AccessStep>) -> Component {
+fn step_row(
+    index: usize,
+    step: Option<&AccessStep>,
+    text: Option<&crate::texts::StepText>,
+) -> Component {
     let kind = step.and_then(|s| s.kind.as_deref()).unwrap_or("other");
-    let title_fr = step.map(|s| s.title.fr.as_str()).unwrap_or("");
-    let title_en = step.map(|s| s.title.en.as_str()).unwrap_or("");
-    let detail_fr = step
-        .and_then(|s| s.detail.as_ref())
-        .map(|d| d.fr.as_str())
-        .unwrap_or("");
-    let detail_en = step
-        .and_then(|s| s.detail.as_ref())
-        .map(|d| d.en.as_str())
-        .unwrap_or("");
+    let title = text.map(|t| t.title.as_str()).unwrap_or("");
+    let detail = text.and_then(|t| t.detail.as_deref()).unwrap_or("");
 
     Stack::new()
         .id(format!("step-{index}"))
@@ -726,24 +742,14 @@ fn step_row(index: usize, step: Option<&AccessStep>) -> Component {
                 )
                 .into(),
             text_field(
-                &format!("steps.{index}.title_fr"),
-                "i18n:host.step.titleFr",
-                title_fr,
+                &format!("steps.{index}.title"),
+                "i18n:host.step.title",
+                title,
             ),
             text_field(
-                &format!("steps.{index}.title_en"),
-                "i18n:host.step.titleEn",
-                title_en,
-            ),
-            text_field(
-                &format!("steps.{index}.detail_fr"),
-                "i18n:host.step.detailFr",
-                detail_fr,
-            ),
-            text_field(
-                &format!("steps.{index}.detail_en"),
-                "i18n:host.step.detailEn",
-                detail_en,
+                &format!("steps.{index}.detail"),
+                "i18n:host.step.detail",
+                detail,
             ),
         ])
         .into()

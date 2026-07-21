@@ -76,11 +76,13 @@ fn home_card_renders_toggles_with_items() {
                 ReplaceItemsArgs {
                     items: vec![
                         ChecklistItemInput {
+                            label: String::new(),
                             label_fr: "Fermer les volets".into(),
                             label_en: "Close shutters".into(),
                             sort_order: 0,
                         },
                         ChecklistItemInput {
+                            label: String::new(),
                             label_fr: "Sortir les poubelles".into(),
                             label_en: "Take out bins".into(),
                             sort_order: 1,
@@ -112,6 +114,7 @@ fn complete_and_uncomplete_roundtrip() {
                 ctx.clone(),
                 ReplaceItemsArgs {
                     items: vec![ChecklistItemInput {
+                        label: String::new(),
                         label_fr: "Clés".into(),
                         label_en: "Keys".into(),
                         sort_order: 0,

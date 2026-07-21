@@ -3,6 +3,7 @@
 mod commands;
 mod entities;
 mod guest;
+mod labels;
 mod queries;
 mod render_host;
 mod storage;

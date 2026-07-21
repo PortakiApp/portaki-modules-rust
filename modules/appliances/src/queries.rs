@@ -3,7 +3,7 @@
 use portaki_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::content::{load_from_locale_slots, Appliance, AppliancesPayload};
+use crate::content::{AppliancesBundle, Appliance, AppliancesPayload};
 use crate::store;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -19,7 +19,7 @@ pub struct AppliancesContentView {
     /// Global TipTap JSON safety notice.
     #[serde(rename = "safetyNotice")]
     pub safety_notice: String,
-    /// Canonical JSON (single language).
+    /// Canonical JSON for the resolved locale.
     pub content: String,
     /// Legacy slots — kept for host tooling during transition.
     pub content_fr: String,
@@ -28,13 +28,14 @@ pub struct AppliancesContentView {
 
 #[portaki_sdk::query(name = "getContent")]
 pub fn get_content(ctx: Context, args: GetContentArgs) -> Result<AppliancesContentView> {
-    let _locale = args.locale.unwrap_or_else(|| ctx.locale.clone());
+    let locale = args.locale.unwrap_or_else(|| ctx.locale.clone());
     let row = store::load_content()?;
     let (content_fr, content_en) = match row {
         Some(row) => (row.content_fr, row.content_en),
         None => (String::new(), String::new()),
     };
-    let payload = load_from_locale_slots(&content_fr, &content_en);
+    let payload = AppliancesBundle::from_row(&content_fr, &content_en)
+        .pick(&locale, &ctx.property.locale);
     let content = payload
         .to_json_string()
         .unwrap_or_else(|_| content_fr.clone());
@@ -48,6 +49,5 @@ pub fn get_content(ctx: Context, args: GetContentArgs) -> Result<AppliancesConte
 }
 
 pub fn load_payload(ctx: &Context) -> Result<AppliancesPayload> {
-    let _ = ctx;
-    store::load_payload()
+    store::load_payload_for(&ctx.locale, &ctx.property.locale)
 }

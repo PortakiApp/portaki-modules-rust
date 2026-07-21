@@ -3,7 +3,7 @@
 use portaki_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::content::{pick_locale, RulesPayload};
+use crate::content::{RulesBundle, RulesPayload};
 use crate::store;
 
 /// Arguments for `getContent` (locale optional — defaults to context locale).
@@ -28,7 +28,8 @@ pub fn get_content(ctx: Context, args: GetContentArgs) -> Result<RulesContentVie
         Some(row) => (row.content_fr, row.content_en),
         None => (String::new(), String::new()),
     };
-    let payload = pick_locale(&content_fr, &content_en, &locale);
+    let bundle = RulesBundle::from_row(&content_fr, &content_en);
+    let payload = bundle.pick(&locale, &ctx.property.locale);
     Ok(RulesContentView {
         items: payload.items,
         content_fr,

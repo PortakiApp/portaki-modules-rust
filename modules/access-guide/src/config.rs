@@ -1,8 +1,13 @@
-//! Host configuration stored in KV (`config` key).
+//! Shared structural configuration stored in KV (`config` key).
+//!
+//! Language-specific copy lives in [`crate::texts`] under `texts/{lang}`.
 
 use portaki_sdk::host;
 use portaki_sdk::Result;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+use crate::texts::{extract_embedded_texts, seed_texts_if_absent, ModuleTexts};
 
 const CONFIG_KEY: &str = "config";
 
@@ -112,6 +117,7 @@ impl RevealPolicy {
 }
 
 /// Fields for the selected primary access method (tagged by `kind`).
+/// Text instructions live in [`ModuleTexts::method_instructions`].
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum MethodFields {
@@ -120,20 +126,14 @@ pub enum MethodFields {
         location: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         code: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        instructions: Option<String>,
     },
     DoorCode {
         #[serde(default)]
         target: DoorCodeTarget,
         #[serde(default)]
         code: String,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        instructions: Option<String>,
     },
     SmartLock {
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        instructions: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         manual_code: Option<String>,
     },
@@ -166,17 +166,12 @@ pub enum MethodFields {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         eta_hint: Option<String>,
     },
-    Other {
-        #[serde(default)]
-        instructions: String,
-    },
+    Other {},
 }
 
 impl Default for MethodFields {
     fn default() -> Self {
-        Self::Other {
-            instructions: String::new(),
-        }
+        Self::Other {}
     }
 }
 
@@ -189,7 +184,7 @@ impl MethodFields {
             Self::InPerson { .. } => PrimaryMethod::InPerson,
             Self::BuildingStaff { .. } => PrimaryMethod::BuildingStaff,
             Self::HostGreets { .. } => PrimaryMethod::HostGreets,
-            Self::Other { .. } => PrimaryMethod::Other,
+            Self::Other {} => PrimaryMethod::Other,
         }
     }
 }
@@ -201,20 +196,16 @@ pub struct BuildingAccess {
     pub gate_code: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub intercom: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub note: Option<String>,
 }
 
 impl BuildingAccess {
     pub fn is_empty(&self) -> bool {
-        opt_empty(&self.gate_code) && opt_empty(&self.intercom) && opt_empty(&self.note)
+        opt_empty(&self.gate_code) && opt_empty(&self.intercom)
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct ParkingLayer {
-    #[serde(default)]
-    pub info: String,
     #[serde(default)]
     pub map_url: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -223,7 +214,7 @@ pub struct ParkingLayer {
 
 impl ParkingLayer {
     pub fn is_empty(&self) -> bool {
-        self.info.trim().is_empty() && self.map_url.trim().is_empty() && opt_empty(&self.code)
+        self.map_url.trim().is_empty() && opt_empty(&self.code)
     }
 }
 
@@ -231,12 +222,11 @@ impl ParkingLayer {
 pub struct ArrivalGuide {
     #[serde(default)]
     pub address: String,
+    /// Step skeleton (`id` + `kind`); titles/details live in [`ModuleTexts::steps`].
     #[serde(default)]
     pub steps: Vec<AccessStep>,
     #[serde(default)]
     pub arrival_video_url: String,
-    #[serde(default)]
-    pub global_note: String,
 }
 
 impl ArrivalGuide {
@@ -244,7 +234,6 @@ impl ArrivalGuide {
         self.address.trim().is_empty()
             && self.parse_steps().is_empty()
             && self.arrival_video_url.trim().is_empty()
-            && self.global_note.trim().is_empty()
     }
 
     pub fn parse_steps(&self) -> Vec<AccessStep> {
@@ -254,6 +243,14 @@ impl ArrivalGuide {
             .cloned()
             .collect()
     }
+}
+
+/// Shared step skeleton (language-invariant).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct AccessStep {
+    pub id: String,
+    #[serde(default)]
+    pub kind: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -289,6 +286,7 @@ impl Default for ModuleConfig {
 }
 
 impl ModuleConfig {
+    /// True when shared structure has no codes/layers (texts may still hold copy).
     pub fn is_empty(&self) -> bool {
         method_is_empty(&self.method)
             && self
@@ -303,10 +301,28 @@ impl ModuleConfig {
                 .unwrap_or(true)
             && self.arrival.is_empty()
             && opt_empty(&self.smart_lock_provider_module_id)
+            && self.primary_method == PrimaryMethod::Other
     }
 
     pub fn parse_steps(&self) -> Vec<AccessStep> {
         self.arrival.parse_steps()
+    }
+
+    /// Merge shared step skeletons with per-lang titles/details (by `id`).
+    pub fn resolve_steps(&self, texts: &ModuleTexts) -> Vec<ResolvedStep> {
+        self.parse_steps()
+            .into_iter()
+            .map(|step| {
+                let text = texts.step_by_id(&step.id);
+                ResolvedStep {
+                    id: step.id,
+                    kind: step.kind,
+                    title: text.map(|t| t.title.clone()).unwrap_or_default(),
+                    detail: text.and_then(|t| t.detail.clone()),
+                }
+            })
+            .filter(|s| !s.id.trim().is_empty())
+            .collect()
     }
 
     /// Align `primary_method` with the tagged `method` variant.
@@ -314,7 +330,6 @@ impl ModuleConfig {
         self.primary_method = self.method.primary_method();
     }
 
-    /// Convenience accessors used by guest/host adapters until full UX rewrite.
     pub fn address(&self) -> &str {
         self.arrival.address.as_str()
     }
@@ -342,17 +357,9 @@ impl ModuleConfig {
         match &self.method {
             MethodFields::SmartLock {
                 manual_code: Some(c),
-                ..
             } if !c.trim().is_empty() => Some(c.as_str()),
             _ => None,
         }
-    }
-
-    pub fn parking_info(&self) -> Option<&str> {
-        self.parking
-            .as_ref()
-            .map(|p| p.info.as_str())
-            .filter(|s| !s.trim().is_empty())
     }
 
     pub fn parking_map_url(&self) -> Option<&str> {
@@ -365,44 +372,15 @@ impl ModuleConfig {
     pub fn arrival_video_url(&self) -> &str {
         self.arrival.arrival_video_url.as_str()
     }
-
-    pub fn global_note(&self) -> &str {
-        self.arrival.global_note.as_str()
-    }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct AccessStep {
+/// Step with shared skeleton + resolved title/detail for one locale.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedStep {
     pub id: String,
-    #[serde(default)]
     pub kind: Option<String>,
-    pub title: Localized,
-    #[serde(default)]
-    pub detail: Option<Localized>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
-pub struct Localized {
-    #[serde(default)]
-    pub fr: String,
-    #[serde(default)]
-    pub en: String,
-}
-
-impl Localized {
-    pub fn pick(&self, locale: &str) -> String {
-        if locale.to_ascii_lowercase().starts_with("en") {
-            if !self.en.trim().is_empty() {
-                self.en.clone()
-            } else {
-                self.fr.clone()
-            }
-        } else if !self.fr.trim().is_empty() {
-            self.fr.clone()
-        } else {
-            self.en.clone()
-        }
-    }
+    pub title: String,
+    pub detail: Option<String>,
 }
 
 // ── Load / save / migrate ────────────────────────────────────────────────────
@@ -420,7 +398,7 @@ pub(crate) struct RawConfig {
     pub(crate) smart_lock_provider_module_id: Option<String>,
 
     // Legacy flat fields (pre-redesign)
-    pub(crate) steps: Vec<AccessStep>,
+    pub(crate) steps: Vec<RawStep>,
     pub(crate) steps_json: String,
     pub(crate) parking_map_url: String,
     pub(crate) arrival_video_url: String,
@@ -431,33 +409,48 @@ pub(crate) struct RawConfig {
     pub(crate) parking_info: String,
 }
 
+/// Step skeleton as stored before / during the texts split.
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(default)]
+pub(crate) struct RawStep {
+    pub(crate) id: String,
+    pub(crate) kind: Option<String>,
+}
+
 impl RawConfig {
     fn has_new_shape(&self) -> bool {
         self.primary_method.is_some() || self.method.is_some() || self.arrival.is_some()
     }
 
-    fn parse_legacy_steps(&self) -> Vec<AccessStep> {
+    fn parse_legacy_step_skeletons(&self) -> Vec<AccessStep> {
         if !self.steps.is_empty() {
             return self
                 .steps
                 .iter()
                 .filter(|s| !s.id.trim().is_empty())
-                .cloned()
+                .map(|s| AccessStep {
+                    id: s.id.trim().to_string(),
+                    kind: s.kind.clone(),
+                })
                 .collect();
         }
         let raw = self.steps_json.trim();
         if raw.is_empty() {
             return Vec::new();
         }
-        serde_json::from_str::<Vec<AccessStep>>(raw)
+        serde_json::from_str::<Vec<RawStep>>(raw)
             .unwrap_or_default()
             .into_iter()
             .filter(|s| !s.id.trim().is_empty())
+            .map(|s| AccessStep {
+                id: s.id.trim().to_string(),
+                kind: s.kind,
+            })
             .collect()
     }
 }
 
-/// Migrate a raw (possibly legacy) document into the current [`ModuleConfig`].
+/// Migrate a raw (possibly legacy) document into the current shared [`ModuleConfig`].
 pub(crate) fn migrate_legacy(raw: RawConfig) -> ModuleConfig {
     if raw.has_new_shape() {
         return migrate_new_shape(raw);
@@ -466,31 +459,38 @@ pub(crate) fn migrate_legacy(raw: RawConfig) -> ModuleConfig {
 }
 
 fn migrate_new_shape(mut raw: RawConfig) -> ModuleConfig {
-    let legacy_steps = raw.parse_legacy_steps();
+    let legacy_steps = raw.parse_legacy_step_skeletons();
     let mut arrival = raw.arrival.take().unwrap_or_default();
-    // Absorb leftover flat arrival fields if arrival was partial.
     if arrival.address.trim().is_empty() && !raw.address.trim().is_empty() {
         arrival.address = raw.address.trim().to_string();
     }
     if arrival.arrival_video_url.trim().is_empty() && !raw.arrival_video_url.trim().is_empty() {
         arrival.arrival_video_url = raw.arrival_video_url.trim().to_string();
     }
-    if arrival.global_note.trim().is_empty() && !raw.global_note.trim().is_empty() {
-        arrival.global_note = raw.global_note.trim().to_string();
-    }
     if arrival.steps.is_empty() {
         arrival.steps = legacy_steps;
+    } else {
+        // Drop any accidentally embedded title/detail by re-mapping skeletons.
+        arrival.steps = arrival
+            .steps
+            .into_iter()
+            .filter(|s| !s.id.trim().is_empty())
+            .map(|s| AccessStep {
+                id: s.id,
+                kind: s.kind,
+            })
+            .collect();
     }
 
-    let mut parking = raw.parking.take().filter(|p| !p.is_empty());
+    let mut parking = raw.parking.take();
     if parking.is_none() {
-        parking = parking_from_legacy(&raw.parking_info, &raw.parking_map_url, None);
+        parking = parking_from_legacy(&raw.parking_map_url, None, !raw.parking_info.trim().is_empty());
     }
 
     let (derived_method, derived_building) =
         method_from_legacy_codes(&raw.keybox_code, &raw.gate_code);
 
-    let mut building_access = raw.building_access.take().filter(|b| !b.is_empty());
+    let mut building_access = raw.building_access.take();
     if building_access.is_none() {
         building_access = derived_building;
     }
@@ -515,28 +515,25 @@ fn migrate_new_shape(mut raw: RawConfig) -> ModuleConfig {
         reveal_policy: raw.reveal_policy.unwrap_or_default(),
         smart_lock_provider_module_id: nonempty_opt(raw.smart_lock_provider_module_id),
     };
-    // Prefer tagged method as source of truth for primary_method.
     config.sync_primary_method();
     config
 }
 
 fn migrate_from_legacy_fields(raw: RawConfig) -> ModuleConfig {
-    let steps = raw.parse_legacy_steps();
+    let steps = raw.parse_legacy_step_skeletons();
     let (derived_method, mut building_access) =
         method_from_legacy_codes(&raw.keybox_code, &raw.gate_code);
 
-    let method = derived_method.unwrap_or(MethodFields::Other {
-        instructions: String::new(),
-    });
+    let method = derived_method.unwrap_or(MethodFields::Other {});
     let primary_method = method.primary_method();
 
-    let parking = parking_from_legacy(&raw.parking_info, &raw.parking_map_url, None);
+    let parking =
+        parking_from_legacy(&raw.parking_map_url, None, !raw.parking_info.trim().is_empty());
 
     let arrival = ArrivalGuide {
         address: raw.address.trim().to_string(),
         steps,
         arrival_video_url: raw.arrival_video_url.trim().to_string(),
-        global_note: raw.global_note.trim().to_string(),
     };
 
     if building_access
@@ -571,7 +568,6 @@ fn method_from_legacy_codes(
             Some(BuildingAccess {
                 gate_code: Some(gate.to_string()),
                 intercom: None,
-                note: None,
             })
         } else {
             None
@@ -580,7 +576,6 @@ fn method_from_legacy_codes(
             Some(MethodFields::Keybox {
                 location: String::new(),
                 code: Some(keybox.to_string()),
-                instructions: None,
             }),
             building,
         );
@@ -591,7 +586,6 @@ fn method_from_legacy_codes(
             Some(MethodFields::DoorCode {
                 target: DoorCodeTarget::Building,
                 code: gate.to_string(),
-                instructions: None,
             }),
             None,
         );
@@ -600,13 +594,16 @@ fn method_from_legacy_codes(
     (None, None)
 }
 
-fn parking_from_legacy(info: &str, map_url: &str, code: Option<String>) -> Option<ParkingLayer> {
+fn parking_from_legacy(
+    map_url: &str,
+    code: Option<String>,
+    force_layer: bool,
+) -> Option<ParkingLayer> {
     let layer = ParkingLayer {
-        info: info.trim().to_string(),
         map_url: map_url.trim().to_string(),
         code: nonempty_opt(code),
     };
-    if layer.is_empty() {
+    if layer.is_empty() && !force_layer {
         None
     } else {
         Some(layer)
@@ -618,17 +615,12 @@ fn default_method_for(primary: PrimaryMethod) -> MethodFields {
         PrimaryMethod::Keybox => MethodFields::Keybox {
             location: String::new(),
             code: None,
-            instructions: None,
         },
         PrimaryMethod::DoorCode => MethodFields::DoorCode {
             target: DoorCodeTarget::Building,
             code: String::new(),
-            instructions: None,
         },
-        PrimaryMethod::SmartLock => MethodFields::SmartLock {
-            instructions: None,
-            manual_code: None,
-        },
+        PrimaryMethod::SmartLock => MethodFields::SmartLock { manual_code: None },
         PrimaryMethod::InPerson => MethodFields::InPerson {
             meeting_place: String::new(),
             lat: None,
@@ -646,26 +638,17 @@ fn default_method_for(primary: PrimaryMethod) -> MethodFields {
             contact_note: None,
             eta_hint: None,
         },
-        PrimaryMethod::Other => MethodFields::Other {
-            instructions: String::new(),
-        },
+        PrimaryMethod::Other => MethodFields::Other {},
     }
 }
 
 fn method_is_empty(method: &MethodFields) -> bool {
     match method {
-        MethodFields::Keybox {
-            location,
-            code,
-            instructions,
-        } => location.trim().is_empty() && opt_empty(code) && opt_empty(instructions),
-        MethodFields::DoorCode {
-            code, instructions, ..
-        } => code.trim().is_empty() && opt_empty(instructions),
-        MethodFields::SmartLock {
-            instructions,
-            manual_code,
-        } => opt_empty(instructions) && opt_empty(manual_code),
+        MethodFields::Keybox { location, code } => {
+            location.trim().is_empty() && opt_empty(code)
+        }
+        MethodFields::DoorCode { code, .. } => code.trim().is_empty(),
+        MethodFields::SmartLock { manual_code } => opt_empty(manual_code),
         MethodFields::InPerson {
             meeting_place,
             lat,
@@ -689,7 +672,7 @@ fn method_is_empty(method: &MethodFields) -> bool {
             contact_note,
             eta_hint,
         } => opt_empty(contact_note) && opt_empty(eta_hint),
-        MethodFields::Other { instructions } => instructions.trim().is_empty(),
+        MethodFields::Other {} => true,
     }
 }
 
@@ -708,35 +691,39 @@ fn nonempty_opt(value: Option<String>) -> Option<String> {
     })
 }
 
+fn document_has_embedded_texts(root: &Value) -> bool {
+    let (fr, en) = extract_embedded_texts(root);
+    !fr.is_empty() || !en.is_empty()
+}
+
+/// Load shared config; migrate legacy embeds into `texts/{lang}` once, then rewrite `config`.
 pub fn load_config() -> Result<ModuleConfig> {
     let Some(bytes) = host::kv::get(CONFIG_KEY)? else {
         return Ok(ModuleConfig::default());
     };
-    let raw: RawConfig = serde_json::from_slice(&bytes).map_err(|error| {
+    let root: Value = serde_json::from_slice(&bytes).map_err(|error| {
         portaki_sdk::PortakiError::Storage(format!("invalid config JSON: {error}"))
     })?;
-    Ok(migrate_legacy(raw))
+    let raw: RawConfig = serde_json::from_value(root.clone()).map_err(|error| {
+        portaki_sdk::PortakiError::Storage(format!("invalid config JSON: {error}"))
+    })?;
+    let config = migrate_legacy(raw);
+
+    if document_has_embedded_texts(&root) {
+        let (fr, en) = extract_embedded_texts(&root);
+        seed_texts_if_absent("fr", &fr)?;
+        seed_texts_if_absent("en", &en)?;
+        // Strip embeds so future loads do not re-seed / overwrite texts.
+        save_config(&config)?;
+    }
+
+    Ok(config)
 }
 
 pub fn save_config(config: &ModuleConfig) -> Result<()> {
     let mut config = config.clone();
     config.sync_primary_method();
-    if config
-        .building_access
-        .as_ref()
-        .map(BuildingAccess::is_empty)
-        .unwrap_or(false)
-    {
-        config.building_access = None;
-    }
-    if config
-        .parking
-        .as_ref()
-        .map(ParkingLayer::is_empty)
-        .unwrap_or(false)
-    {
-        config.parking = None;
-    }
+    // Keep empty Some(parking/building) as enable markers when only texts fill the layer.
     let bytes = serde_json::to_vec(&config).map_err(|error| {
         portaki_sdk::PortakiError::Storage(format!("config serialize: {error}"))
     })?;
@@ -748,9 +735,15 @@ pub fn config_from_update_parts(raw: RawConfig) -> ModuleConfig {
     migrate_legacy(raw)
 }
 
+/// True when shared config or locale texts have guest-visible content.
+pub fn has_content(config: &ModuleConfig, texts: &ModuleTexts) -> bool {
+    !config.is_empty() || !texts.is_empty() || config.primary_method != PrimaryMethod::Other
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::texts::StepText;
     use serde_json::json;
 
     #[test]
@@ -776,9 +769,11 @@ mod tests {
                 .and_then(|b| b.gate_code.as_deref()),
             Some("A17B")
         );
-        assert_eq!(cfg.parking.as_ref().map(|p| p.info.as_str()), Some("Rue A"));
+        assert!(cfg.parking.is_some());
         assert_eq!(cfg.arrival.address, "Ch. des Douaniers");
         assert_eq!(cfg.parse_steps().len(), 1);
+        assert_eq!(cfg.parse_steps()[0].id, "1");
+        assert_eq!(cfg.parse_steps()[0].kind.as_deref(), Some("parking"));
         assert_eq!(cfg.reveal_policy, RevealPolicy::DayBefore16h);
     }
 
@@ -791,7 +786,7 @@ mod tests {
         let cfg = migrate_legacy(raw);
         assert_eq!(cfg.primary_method, PrimaryMethod::DoorCode);
         match &cfg.method {
-            MethodFields::DoorCode { target, code, .. } => {
+            MethodFields::DoorCode { target, code } => {
                 assert_eq!(*target, DoorCodeTarget::Building);
                 assert_eq!(code, "9999");
             }
@@ -803,14 +798,9 @@ mod tests {
     #[test]
     fn migrate_steps_only_to_other() {
         let raw = RawConfig {
-            steps: vec![AccessStep {
+            steps: vec![RawStep {
                 id: "1".into(),
                 kind: Some("door".into()),
-                title: Localized {
-                    fr: "Porte".into(),
-                    en: "Door".into(),
-                },
-                detail: None,
             }],
             parking_info: "Sous-sol".into(),
             ..RawConfig::default()
@@ -831,7 +821,6 @@ mod tests {
 
     #[test]
     fn reveal_policy_choice_list_values_deserialize() {
-        // Catches drift: ChoiceList posts these strings; updateConfig must accept them.
         assert_eq!(
             RevealPolicy::CHOICE_LIST_WIRE_VALUES.len(),
             RevealPolicy::ALL.len()
@@ -863,7 +852,6 @@ mod tests {
 
     #[test]
     fn reveal_policy_legacy_aliases_still_parse() {
-        // Legacy rename_all snake_case (no underscore before digits).
         assert_eq!(
             serde_json::from_value::<RevealPolicy>(json!("hours_before24")).unwrap(),
             RevealPolicy::HoursBefore24
@@ -906,11 +894,10 @@ mod tests {
     }
 
     #[test]
-    fn new_shape_roundtrip_json() {
+    fn new_shape_roundtrip_json_strips_instructions() {
         let cfg = ModuleConfig {
             primary_method: PrimaryMethod::SmartLock,
             method: MethodFields::SmartLock {
-                instructions: Some("Appuyer sur unlock".into()),
                 manual_code: Some("1234".into()),
             },
             building_access: None,
@@ -920,7 +907,10 @@ mod tests {
             smart_lock_provider_module_id: Some("nuki".into()),
         };
         let bytes = serde_json::to_vec(&cfg).unwrap();
-        let raw: RawConfig = serde_json::from_slice(&bytes).unwrap();
+        let value: Value = serde_json::from_slice(&bytes).unwrap();
+        assert!(value.pointer("/method/instructions").is_none());
+        assert!(value.pointer("/arrival/global_note").is_none());
+        let raw: RawConfig = serde_json::from_value(value).unwrap();
         let loaded = migrate_legacy(raw);
         assert_eq!(loaded.primary_method, PrimaryMethod::SmartLock);
         assert_eq!(
@@ -928,5 +918,31 @@ mod tests {
             Some("nuki")
         );
         assert_eq!(loaded.reveal_policy, RevealPolicy::HoursBefore24);
+    }
+
+    #[test]
+    fn resolve_steps_merges_texts_by_id() {
+        let cfg = ModuleConfig {
+            arrival: ArrivalGuide {
+                steps: vec![AccessStep {
+                    id: "1".into(),
+                    kind: Some("parking".into()),
+                }],
+                ..ArrivalGuide::default()
+            },
+            ..ModuleConfig::default()
+        };
+        let texts = ModuleTexts {
+            steps: vec![StepText {
+                id: "1".into(),
+                title: "Se garer".into(),
+                detail: Some("Place résident".into()),
+            }],
+            ..ModuleTexts::default()
+        };
+        let resolved = cfg.resolve_steps(&texts);
+        assert_eq!(resolved[0].title, "Se garer");
+        assert_eq!(resolved[0].detail.as_deref(), Some("Place résident"));
+        assert_eq!(resolved[0].kind.as_deref(), Some("parking"));
     }
 }

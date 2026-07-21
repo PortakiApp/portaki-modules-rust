@@ -19,7 +19,7 @@ const EMIT_SURFACE_INPUT: &str = "host.surface.input";
 /// Host appliances editor — safety accordion (col-12) + list (col-3) / detail (col-9).
 #[portaki_sdk::surface(host, id = "main")]
 pub fn render_host_main(ctx: HostContext) -> Surface {
-    let payload = store::load_payload().unwrap_or_default();
+    let payload = store::load_payload_for(&ctx.locale, &ctx.property.locale).unwrap_or_default();
     let selected_id = selected_id_from_input(&ctx.input);
 
     let safety = build_safety_accordion(&payload.safety_notice);

@@ -38,7 +38,9 @@ pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad
         channel: config.review_channel,
         show_qr: config.show_qr_code && show_airbnb,
         airbnb_url,
-        thank_you: config.thank_you_message.trim().to_string(),
+        thank_you: config
+            .thank_you_message
+            .pick_with_fallback(&ctx.locale, &ctx.property.locale),
         property_name: ctx.property.name.clone(),
         locale: ctx.locale.clone(),
     }))

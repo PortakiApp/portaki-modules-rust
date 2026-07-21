@@ -16,7 +16,7 @@
   "host.spot.description": "Description",
   "host.disclaimer.label": "Disclaimer",
   "host.disclaimer.placeholder": "Non-partner suggestions — hours may vary",
-  "host.main.help": "Leave a spot empty to hide it. The disclaimer is free-form text.",
+  "host.main.help": "Leave a spot empty to hide it. Texts are saved for the active edit language only.",
   "host.save": "Save",
   "home.card.title": "Local picks",
   "guest.disclaimer.title": "Info",

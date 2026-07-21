@@ -8,18 +8,19 @@ use portaki_sdk::sdui::primitives::{
 use portaki_sdk::sdui::surface::Surface;
 use serde_json::json;
 
-use crate::config::load_config;
+use crate::config::{load_config, Localized};
 
 #[portaki_sdk::surface(host, id = "main")]
 pub fn render_host_main(ctx: HostContext) -> Surface {
-    let _ = ctx;
+    let lang = Localized::lang_code(&ctx.locale);
     let config = load_config().unwrap_or_default();
+    let thank_you_message = config.thank_you_message.get(&lang).to_string();
 
     let submit_args = json!({
         "review_channel": config.review_channel.as_str(),
         "show_qr_code": config.show_qr_code,
         "airbnb_review_url": config.airbnb_review_url,
-        "thank_you_message": config.thank_you_message,
+        "thank_you_message": thank_you_message,
     });
     let save_action = serde_json::to_value(Action::command(
         "guest-reviews",
@@ -81,7 +82,7 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
                             .child(
                                 TextArea::new()
                                     .name(json!("thank_you_message"))
-                                    .value(json!(config.thank_you_message))
+                                    .value(json!(thank_you_message))
                                     .placeholder(json!("i18n:host.thanks.placeholder")),
                             ),
                     )

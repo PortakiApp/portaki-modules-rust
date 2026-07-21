@@ -14,5 +14,5 @@ pub struct ListSectionsArgs {
 #[portaki_sdk::query(name = "listSections")]
 pub fn list_sections(ctx: Context, args: ListSectionsArgs) -> Result<Vec<SectionView>> {
     let locale = args.locale.unwrap_or_else(|| ctx.locale.clone());
-    store::list_all(&locale)
+    store::list_all(&locale, &ctx.property.locale)
 }

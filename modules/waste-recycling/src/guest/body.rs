@@ -11,11 +11,13 @@ pub fn build_bins_body(data: &GuestData, enriched: bool) -> Vec<Component> {
     let mut children = Vec::new();
 
     for bin in &data.bins {
-        let title = bin.title.pick(&data.locale);
+        let title = bin
+            .title
+            .pick_with_fallback(&data.locale, &data.property_locale);
         let subtitle = bin
             .items
             .iter()
-            .map(|item| item.pick(&data.locale))
+            .map(|item| item.pick_with_fallback(&data.locale, &data.property_locale))
             .filter(|s| !s.trim().is_empty())
             .collect::<Vec<_>>()
             .join(", ");
@@ -33,7 +35,7 @@ pub fn build_bins_body(data: &GuestData, enriched: bool) -> Vec<Component> {
             }
             if enriched {
                 for line in &bin.items {
-                    let text = line.pick(&data.locale);
+                    let text = line.pick_with_fallback(&data.locale, &data.property_locale);
                     if text.trim().is_empty() {
                         continue;
                     }

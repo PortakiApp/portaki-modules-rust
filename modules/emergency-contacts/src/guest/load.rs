@@ -11,6 +11,7 @@ pub struct GuestData {
     pub contacts: Vec<ContactRow>,
     pub host_phone: String,
     pub locale: String,
+    pub property_locale: String,
 }
 
 pub enum GuestLoad {
@@ -32,5 +33,6 @@ pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad
         contacts: config.parse_contacts(),
         host_phone: config.host_visible_phone.trim().to_string(),
         locale: ctx.locale.clone(),
+        property_locale: ctx.property.locale.clone(),
     }))
 }

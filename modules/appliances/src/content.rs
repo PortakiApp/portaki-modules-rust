@@ -116,10 +116,134 @@ impl AppliancesPayload {
 
 /// Prefer canonical `content_fr`; fall back to `content_en` for legacy EN-only rows.
 pub fn load_from_locale_slots(content_fr: &str, content_en: &str) -> AppliancesPayload {
-    if !content_fr.trim().is_empty() {
-        return AppliancesPayload::parse(content_fr);
+    AppliancesBundle::from_row(content_fr, content_en).pick("fr", "fr")
+}
+
+/// N-language storage written into `content_fr` (`content_en` cleared after migrate).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct AppliancesBundle {
+    #[serde(default)]
+    pub by_lang: std::collections::BTreeMap<String, AppliancesPayload>,
+}
+
+impl AppliancesBundle {
+    pub fn lang_code(locale: &str) -> String {
+        let trimmed = locale.trim();
+        if trimmed.is_empty() {
+            return "fr".to_string();
+        }
+        let lower = trimmed.to_ascii_lowercase();
+        let base = lower
+            .split(['-', '_'])
+            .next()
+            .unwrap_or("fr")
+            .trim();
+        if base.is_empty() {
+            "fr".to_string()
+        } else {
+            base.to_string()
+        }
     }
-    AppliancesPayload::parse(content_en)
+
+    pub fn from_row(content_fr: &str, content_en: &str) -> Self {
+        if let Ok(value) = serde_json::from_str::<Value>(content_fr.trim()) {
+            if value.get("by_lang").is_some() {
+                if let Ok(bundle) = serde_json::from_value::<AppliancesBundle>(value.clone()) {
+                    return bundle;
+                }
+            }
+            if value.get("devices").is_some() || value.get("safetyNotice").is_some() {
+                let mut bundle = Self::default();
+                let fr = AppliancesPayload::parse(content_fr);
+                if !fr.is_empty() || !fr.safety_notice.trim().is_empty() {
+                    bundle.by_lang.insert("fr".into(), fr);
+                }
+                let en = AppliancesPayload::parse(content_en);
+                if !en.is_empty() || !en.safety_notice.trim().is_empty() {
+                    bundle.by_lang.insert("en".into(), en);
+                }
+                return bundle;
+            }
+        }
+        let mut bundle = Self::default();
+        let fr = AppliancesPayload::parse(content_fr);
+        if !fr.is_empty() || !fr.safety_notice.trim().is_empty() {
+            bundle.by_lang.insert("fr".into(), fr);
+        }
+        let en = AppliancesPayload::parse(content_en);
+        if !en.is_empty() || !en.safety_notice.trim().is_empty() {
+            bundle.by_lang.insert("en".into(), en);
+        }
+        bundle
+    }
+
+    pub fn to_json_string(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string(self)
+    }
+
+    pub fn get(&self, lang: &str) -> AppliancesPayload {
+        self.by_lang
+            .get(&Self::lang_code(lang))
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    pub fn set(&mut self, lang: &str, payload: AppliancesPayload) {
+        let code = Self::lang_code(lang);
+        self.by_lang.insert(code, payload);
+    }
+
+    /// Copy shared device fields from `source` into other language payloads (by device id).
+    pub fn sync_shared_from(&mut self, source: &AppliancesPayload) {
+        for payload in self.by_lang.values_mut() {
+            for device in &mut payload.devices {
+                if let Some(src) = source.find_device(&device.id) {
+                    device.emoji = src.emoji.clone();
+                    device.featured = src.featured;
+                    device.order = src.order;
+                    device.manual_url = src.manual_url.clone();
+                    device.status = src.status;
+                }
+            }
+            // Align device list order/ids with source when missing.
+            for src in &source.devices {
+                if !payload.devices.iter().any(|d| d.id == src.id) {
+                    let mut clone = src.clone();
+                    clone.name.clear();
+                    clone.description.clear();
+                    clone.location.clear();
+                    clone.safety_note.clear();
+                    payload.devices.push(clone);
+                }
+            }
+            payload.devices.retain(|d| source.find_device(&d.id).is_some());
+            payload.sort_by_order();
+        }
+    }
+
+    pub fn pick(&self, guest_locale: &str, property_locale: &str) -> AppliancesPayload {
+        let candidates = [
+            Self::lang_code(guest_locale),
+            Self::lang_code(property_locale),
+            "fr".to_string(),
+        ];
+        let mut tried = std::collections::BTreeSet::new();
+        for lang in &candidates {
+            if !tried.insert(lang.clone()) {
+                continue;
+            }
+            let payload = self.get(lang);
+            if !payload.is_empty() || !payload.safety_notice.trim().is_empty() {
+                return payload;
+            }
+        }
+        for payload in self.by_lang.values() {
+            if !payload.is_empty() || !payload.safety_notice.trim().is_empty() {
+                return payload.clone();
+            }
+        }
+        AppliancesPayload::default()
+    }
 }
 
 fn looks_legacy(value: &Value) -> bool {

@@ -122,8 +122,10 @@ fn update_config_persists_and_get_config_reads() {
                 ctx.clone(),
                 UpdateConfigArgs {
                     bins: vec![BinInput {
-                        title_fr: "A".into(),
-                        title_en: "A".into(),
+                        title: "A".into(),
+                        title_fr: String::new(),
+                        title_en: String::new(),
+                        items: String::new(),
                         items_fr: String::new(),
                         color: String::new(),
                     }],
@@ -135,6 +137,6 @@ fn update_config_persists_and_get_config_reads() {
             let config = get_config(ctx).expect("getConfig");
             assert_eq!(config.bins.len(), 1);
             assert_eq!(config.bins[0].title.fr, "A");
-            assert_eq!(config.collection_schedule, "Lundi");
+            assert_eq!(config.collection_schedule.get("fr"), "Lundi");
         });
 }

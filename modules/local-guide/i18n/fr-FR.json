@@ -16,7 +16,7 @@
   "host.spot.description": "Description",
   "host.disclaimer.label": "Disclaimer",
   "host.disclaimer.placeholder": "Suggestions non partenaires — horaires variables",
-  "host.main.help": "Laissez un lieu vide pour ne pas l’afficher. Le disclaimer est du texte libre.",
+  "host.main.help": "Laissez un lieu vide pour ne pas l’afficher. Les textes sont enregistrés pour la langue d'édition active uniquement.",
   "host.save": "Enregistrer",
   "home.card.title": "Bons plans",
   "guest.disclaimer.title": "Info",

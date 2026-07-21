@@ -8,7 +8,7 @@ use portaki_sdk::sdui::primitives::{
 use serde_json::json;
 
 use crate::config::{
-    AccessStep, BuildingAccess, DoorCodeTarget, MethodFields, ParkingLayer, StaffKind,
+    BuildingAccess, DoorCodeTarget, MethodFields, ParkingLayer, ResolvedStep, StaffKind,
 };
 use crate::reveal::SECRET_MASK;
 
@@ -225,13 +225,18 @@ fn push_smart_lock_ctas(children: &mut Vec<Component>, data: &GuestData) {
     ));
 }
 
+fn push_method_instructions(children: &mut Vec<Component>, data: &GuestData) {
+    if let Some(instructions) = data.texts.method_instructions.as_deref() {
+        let trimmed = instructions.trim();
+        if !trimmed.is_empty() {
+            push_text_row(children, "i18n:guest.instructions", trimmed);
+        }
+    }
+}
+
 fn push_primary_method(children: &mut Vec<Component>, data: &GuestData, detailed: bool) {
     match &data.config.method {
-        MethodFields::Keybox {
-            location,
-            code,
-            instructions,
-        } => {
+        MethodFields::Keybox { location, code } => {
             children.push(kv_row(
                 "i18n:guest.method",
                 "i18n:guest.method.keybox",
@@ -242,28 +247,17 @@ fn push_primary_method(children: &mut Vec<Component>, data: &GuestData, detailed
                 push_secret_row(children, data, "i18n:guest.keybox.code", code);
             }
             if detailed {
-                if let Some(instructions) = instructions {
-                    push_text_row(children, "i18n:guest.instructions", instructions);
-                }
+                push_method_instructions(children, data);
             }
         }
-        MethodFields::DoorCode {
-            target,
-            code,
-            instructions,
-        } => {
+        MethodFields::DoorCode { target, code } => {
             children.push(kv_row("i18n:guest.method", door_target_key(*target), false));
             push_secret_row(children, data, "i18n:guest.doorCode.code", code);
             if detailed {
-                if let Some(instructions) = instructions {
-                    push_text_row(children, "i18n:guest.instructions", instructions);
-                }
+                push_method_instructions(children, data);
             }
         }
-        MethodFields::SmartLock {
-            instructions,
-            manual_code,
-        } => {
+        MethodFields::SmartLock { manual_code } => {
             children.push(kv_row(
                 "i18n:guest.method",
                 "i18n:guest.method.smartLock",
@@ -288,9 +282,7 @@ fn push_primary_method(children: &mut Vec<Component>, data: &GuestData, detailed
                 );
             }
             if detailed || !has_provider {
-                if let Some(instructions) = instructions {
-                    push_text_row(children, "i18n:guest.instructions", instructions);
-                }
+                push_method_instructions(children, data);
             }
         }
         MethodFields::InPerson {
@@ -362,13 +354,13 @@ fn push_primary_method(children: &mut Vec<Component>, data: &GuestData, detailed
                 push_text_row(children, "i18n:guest.hostGreets.contactNote", contact_note);
             }
         }
-        MethodFields::Other { instructions } => {
+        MethodFields::Other {} => {
             children.push(kv_row(
                 "i18n:guest.method",
                 "i18n:guest.method.other",
                 false,
             ));
-            push_text_row(children, "i18n:guest.instructions", instructions);
+            push_method_instructions(children, data);
         }
     }
 }
@@ -379,7 +371,13 @@ fn push_building_access(
     building: &BuildingAccess,
     detailed: bool,
 ) {
-    if building.is_empty() {
+    let note = data
+        .texts
+        .building_note
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    if building.is_empty() && note.is_none() {
         return;
     }
     if let Some(gate) = building.gate_code.as_deref() {
@@ -389,7 +387,7 @@ fn push_building_access(
         push_text_row(children, "i18n:guest.building.intercom", intercom);
     }
     if detailed {
-        if let Some(note) = building.note.as_deref() {
+        if let Some(note) = note {
             push_text_row(children, "i18n:guest.building.note", note);
         }
     }
@@ -398,14 +396,22 @@ fn push_building_access(
 fn push_parking(
     children: &mut Vec<Component>,
     data: &GuestData,
-    parking: &ParkingLayer,
+    parking: Option<&ParkingLayer>,
     _detailed: bool,
 ) {
-    if parking.is_empty() {
+    let info = data.texts.parking_info.trim();
+    let code = parking.and_then(|p| p.code.as_deref());
+    let has_layer = parking.is_some();
+    if info.is_empty() && code.is_none() && !has_layer {
         return;
     }
-    push_text_row(children, "i18n:guest.parking", &parking.info);
-    if let Some(code) = parking.code.as_deref() {
+    if parking.map(ParkingLayer::is_empty).unwrap_or(true) && info.is_empty() {
+        return;
+    }
+    if !info.is_empty() {
+        push_text_row(children, "i18n:guest.parking", info);
+    }
+    if let Some(code) = code {
         push_secret_row(children, data, "i18n:guest.parking.code", code);
     }
 }
@@ -424,7 +430,7 @@ fn push_reveal_banner(children: &mut Vec<Component>, data: &GuestData) {
     ));
 }
 
-fn push_arrival_extras(children: &mut Vec<Component>, data: &GuestData, steps: &[AccessStep]) {
+fn push_arrival_extras(children: &mut Vec<Component>, data: &GuestData, steps: &[ResolvedStep]) {
     let video = data.config.arrival.arrival_video_url.trim();
     if !video.is_empty() {
         children.push(Component::Link(
@@ -436,13 +442,16 @@ fn push_arrival_extras(children: &mut Vec<Component>, data: &GuestData, steps: &
     }
 
     for step in steps {
-        let title = step.title.pick(&data.locale);
+        let title = step.title.trim();
+        if title.is_empty() {
+            continue;
+        }
         let mut item = ListItem::new()
             .title(json!(title))
             .child(Badge::new().label(json!(kind_label(step.kind.as_deref(), &data.locale))));
         if let Some(detail) = step.detail.as_ref() {
-            let text = detail.pick(&data.locale);
-            if !text.trim().is_empty() {
+            let text = detail.trim();
+            if !text.is_empty() {
                 item = item.child(Text::new().text(json!(text)).variant(json!("caption")));
             }
         }
@@ -467,10 +476,17 @@ pub fn build_access_glance(data: &GuestData) -> Vec<Component> {
 
     if let Some(building) = data.config.building_access.as_ref() {
         push_building_access(&mut children, data, building, false);
+    } else if data
+        .texts
+        .building_note
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .is_some()
+    {
+        push_building_access(&mut children, data, &BuildingAccess::default(), false);
     }
-    if let Some(parking) = data.config.parking.as_ref() {
-        push_parking(&mut children, data, parking, false);
-    }
+    push_parking(&mut children, data, data.config.parking.as_ref(), false);
 
     if let Some(url) = maps_url(data) {
         children.push(Component::Button(
@@ -487,7 +503,7 @@ pub fn build_access_glance(data: &GuestData) -> Vec<Component> {
 pub fn build_access_detail(data: &GuestData) -> Vec<Component> {
     let mut children = Vec::new();
 
-    let note = data.config.arrival.global_note.trim();
+    let note = data.texts.global_note.trim();
     if !note.is_empty() {
         children.push(Component::InfoBanner(
             InfoBanner::new()
@@ -510,10 +526,17 @@ pub fn build_access_detail(data: &GuestData) -> Vec<Component> {
 
     if let Some(building) = data.config.building_access.as_ref() {
         push_building_access(&mut children, data, building, true);
+    } else if data
+        .texts
+        .building_note
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .is_some()
+    {
+        push_building_access(&mut children, data, &BuildingAccess::default(), true);
     }
-    if let Some(parking) = data.config.parking.as_ref() {
-        push_parking(&mut children, data, parking, true);
-    }
+    push_parking(&mut children, data, data.config.parking.as_ref(), true);
 
     if let Some(url) = maps_url(data) {
         children.push(Component::Button(
@@ -524,7 +547,7 @@ pub fn build_access_detail(data: &GuestData) -> Vec<Component> {
         ));
     }
 
-    let steps = data.config.parse_steps();
+    let steps = data.config.resolve_steps(&data.texts);
     push_arrival_extras(&mut children, data, &steps);
 
     children

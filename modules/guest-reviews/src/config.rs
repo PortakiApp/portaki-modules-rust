@@ -4,6 +4,10 @@ use portaki_sdk::host;
 use portaki_sdk::Result;
 use serde::{Deserialize, Serialize};
 
+use crate::localized::deserialize_localized_field;
+
+pub use crate::localized::Localized;
+
 const CONFIG_KEY: &str = "config";
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -49,8 +53,8 @@ pub struct ModuleConfig {
     pub show_qr_code: bool,
     #[serde(default)]
     pub airbnb_review_url: String,
-    #[serde(default)]
-    pub thank_you_message: String,
+    #[serde(default, deserialize_with = "deserialize_localized_field")]
+    pub thank_you_message: Localized,
 }
 
 fn default_true() -> bool {
@@ -63,7 +67,7 @@ impl Default for ModuleConfig {
             review_channel: ReviewChannel::Airbnb,
             show_qr_code: true,
             airbnb_review_url: String::new(),
-            thank_you_message: String::new(),
+            thank_you_message: Localized::default(),
         }
     }
 }

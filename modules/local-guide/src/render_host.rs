@@ -6,19 +6,20 @@ use portaki_sdk::sdui::primitives::{Button, Field, Form, Page, Text, TextArea, T
 use portaki_sdk::sdui::surface::Surface;
 use serde_json::json;
 
-use crate::config::{load_config, SpotRow};
+use crate::config::{load_config, Localized, SpotRow};
 
 const SPOT_SLOTS: usize = 6;
 
 #[portaki_sdk::surface(host, id = "main")]
 pub fn render_host_main(ctx: HostContext) -> Surface {
-    let _ = ctx;
+    let lang = Localized::lang_code(&ctx.locale);
     let config = load_config().unwrap_or_default();
     let spots = config.parse_spots();
+    let disclaimer = config.disclaimer.get(&lang).to_string();
 
     let submit_args = json!({
-        "spots": spots_to_submit(&spots),
-        "disclaimer": config.disclaimer,
+        "spots": spots_to_submit(&spots, &lang),
+        "disclaimer": disclaimer,
     });
     let save_action =
         serde_json::to_value(Action::command("local-guide", "updateConfig", submit_args))
@@ -26,7 +27,7 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
 
     let mut form_children: Vec<Component> = Vec::new();
     for index in 0..SPOT_SLOTS {
-        push_spot_slot(&mut form_children, index, spots.get(index));
+        push_spot_slot(&mut form_children, index, spots.get(index), &lang);
     }
     form_children.push(
         Field::new()
@@ -35,7 +36,7 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
             .child(
                 TextArea::new()
                     .name(json!("disclaimer"))
-                    .value(json!(config.disclaimer))
+                    .value(json!(disclaimer))
                     .placeholder(json!("i18n:host.disclaimer.placeholder")),
             )
             .into(),
@@ -66,60 +67,35 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     .with_id("main")
 }
 
-fn spots_to_submit(spots: &[SpotRow]) -> Vec<serde_json::Value> {
+fn spots_to_submit(spots: &[SpotRow], lang: &str) -> Vec<serde_json::Value> {
     spots
         .iter()
         .map(|s| {
-            let name = if !s.title.fr.trim().is_empty() {
-                s.title.fr.clone()
-            } else {
-                s.title.en.clone()
-            };
-            let description = s
-                .detail
-                .as_ref()
-                .map(|d| {
-                    if !d.fr.trim().is_empty() {
-                        d.fr.clone()
-                    } else {
-                        d.en.clone()
-                    }
-                })
-                .unwrap_or_default();
             json!({
-                "name": name,
+                "name": s.title.get(lang),
                 "category": s.category.clone().unwrap_or_default(),
                 "distance": s.distance.clone().unwrap_or_default(),
                 "tag": s.tag.clone().unwrap_or_default(),
-                "description": description,
+                "description": s.detail.as_ref().map(|d| d.get(lang)).unwrap_or(""),
             })
         })
         .collect()
 }
 
-fn push_spot_slot(children: &mut Vec<Component>, index: usize, spot: Option<&SpotRow>) {
+fn push_spot_slot(
+    children: &mut Vec<Component>,
+    index: usize,
+    spot: Option<&SpotRow>,
+    lang: &str,
+) {
     let slot = index + 1;
-    let name = spot
-        .map(|s| {
-            if !s.title.fr.trim().is_empty() {
-                s.title.fr.as_str()
-            } else {
-                s.title.en.as_str()
-            }
-        })
-        .unwrap_or("");
+    let name = spot.map(|s| s.title.get(lang)).unwrap_or("");
     let category = spot.and_then(|s| s.category.as_deref()).unwrap_or("");
     let distance = spot.and_then(|s| s.distance.as_deref()).unwrap_or("");
     let tag = spot.and_then(|s| s.tag.as_deref()).unwrap_or("");
     let description = spot
         .and_then(|s| s.detail.as_ref())
-        .map(|d| {
-            if !d.fr.trim().is_empty() {
-                d.fr.as_str()
-            } else {
-                d.en.as_str()
-            }
-        })
+        .map(|d| d.get(lang))
         .unwrap_or("");
 
     children.push(

@@ -1,18 +1,24 @@
-//! Module commands — configuration persistence.
+//! Module commands — configuration persistence (shared config + locale texts).
 
 use portaki_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::config::{
     config_from_update_parts, save_config, AccessStep, ArrivalGuide, BuildingAccess,
-    DoorCodeTarget, Localized, MethodFields, ModuleConfig, ParkingLayer, PrimaryMethod, RawConfig,
+    DoorCodeTarget, MethodFields, ModuleConfig, ParkingLayer, PrimaryMethod, RawConfig,
     RevealPolicy, StaffKind,
 };
+use crate::texts::{lang_code, save_texts, ModuleTexts, StepText};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct StepInput {
     #[serde(default)]
     pub kind: String,
+    #[serde(default)]
+    pub title: String,
+    #[serde(default)]
+    pub detail: String,
+    /// Legacy bilingual host form fields — folded into [`Self::title`] / [`Self::detail`].
     #[serde(default)]
     pub title_fr: String,
     #[serde(default)]
@@ -97,7 +103,7 @@ pub struct UpdateConfigArgs {
     #[serde(default)]
     pub parking_code: String,
 
-    // ── Legacy / host-form flat fields (migrated on save) ────────────────────
+    // ── Legacy / host-form flat fields ───────────────────────────────────────
     #[serde(default)]
     pub steps: Vec<StepInput>,
     #[serde(default)]
@@ -116,67 +122,132 @@ pub struct UpdateConfigArgs {
     pub keybox_code: String,
     #[serde(default)]
     pub parking_info: String,
+
+    /// Optional structured texts (API / tests). Host form flat fields win when empty.
+    #[serde(default)]
+    pub texts: Option<ModuleTexts>,
 }
 
 impl UpdateConfigArgs {
-    fn resolve_steps(&self) -> Vec<AccessStep> {
+    fn resolve_step_parts(&self) -> (Vec<AccessStep>, Vec<StepText>) {
         if !self.steps.is_empty() {
-            return self
-                .steps
-                .iter()
-                .enumerate()
-                .filter_map(|(index, input)| step_from_input(input, index))
-                .collect();
+            let mut skeletons = Vec::new();
+            let mut texts = Vec::new();
+            for (index, input) in self.steps.iter().enumerate() {
+                if let Some((skeleton, text)) = step_from_input(input, index) {
+                    skeletons.push(skeleton);
+                    if !text.is_empty() {
+                        texts.push(text);
+                    }
+                }
+            }
+            return (skeletons, texts);
         }
         let raw = self.steps_json.trim();
         if raw.is_empty() {
-            return Vec::new();
+            return (Vec::new(), Vec::new());
         }
-        serde_json::from_str::<Vec<AccessStep>>(raw)
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|s| !s.id.trim().is_empty())
-            .collect()
+        let parsed: Vec<serde_json::Value> = serde_json::from_str(raw).unwrap_or_default();
+        let mut skeletons = Vec::new();
+        let mut texts = Vec::new();
+        for (index, value) in parsed.into_iter().enumerate() {
+            let id = value
+                .get("id")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(str::to_string)
+                .unwrap_or_else(|| format!("step-{}", index + 1));
+            let kind = value
+                .get("kind")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(str::to_string);
+            let title = value
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .trim()
+                .to_string();
+            let detail = value
+                .get("detail")
+                .and_then(|v| v.as_str())
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(str::to_string);
+            skeletons.push(AccessStep { id: id.clone(), kind });
+            if !title.is_empty() || detail.is_some() {
+                texts.push(StepText {
+                    id,
+                    title,
+                    detail,
+                });
+            }
+        }
+        (skeletons, texts)
     }
 
-    fn into_config(self) -> ModuleConfig {
-        // Structured `method` wins (API / tests).
+    fn into_config_and_texts(self) -> (ModuleConfig, ModuleTexts) {
         if self.method.is_some() {
-            return self.into_structured_config();
+            return self.into_structured();
         }
-        // Host SDUI posts primary_method + flat fields.
         if let Some(primary) = self.primary_method {
             return self.assemble_host_form(primary);
         }
-        // Legacy flat gate/keybox only.
-        self.into_legacy_config()
+        self.into_legacy()
     }
 
-    fn into_structured_config(self) -> ModuleConfig {
-        let steps = self.resolve_steps();
-        config_from_update_parts(RawConfig {
+    fn into_structured(self) -> (ModuleConfig, ModuleTexts) {
+        let (step_skeletons, step_texts) = self.resolve_step_parts();
+        let mut texts = self.texts.clone().unwrap_or_default();
+        if texts.steps.is_empty() {
+            texts.steps = step_texts;
+        }
+        merge_flat_texts(&mut texts, &self);
+
+        let mut arrival = self.arrival.clone().unwrap_or_default();
+        if arrival.steps.is_empty() {
+            arrival.steps = step_skeletons;
+        }
+        if arrival.address.trim().is_empty() && !self.address.trim().is_empty() {
+            arrival.address = self.address.trim().to_string();
+        }
+        if arrival.arrival_video_url.trim().is_empty() && !self.arrival_video_url.trim().is_empty()
+        {
+            arrival.arrival_video_url = self.arrival_video_url.trim().to_string();
+        }
+
+        let config = config_from_update_parts(RawConfig {
             primary_method: self.primary_method,
             method: self.method,
             building_access: self.building_access,
             parking: self.parking,
-            arrival: self.arrival,
+            arrival: Some(arrival),
             reveal_policy: self.reveal_policy,
             smart_lock_provider_module_id: self.smart_lock_provider_module_id,
-            steps,
-            steps_json: self.steps_json,
+            steps: Vec::new(),
+            steps_json: String::new(),
             parking_map_url: self.parking_map_url,
             arrival_video_url: self.arrival_video_url,
-            global_note: self.global_note,
+            global_note: String::new(),
             address: self.address,
             gate_code: self.gate_code,
             keybox_code: self.keybox_code,
-            parking_info: self.parking_info,
-        })
+            parking_info: String::new(),
+        });
+        (config, texts)
     }
 
-    fn into_legacy_config(self) -> ModuleConfig {
-        let steps = self.resolve_steps();
-        config_from_update_parts(RawConfig {
+    fn into_legacy(self) -> (ModuleConfig, ModuleTexts) {
+        let (step_skeletons, step_texts) = self.resolve_step_parts();
+        let mut texts = ModuleTexts {
+            steps: step_texts,
+            ..ModuleTexts::default()
+        };
+        merge_flat_texts(&mut texts, &self);
+
+        let config = config_from_update_parts(RawConfig {
             primary_method: None,
             method: None,
             building_access: None,
@@ -184,34 +255,50 @@ impl UpdateConfigArgs {
             arrival: None,
             reveal_policy: self.reveal_policy,
             smart_lock_provider_module_id: self.smart_lock_provider_module_id,
-            steps,
-            steps_json: self.steps_json,
+            steps: step_skeletons
+                .into_iter()
+                .map(|s| crate::config::RawStep {
+                    id: s.id,
+                    kind: s.kind,
+                })
+                .collect(),
+            steps_json: String::new(),
             parking_map_url: self.parking_map_url,
             arrival_video_url: self.arrival_video_url,
-            global_note: self.global_note,
+            global_note: String::new(),
             address: self.address,
             gate_code: self.gate_code,
             keybox_code: self.keybox_code,
-            parking_info: self.parking_info,
-        })
+            parking_info: self.parking_info.clone(),
+        });
+        (config, texts)
     }
 
-    fn assemble_host_form(self, primary: PrimaryMethod) -> ModuleConfig {
+    fn assemble_host_form(self, primary: PrimaryMethod) -> (ModuleConfig, ModuleTexts) {
         let method = assemble_method(&self, primary);
         let building_access = assemble_building_access(&self);
         let parking = assemble_parking(&self);
-        let steps = self.resolve_steps();
+        let (step_skeletons, step_texts) = self.resolve_step_parts();
         let arrival = ArrivalGuide {
             address: self.address.trim().to_string(),
-            steps,
+            steps: step_skeletons,
             arrival_video_url: self.arrival_video_url.trim().to_string(),
-            global_note: self.global_note.trim().to_string(),
         };
         let provider = if primary == PrimaryMethod::SmartLock {
             resolve_smart_lock_provider(&self)
         } else {
             None
         };
+
+        let mut texts = self.texts.clone().unwrap_or_default();
+        if texts.steps.is_empty() {
+            texts.steps = step_texts;
+        }
+        merge_flat_texts(&mut texts, &self);
+        // Method instructions from the active primary form field.
+        if texts.method_instructions.is_none() {
+            texts.method_instructions = method_instructions_from_form(&self, primary);
+        }
 
         let mut config = ModuleConfig {
             primary_method: primary,
@@ -223,7 +310,42 @@ impl UpdateConfigArgs {
             smart_lock_provider_module_id: provider,
         };
         config.sync_primary_method();
-        config
+        (config, texts)
+    }
+}
+
+fn merge_flat_texts(texts: &mut ModuleTexts, args: &UpdateConfigArgs) {
+    if texts.building_note.is_none() {
+        texts.building_note = nonempty_owned(&args.building_access_note);
+    }
+    if texts.parking_info.trim().is_empty() {
+        texts.parking_info = args.parking_info.trim().to_string();
+    }
+    if texts.global_note.trim().is_empty() {
+        texts.global_note = args.global_note.trim().to_string();
+    }
+    if texts.method_instructions.is_none() {
+        let from_other = nonempty_owned(&args.other_instructions);
+        let from_keybox = nonempty_owned(&args.keybox_instructions);
+        let from_door = nonempty_owned(&args.door_code_instructions);
+        let from_smart = nonempty_owned(&args.smart_lock_instructions);
+        texts.method_instructions = from_other
+            .or(from_keybox)
+            .or(from_door)
+            .or(from_smart);
+    }
+}
+
+fn method_instructions_from_form(
+    args: &UpdateConfigArgs,
+    primary: PrimaryMethod,
+) -> Option<String> {
+    match primary {
+        PrimaryMethod::Keybox => nonempty_owned(&args.keybox_instructions),
+        PrimaryMethod::DoorCode => nonempty_owned(&args.door_code_instructions),
+        PrimaryMethod::SmartLock => nonempty_owned(&args.smart_lock_instructions),
+        PrimaryMethod::Other => nonempty_owned(&args.other_instructions),
+        _ => None,
     }
 }
 
@@ -232,7 +354,6 @@ fn assemble_method(args: &UpdateConfigArgs, primary: PrimaryMethod) -> MethodFie
         PrimaryMethod::Keybox => MethodFields::Keybox {
             location: args.keybox_location.trim().to_string(),
             code: nonempty_owned(&args.keybox_code),
-            instructions: nonempty_owned(&args.keybox_instructions),
         },
         PrimaryMethod::DoorCode => {
             let code = if !args.door_code.trim().is_empty() {
@@ -243,11 +364,9 @@ fn assemble_method(args: &UpdateConfigArgs, primary: PrimaryMethod) -> MethodFie
             MethodFields::DoorCode {
                 target: parse_door_target(&args.door_code_target),
                 code,
-                instructions: nonempty_owned(&args.door_code_instructions),
             }
         }
         PrimaryMethod::SmartLock => MethodFields::SmartLock {
-            instructions: nonempty_owned(&args.smart_lock_instructions),
             manual_code: nonempty_owned(&args.smart_lock_manual_code),
         },
         PrimaryMethod::InPerson => {
@@ -271,9 +390,7 @@ fn assemble_method(args: &UpdateConfigArgs, primary: PrimaryMethod) -> MethodFie
             contact_note: nonempty_owned(&args.host_greets_contact_note),
             eta_hint: nonempty_owned(&args.host_greets_eta_hint),
         },
-        PrimaryMethod::Other => MethodFields::Other {
-            instructions: args.other_instructions.trim().to_string(),
-        },
+        PrimaryMethod::Other => MethodFields::Other {},
     }
 }
 
@@ -283,27 +400,17 @@ fn assemble_building_access(args: &UpdateConfigArgs) -> Option<BuildingAccess> {
     }
     if let Some(structured) = args.building_access.clone() {
         if args.building_access_enabled != Some(true) && !has_building_flat(args) {
-            return if structured.is_empty() {
-                None
-            } else {
-                Some(structured)
-            };
+            return Some(structured);
         }
     }
     if args.building_access_enabled != Some(true) && !has_building_flat(args) {
         return None;
     }
-    let layer = BuildingAccess {
+    Some(BuildingAccess {
         gate_code: nonempty_owned(&args.building_access_gate_code)
             .or_else(|| nonempty_owned(&args.gate_code)),
         intercom: nonempty_owned(&args.building_access_intercom),
-        note: nonempty_owned(&args.building_access_note),
-    };
-    if layer.is_empty() {
-        None
-    } else {
-        Some(layer)
-    }
+    })
 }
 
 fn assemble_parking(args: &UpdateConfigArgs) -> Option<ParkingLayer> {
@@ -312,26 +419,17 @@ fn assemble_parking(args: &UpdateConfigArgs) -> Option<ParkingLayer> {
     }
     if let Some(structured) = args.parking.clone() {
         if args.parking_enabled != Some(true) && !has_parking_flat(args) {
-            return if structured.is_empty() {
-                None
-            } else {
-                Some(structured)
-            };
+            return Some(structured);
         }
     }
     if args.parking_enabled != Some(true) && !has_parking_flat(args) {
         return None;
     }
-    let layer = ParkingLayer {
-        info: args.parking_info.trim().to_string(),
+    // Keep empty layer when only parking_info text is set (enable marker).
+    Some(ParkingLayer {
         map_url: args.parking_map_url.trim().to_string(),
         code: nonempty_owned(&args.parking_code),
-    };
-    if layer.is_empty() {
-        None
-    } else {
-        Some(layer)
-    }
+    })
 }
 
 fn has_building_flat(args: &UpdateConfigArgs) -> bool {
@@ -397,38 +495,63 @@ fn parse_optional_coord_pair(lat_raw: &str, lng_raw: &str) -> (Option<f64>, Opti
     (Some(lat), Some(lng))
 }
 
-fn step_from_input(input: &StepInput, index: usize) -> Option<AccessStep> {
-    if input.title_fr.trim().is_empty() && input.title_en.trim().is_empty() {
+fn step_from_input(input: &StepInput, index: usize) -> Option<(AccessStep, StepText)> {
+    let title = first_nonempty_str(&[
+        input.title.as_str(),
+        input.title_fr.as_str(),
+        input.title_en.as_str(),
+    ]);
+    let kind = input.kind.trim();
+    let detail = first_nonempty_str(&[
+        input.detail.as_str(),
+        input.detail_fr.as_str(),
+        input.detail_en.as_str(),
+    ]);
+    // Keep skeleton even when title empty if kind is set (host draft slots).
+    if title.is_empty() && kind.is_empty() && detail.is_empty() {
         return None;
     }
-    let kind = input.kind.trim();
-    let detail_fr = input.detail_fr.trim();
-    let detail_en = input.detail_en.trim();
-    Some(AccessStep {
-        id: format!("step-{}", index + 1),
+    if title.is_empty() && kind.is_empty() {
+        return None;
+    }
+    let id = format!("step-{}", index + 1);
+    let skeleton = AccessStep {
+        id: id.clone(),
         kind: if kind.is_empty() {
             None
         } else {
             Some(kind.to_string())
         },
-        title: Localized {
-            fr: input.title_fr.trim().to_string(),
-            en: input.title_en.trim().to_string(),
-        },
-        detail: if detail_fr.is_empty() && detail_en.is_empty() {
+    };
+    let text = StepText {
+        id,
+        title: title.to_string(),
+        detail: if detail.is_empty() {
             None
         } else {
-            Some(Localized {
-                fr: detail_fr.to_string(),
-                en: detail_en.to_string(),
-            })
+            Some(detail.to_string())
         },
-    })
+    };
+    Some((skeleton, text))
+}
+
+fn first_nonempty_str<'a>(candidates: &[&'a str]) -> &'a str {
+    for candidate in candidates {
+        let trimmed = candidate.trim();
+        if !trimmed.is_empty() {
+            return trimmed;
+        }
+    }
+    ""
 }
 
 #[portaki_sdk::command(name = "updateConfig")]
-pub fn update_config(_ctx: Context, args: UpdateConfigArgs) -> Result<()> {
-    save_config(&args.into_config())
+pub fn update_config(ctx: Context, args: UpdateConfigArgs) -> Result<()> {
+    let lang = lang_code(&ctx.locale);
+    let (config, texts) = args.into_config_and_texts();
+    save_config(&config)?;
+    save_texts(&lang, &texts)?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -451,7 +574,6 @@ mod tests {
 
     #[test]
     fn update_config_args_day_before_16h_and_hours_before_24() {
-        // Regression: wasm_params_invalid unknown variant day_before_16h.
         let day: UpdateConfigArgs = serde_json::from_value(json!({
             "reveal_policy": "day_before_16h",
             "primary_method": "other",
@@ -488,5 +610,42 @@ mod tests {
                 .unwrap_or_else(|e| panic!("MethodFields kind={wire:?} must deserialize: {e}"));
             assert_eq!(method.primary_method().as_wire(), *wire);
         }
+    }
+
+    #[test]
+    fn assemble_host_form_splits_texts() {
+        let args = UpdateConfigArgs {
+            primary_method: Some(PrimaryMethod::Keybox),
+            keybox_location: "Porte".into(),
+            keybox_code: "4821".into(),
+            keybox_instructions: "Tourner".into(),
+            building_access_enabled: Some(true),
+            building_access_note: "Sonnette".into(),
+            parking_enabled: Some(true),
+            parking_info: "Rue A".into(),
+            global_note: "Note".into(),
+            steps: vec![StepInput {
+                kind: "parking".into(),
+                title: "Se garer".into(),
+                detail: "Place".into(),
+                ..StepInput::default()
+            }],
+            ..UpdateConfigArgs::default()
+        };
+        let (config, texts) = args.into_config_and_texts();
+        assert_eq!(config.primary_method, PrimaryMethod::Keybox);
+        match &config.method {
+            MethodFields::Keybox { location, code } => {
+                assert_eq!(location, "Porte");
+                assert_eq!(code.as_deref(), Some("4821"));
+            }
+            other => panic!("expected Keybox, got {other:?}"),
+        }
+        assert_eq!(texts.method_instructions.as_deref(), Some("Tourner"));
+        assert_eq!(texts.building_note.as_deref(), Some("Sonnette"));
+        assert_eq!(texts.parking_info, "Rue A");
+        assert_eq!(texts.global_note, "Note");
+        assert_eq!(texts.steps[0].title, "Se garer");
+        assert_eq!(config.parse_steps()[0].kind.as_deref(), Some("parking"));
     }
 }

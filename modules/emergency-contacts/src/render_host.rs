@@ -6,18 +6,18 @@ use portaki_sdk::sdui::primitives::{Button, Field, Form, Page, Text, TextInput};
 use portaki_sdk::sdui::surface::Surface;
 use serde_json::json;
 
-use crate::config::{load_config, ContactRow};
+use crate::config::{load_config, ContactRow, Localized};
 
 const CONTACT_SLOTS: usize = 6;
 
 #[portaki_sdk::surface(host, id = "main")]
 pub fn render_host_main(ctx: HostContext) -> Surface {
-    let _ = ctx;
+    let lang = Localized::lang_code(&ctx.locale);
     let config = load_config().unwrap_or_default();
     let contacts = config.parse_contacts();
 
     let submit_args = json!({
-        "contacts": contacts_to_submit(&contacts),
+        "contacts": contacts_to_submit(&contacts, &lang),
         "host_visible_phone": config.host_visible_phone,
     });
     let save_action = serde_json::to_value(Action::command(
@@ -39,7 +39,7 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         .into()];
 
     for index in 0..CONTACT_SLOTS {
-        push_contact_slot(&mut form_children, index, contacts.get(index));
+        push_contact_slot(&mut form_children, index, contacts.get(index), &lang);
     }
 
     form_children.push(
@@ -68,23 +68,26 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     .with_id("main")
 }
 
-fn contacts_to_submit(contacts: &[ContactRow]) -> Vec<serde_json::Value> {
+fn contacts_to_submit(contacts: &[ContactRow], lang: &str) -> Vec<serde_json::Value> {
     contacts
         .iter()
         .map(|c| {
             json!({
-                "label_fr": c.label.fr,
-                "label_en": c.label.en,
+                "label": c.label.get(lang),
                 "phone": c.phone,
             })
         })
         .collect()
 }
 
-fn push_contact_slot(children: &mut Vec<Component>, index: usize, contact: Option<&ContactRow>) {
+fn push_contact_slot(
+    children: &mut Vec<Component>,
+    index: usize,
+    contact: Option<&ContactRow>,
+    lang: &str,
+) {
     let slot = index + 1;
-    let label_fr = contact.map(|c| c.label.fr.as_str()).unwrap_or("");
-    let label_en = contact.map(|c| c.label.en.as_str()).unwrap_or("");
+    let label = contact.map(|c| c.label.get(lang)).unwrap_or("");
     let phone = contact.map(|c| c.phone.as_str()).unwrap_or("");
 
     children.push(
@@ -95,23 +98,12 @@ fn push_contact_slot(children: &mut Vec<Component>, index: usize, contact: Optio
     );
     children.push(
         Field::new()
-            .name(json!(format!("contacts.{index}.label_fr")))
-            .label(json!("i18n:host.contact.labelFr"))
+            .name(json!(format!("contacts.{index}.label")))
+            .label(json!("i18n:host.contact.label"))
             .child(
                 TextInput::new()
-                    .name(json!(format!("contacts.{index}.label_fr")))
-                    .value(json!(label_fr)),
-            )
-            .into(),
-    );
-    children.push(
-        Field::new()
-            .name(json!(format!("contacts.{index}.label_en")))
-            .label(json!("i18n:host.contact.labelEn"))
-            .child(
-                TextInput::new()
-                    .name(json!(format!("contacts.{index}.label_en")))
-                    .value(json!(label_en)),
+                    .name(json!(format!("contacts.{index}.label")))
+                    .value(json!(label)),
             )
             .into(),
     );

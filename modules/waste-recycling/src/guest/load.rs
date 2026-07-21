@@ -11,6 +11,7 @@ pub struct GuestData {
     pub bins: Vec<BinRow>,
     pub collection_schedule: String,
     pub locale: String,
+    pub property_locale: String,
 }
 
 pub enum GuestLoad {
@@ -30,7 +31,10 @@ pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad
 
     Ok(GuestLoad::Ready(GuestData {
         bins: config.parse_bins(),
-        collection_schedule: config.collection_schedule.trim().to_string(),
+        collection_schedule: config
+            .collection_schedule
+            .pick_with_fallback(&ctx.locale, &ctx.property.locale),
         locale: ctx.locale.clone(),
+        property_locale: ctx.property.locale.clone(),
     }))
 }

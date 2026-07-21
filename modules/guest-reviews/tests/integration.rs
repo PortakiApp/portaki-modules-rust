@@ -127,7 +127,7 @@ fn submit_review_and_update_config() {
             )
             .expect("update");
             let cfg = get_config(ctx.clone()).expect("cfg");
-            assert_eq!(cfg.thank_you_message, "Thanks");
+            assert_eq!(cfg.thank_you_message.get("fr"), "Thanks");
 
             submit_review(
                 ctx,

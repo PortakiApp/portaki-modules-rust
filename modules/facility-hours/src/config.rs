@@ -4,6 +4,10 @@ use portaki_sdk::host;
 use portaki_sdk::Result;
 use serde::{Deserialize, Serialize};
 
+use crate::localized::deserialize_localized_field;
+
+pub use crate::localized::Localized;
+
 const CONFIG_KEY: &str = "config";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -12,13 +16,13 @@ pub struct ModuleConfig {
     pub facilities: Vec<FacilityRow>,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub facilities_json: String,
-    #[serde(default)]
-    pub general_note: String,
+    #[serde(default, deserialize_with = "deserialize_localized_field")]
+    pub general_note: Localized,
 }
 
 impl ModuleConfig {
     pub fn is_empty(&self) -> bool {
-        self.parse_facilities().is_empty() && self.general_note.trim().is_empty()
+        self.parse_facilities().is_empty() && self.general_note.is_empty()
     }
 
     pub fn parse_facilities(&self) -> Vec<FacilityRow> {
@@ -57,30 +61,6 @@ pub struct FacilityRow {
     pub hours: Option<String>,
     #[serde(default)]
     pub note: Option<Localized>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
-pub struct Localized {
-    #[serde(default)]
-    pub fr: String,
-    #[serde(default)]
-    pub en: String,
-}
-
-impl Localized {
-    pub fn pick(&self, locale: &str) -> String {
-        if locale.to_ascii_lowercase().starts_with("en") {
-            if !self.en.trim().is_empty() {
-                self.en.clone()
-            } else {
-                self.fr.clone()
-            }
-        } else if !self.fr.trim().is_empty() {
-            self.fr.clone()
-        } else {
-            self.en.clone()
-        }
-    }
 }
 
 pub fn load_config() -> Result<ModuleConfig> {

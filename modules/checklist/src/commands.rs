@@ -6,11 +6,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uuid::Uuid;
 
+use crate::labels::{self, lang_code};
 use crate::storage;
 
 /// Single item payload for `replaceItems`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChecklistItemInput {
+    #[serde(default)]
+    pub label: String,
     #[serde(default, alias = "labelFr")]
     pub label_fr: String,
     #[serde(default, alias = "labelEn")]
@@ -44,10 +47,14 @@ impl ReplaceItemsArgs {
             .iter()
             .enumerate()
             .filter_map(|(index, item)| {
-                if item.label_fr.trim().is_empty() && item.label_en.trim().is_empty() {
+                let empty = item.label.trim().is_empty()
+                    && item.label_fr.trim().is_empty()
+                    && item.label_en.trim().is_empty();
+                if empty {
                     return None;
                 }
                 Some(ChecklistItemInput {
+                    label: item.label.trim().to_string(),
                     label_fr: item.label_fr.trim().to_string(),
                     label_en: item.label_en.trim().to_string(),
                     sort_order: if item.sort_order == 0 {
@@ -74,13 +81,31 @@ impl ReplaceItemsArgs {
 }
 
 #[portaki_sdk::command(name = "replaceItems")]
-pub fn replace_items(_ctx: Context, args: ReplaceItemsArgs) -> Result<()> {
+pub fn replace_items(ctx: Context, args: ReplaceItemsArgs) -> Result<()> {
+    let lang = lang_code(&ctx.locale);
     let items = args.resolve_items()?;
-    let payload = items
-        .into_iter()
-        .map(|item| (item.label_fr, item.label_en, item.sort_order))
-        .collect();
-    storage::replace_items(payload)
+    let existing = storage::list_items()?;
+    let mut next = Vec::new();
+    for (index, input) in items.into_iter().enumerate() {
+        let mut labels = existing
+            .get(index)
+            .map(labels::labels_from_item)
+            .unwrap_or_default();
+        if !input.label.trim().is_empty() {
+            labels.insert(lang.clone(), input.label.trim().to_string());
+        } else {
+            if !input.label_fr.trim().is_empty() {
+                labels.insert("fr".into(), input.label_fr.trim().to_string());
+            }
+            if !input.label_en.trim().is_empty() {
+                labels.insert("en".into(), input.label_en.trim().to_string());
+            }
+        }
+        let (label_fr, label_en) = labels::encode_labels(&labels);
+        let id = existing.get(index).map(|item| item.id);
+        next.push((id, label_fr, label_en, input.sort_order));
+    }
+    storage::replace_items_preserving_ids(next)
 }
 
 #[portaki_sdk::command(name = "completeItem")]

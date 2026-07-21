@@ -4,6 +4,8 @@ use portaki_sdk::host;
 use portaki_sdk::Result;
 use serde::{Deserialize, Serialize};
 
+pub use crate::localized::Localized;
+
 const CONFIG_KEY: &str = "config";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -56,30 +58,6 @@ pub struct ContactRow {
     pub note: Option<Localized>,
     #[serde(default)]
     pub category: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
-pub struct Localized {
-    #[serde(default)]
-    pub fr: String,
-    #[serde(default)]
-    pub en: String,
-}
-
-impl Localized {
-    pub fn pick(&self, locale: &str) -> String {
-        if locale.to_ascii_lowercase().starts_with("en") {
-            if !self.en.trim().is_empty() {
-                self.en.clone()
-            } else {
-                self.fr.clone()
-            }
-        } else if !self.fr.trim().is_empty() {
-            self.fr.clone()
-        } else {
-            self.en.clone()
-        }
-    }
 }
 
 pub fn load_config() -> Result<ModuleConfig> {

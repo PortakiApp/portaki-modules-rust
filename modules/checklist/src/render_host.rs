@@ -9,22 +9,22 @@ use portaki_sdk::sdui::primitives::{Button, Field, Form, Page, Text, TextInput};
 use portaki_sdk::sdui::surface::Surface;
 use serde_json::json;
 
+use crate::labels::{self, lang_code};
 use crate::storage;
 
 const ITEM_SLOTS: usize = 6;
 
-/// Host checklist editor — indexed item slots → `replaceItems`.
+/// Host checklist editor — indexed item slots → `replaceItems` for active locale.
 #[portaki_sdk::surface(host, id = "main")]
 pub fn render_host_main(ctx: HostContext) -> Surface {
-    let _ = ctx;
+    let lang = lang_code(&ctx.locale);
     let items = storage::list_items().unwrap_or_default();
 
     let submit_items: Vec<serde_json::Value> = items
         .iter()
         .map(|item| {
             json!({
-                "label_fr": item.label_fr,
-                "label_en": item.label_en,
+                "label": labels::get_label(item, &lang),
                 "sort_order": item.sort_order,
             })
         })
@@ -41,8 +41,9 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     for index in 0..ITEM_SLOTS {
         let item = items.get(index);
         let slot = index + 1;
-        let label_fr = item.map(|i| i.label_fr.as_str()).unwrap_or("");
-        let label_en = item.map(|i| i.label_en.as_str()).unwrap_or("");
+        let label = item
+            .map(|i| labels::get_label(i, &lang))
+            .unwrap_or_default();
 
         form_children.push(
             Text::new()
@@ -52,23 +53,12 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         );
         form_children.push(
             Field::new()
-                .name(json!(format!("items.{index}.label_fr")))
-                .label(json!("i18n:host.item.labelFr"))
+                .name(json!(format!("items.{index}.label")))
+                .label(json!("i18n:host.item.label"))
                 .child(
                     TextInput::new()
-                        .name(json!(format!("items.{index}.label_fr")))
-                        .value(json!(label_fr)),
-                )
-                .into(),
-        );
-        form_children.push(
-            Field::new()
-                .name(json!(format!("items.{index}.label_en")))
-                .label(json!("i18n:host.item.labelEn"))
-                .child(
-                    TextInput::new()
-                        .name(json!(format!("items.{index}.label_en")))
-                        .value(json!(label_en)),
+                        .name(json!(format!("items.{index}.label")))
+                        .value(json!(label)),
                 )
                 .into(),
         );

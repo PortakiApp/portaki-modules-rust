@@ -11,6 +11,7 @@ pub struct GuestData {
     pub spots: Vec<SpotRow>,
     pub disclaimer: String,
     pub locale: String,
+    pub property_locale: String,
 }
 
 pub enum GuestLoad {
@@ -30,7 +31,10 @@ pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad
 
     Ok(GuestLoad::Ready(GuestData {
         spots: config.parse_spots(),
-        disclaimer: config.disclaimer.trim().to_string(),
+        disclaimer: config
+            .disclaimer
+            .pick_with_fallback(&ctx.locale, &ctx.property.locale),
         locale: ctx.locale.clone(),
+        property_locale: ctx.property.locale.clone(),
     }))
 }

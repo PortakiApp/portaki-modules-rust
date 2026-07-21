@@ -76,13 +76,14 @@ pub struct ReplaceDeviceSlot {
 }
 
 #[portaki_sdk::command(name = "saveAppliance")]
-pub fn save_appliance(_ctx: Context, args: SaveApplianceArgs) -> Result<Appliance> {
+pub fn save_appliance(ctx: Context, args: SaveApplianceArgs) -> Result<Appliance> {
+    let lang = crate::content::AppliancesBundle::lang_code(&ctx.locale);
     let name = args.name.trim().to_string();
     if name.is_empty() {
         return Err(PortakiError::Host("appliance name is required".into()));
     }
 
-    let mut payload = store::load_payload()?;
+    let mut payload = store::load_payload_for(&lang, &ctx.property.locale)?;
     let is_create = args
         .id
         .as_ref()
@@ -145,53 +146,57 @@ pub fn save_appliance(_ctx: Context, args: SaveApplianceArgs) -> Result<Applianc
     }
 
     payload.sort_by_order();
-    let _ = store::save_payload(&payload)?;
+    let _ = store::save_payload_for(&lang, &payload)?;
     Ok(next)
 }
 
 #[portaki_sdk::command(name = "deleteAppliance")]
-pub fn delete_appliance(_ctx: Context, args: DeleteApplianceArgs) -> Result<()> {
+pub fn delete_appliance(ctx: Context, args: DeleteApplianceArgs) -> Result<()> {
+    let lang = crate::content::AppliancesBundle::lang_code(&ctx.locale);
     let id = args.id.trim();
     if id.is_empty() {
         return Err(PortakiError::Host("appliance id is required".into()));
     }
-    let mut payload = store::load_payload()?;
+    let mut payload = store::load_payload_for(&lang, &ctx.property.locale)?;
     let before = payload.devices.len();
     payload.devices.retain(|d| d.id != id);
     if payload.devices.len() == before {
         return Err(PortakiError::Host(format!("appliance not found: {id}")));
     }
-    let _ = store::save_payload(&payload)?;
+    let _ = store::save_payload_for(&lang, &payload)?;
     Ok(())
 }
 
 #[portaki_sdk::command(name = "reorderAppliances")]
-pub fn reorder_appliances(_ctx: Context, args: ReorderAppliancesArgs) -> Result<()> {
+pub fn reorder_appliances(ctx: Context, args: ReorderAppliancesArgs) -> Result<()> {
+    let lang = crate::content::AppliancesBundle::lang_code(&ctx.locale);
     if args.ordered_ids.is_empty() {
         return Ok(());
     }
-    let mut payload = store::load_payload()?;
+    let mut payload = store::load_payload_for(&lang, &ctx.property.locale)?;
     for (index, id) in args.ordered_ids.iter().enumerate() {
         if let Some(device) = payload.devices.iter_mut().find(|d| d.id == *id) {
             device.order = index as i32;
         }
     }
     payload.sort_by_order();
-    let _ = store::save_payload(&payload)?;
+    let _ = store::save_payload_for(&lang, &payload)?;
     Ok(())
 }
 
 #[portaki_sdk::command(name = "saveSafetyNotice")]
-pub fn save_safety_notice(_ctx: Context, args: SaveSafetyNoticeArgs) -> Result<()> {
-    let mut payload = store::load_payload()?;
+pub fn save_safety_notice(ctx: Context, args: SaveSafetyNoticeArgs) -> Result<()> {
+    let lang = crate::content::AppliancesBundle::lang_code(&ctx.locale);
+    let mut payload = store::load_payload_for(&lang, &ctx.property.locale)?;
     payload.safety_notice = normalize_description(&args.safety_notice);
-    let _ = store::save_payload(&payload)?;
+    let _ = store::save_payload_for(&lang, &payload)?;
     Ok(())
 }
 
 /// Replace the full device list from the host SDUI form (empty name = drop slot).
 #[portaki_sdk::command(name = "replaceDevices")]
-pub fn replace_devices(_ctx: Context, args: ReplaceDevicesArgs) -> Result<()> {
+pub fn replace_devices(ctx: Context, args: ReplaceDevicesArgs) -> Result<()> {
+    let lang = crate::content::AppliancesBundle::lang_code(&ctx.locale);
     let mut next_devices: Vec<Appliance> = Vec::new();
 
     for (index, slot) in args.devices.iter().enumerate() {
@@ -245,11 +250,11 @@ pub fn replace_devices(_ctx: Context, args: ReplaceDevicesArgs) -> Result<()> {
         )));
     }
 
-    let mut payload = store::load_payload()?;
+    let mut payload = store::load_payload_for(&lang, &ctx.property.locale)?;
     payload.safety_notice = normalize_description(&args.safety_notice);
     payload.devices = next_devices;
     payload.sort_by_order();
-    let _ = store::save_payload(&payload)?;
+    let _ = store::save_payload_for(&lang, &payload)?;
     Ok(())
 }
 

@@ -6,39 +6,38 @@ use portaki_sdk::sdui::primitives::{Button, Field, Form, Page, Select, Text, Tex
 use portaki_sdk::sdui::surface::Surface;
 use serde_json::json;
 
-use crate::content::{RuleItem, RulesPayload};
+use crate::content::{RuleItem, RulesBundle, RulesPayload};
 use crate::store;
 
 const ITEM_SLOTS: usize = 6;
 
-/// Host editor — structured rule slots (workspace tab `rules`).
+/// Host editor — structured rule slots for the active `ctx.locale`.
 #[portaki_sdk::surface(host, id = "main")]
 pub fn render_host_main(ctx: HostContext) -> Surface {
-    let _ = ctx;
+    let lang = RulesBundle::lang_code(&ctx.locale);
     let row = store::load_content().ok().flatten();
-    let fr = row
+    let bundle = row
         .as_ref()
-        .map(|r| RulesPayload::parse(&r.content_fr))
-        .unwrap_or_else(default_fr);
-    let en = row
-        .as_ref()
-        .map(|r| RulesPayload::parse(&r.content_en))
-        .unwrap_or_else(default_en);
+        .map(|r| RulesBundle::from_row(&r.content_fr, &r.content_en))
+        .unwrap_or_default();
+    let payload = {
+        let current = bundle.get(&lang);
+        if current.is_empty() {
+            default_for_lang(&lang)
+        } else {
+            current
+        }
+    };
 
     let submit_args = json!({
-        "items": items_to_submit(&fr, &en),
+        "items": items_to_submit(&payload),
     });
     let save_action = serde_json::to_value(Action::command("rules", "saveContent", submit_args))
         .unwrap_or(json!({}));
 
     let mut form_children: Vec<Component> = Vec::new();
     for index in 0..ITEM_SLOTS {
-        push_rule_slot(
-            &mut form_children,
-            index,
-            fr.items.get(index),
-            en.items.get(index),
-        );
+        push_rule_slot(&mut form_children, index, payload.items.get(index));
     }
     form_children.push(
         Text::new()
@@ -66,72 +65,59 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     .with_id("main")
 }
 
-fn default_fr() -> RulesPayload {
-    RulesPayload {
-        items: vec![
-            RuleItem {
-                icon: "clock-circle".into(),
-                title: "Calme après 22 h".into(),
-                subtitle: "Merci pour le voisinage".into(),
-            },
-            RuleItem {
-                icon: "x".into(),
-                title: "Logement non-fumeur".into(),
-                subtitle: "Terrasse autorisée".into(),
-            },
-        ],
+fn default_for_lang(lang: &str) -> RulesPayload {
+    if lang == "en" {
+        RulesPayload {
+            items: vec![
+                RuleItem {
+                    icon: "clock-circle".into(),
+                    title: "Quiet after 10 pm".into(),
+                    subtitle: "Please respect neighbours".into(),
+                },
+                RuleItem {
+                    icon: "x".into(),
+                    title: "Non-smoking property".into(),
+                    subtitle: "Terrace allowed".into(),
+                },
+            ],
+        }
+    } else {
+        RulesPayload {
+            items: vec![
+                RuleItem {
+                    icon: "clock-circle".into(),
+                    title: "Calme après 22 h".into(),
+                    subtitle: "Merci pour le voisinage".into(),
+                },
+                RuleItem {
+                    icon: "x".into(),
+                    title: "Logement non-fumeur".into(),
+                    subtitle: "Terrasse autorisée".into(),
+                },
+            ],
+        }
     }
 }
 
-fn default_en() -> RulesPayload {
-    RulesPayload {
-        items: vec![
-            RuleItem {
-                icon: "clock-circle".into(),
-                title: "Quiet after 10 pm".into(),
-                subtitle: "Please respect neighbours".into(),
-            },
-            RuleItem {
-                icon: "x".into(),
-                title: "Non-smoking property".into(),
-                subtitle: "Terrace allowed".into(),
-            },
-        ],
-    }
-}
-
-fn items_to_submit(fr: &RulesPayload, en: &RulesPayload) -> Vec<serde_json::Value> {
-    let len = fr.items.len().max(en.items.len());
-    (0..len)
-        .map(|i| {
-            let fr_item = fr.items.get(i);
-            let en_item = en.items.get(i);
+fn items_to_submit(payload: &RulesPayload) -> Vec<serde_json::Value> {
+    payload
+        .items
+        .iter()
+        .map(|item| {
             json!({
-                "icon": fr_item
-                    .map(|r| r.icon.as_str())
-                    .filter(|s| !s.is_empty())
-                    .or_else(|| en_item.map(|r| r.icon.as_str()).filter(|s| !s.is_empty()))
-                    .unwrap_or(""),
-                "title_fr": fr_item.map(|r| r.title.as_str()).unwrap_or(""),
-                "subtitle_fr": fr_item.map(|r| r.subtitle.as_str()).unwrap_or(""),
-                "title_en": en_item.map(|r| r.title.as_str()).unwrap_or(""),
-                "subtitle_en": en_item.map(|r| r.subtitle.as_str()).unwrap_or(""),
+                "icon": item.icon,
+                "title": item.title,
+                "subtitle": item.subtitle,
             })
         })
         .collect()
 }
 
-fn push_rule_slot(
-    children: &mut Vec<Component>,
-    index: usize,
-    fr: Option<&RuleItem>,
-    en: Option<&RuleItem>,
-) {
+fn push_rule_slot(children: &mut Vec<Component>, index: usize, item: Option<&RuleItem>) {
     let slot = index + 1;
-    let icon = fr
+    let icon = item
         .map(|r| r.icon.as_str())
         .filter(|s| !s.is_empty())
-        .or_else(|| en.map(|r| r.icon.as_str()).filter(|s| !s.is_empty()))
         .unwrap_or("check-circle");
 
     children.push(
@@ -161,45 +147,23 @@ fn push_rule_slot(
     );
     children.push(
         Field::new()
-            .name(json!(format!("items.{index}.title_fr")))
-            .label(json!("i18n:host.rule.titleFr"))
+            .name(json!(format!("items.{index}.title")))
+            .label(json!("i18n:host.rule.title"))
             .child(
                 TextInput::new()
-                    .name(json!(format!("items.{index}.title_fr")))
-                    .value(json!(fr.map(|r| r.title.as_str()).unwrap_or(""))),
+                    .name(json!(format!("items.{index}.title")))
+                    .value(json!(item.map(|r| r.title.as_str()).unwrap_or(""))),
             )
             .into(),
     );
     children.push(
         Field::new()
-            .name(json!(format!("items.{index}.subtitle_fr")))
-            .label(json!("i18n:host.rule.subtitleFr"))
+            .name(json!(format!("items.{index}.subtitle")))
+            .label(json!("i18n:host.rule.subtitle"))
             .child(
                 TextInput::new()
-                    .name(json!(format!("items.{index}.subtitle_fr")))
-                    .value(json!(fr.map(|r| r.subtitle.as_str()).unwrap_or(""))),
-            )
-            .into(),
-    );
-    children.push(
-        Field::new()
-            .name(json!(format!("items.{index}.title_en")))
-            .label(json!("i18n:host.rule.titleEn"))
-            .child(
-                TextInput::new()
-                    .name(json!(format!("items.{index}.title_en")))
-                    .value(json!(en.map(|r| r.title.as_str()).unwrap_or(""))),
-            )
-            .into(),
-    );
-    children.push(
-        Field::new()
-            .name(json!(format!("items.{index}.subtitle_en")))
-            .label(json!("i18n:host.rule.subtitleEn"))
-            .child(
-                TextInput::new()
-                    .name(json!(format!("items.{index}.subtitle_en")))
-                    .value(json!(en.map(|r| r.subtitle.as_str()).unwrap_or(""))),
+                    .name(json!(format!("items.{index}.subtitle")))
+                    .value(json!(item.map(|r| r.subtitle.as_str()).unwrap_or(""))),
             )
             .into(),
     );

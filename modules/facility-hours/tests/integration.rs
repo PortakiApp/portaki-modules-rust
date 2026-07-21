@@ -107,6 +107,6 @@ fn update_config_roundtrip() {
                 },
             )
             .expect("ok");
-            assert_eq!(get_config(ctx).expect("cfg").general_note, "note");
+            assert_eq!(get_config(ctx).expect("cfg").general_note.get("fr"), "note");
         });
 }

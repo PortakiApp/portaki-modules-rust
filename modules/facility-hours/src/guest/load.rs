@@ -11,6 +11,7 @@ pub struct GuestData {
     pub facilities: Vec<FacilityRow>,
     pub general_note: String,
     pub locale: String,
+    pub property_locale: String,
 }
 
 pub enum GuestLoad {
@@ -30,7 +31,10 @@ pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad
 
     Ok(GuestLoad::Ready(GuestData {
         facilities: config.parse_facilities(),
-        general_note: config.general_note.trim().to_string(),
+        general_note: config
+            .general_note
+            .pick_with_fallback(&ctx.locale, &ctx.property.locale),
         locale: ctx.locale.clone(),
+        property_locale: ctx.property.locale.clone(),
     }))
 }

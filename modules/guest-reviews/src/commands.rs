@@ -5,7 +5,7 @@ use portaki_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::config::{save_config, ModuleConfig, ReviewChannel};
+use crate::config::{load_config, save_config, Localized, ModuleConfig, ReviewChannel};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateConfigArgs {
@@ -24,12 +24,16 @@ fn default_true() -> bool {
 }
 
 #[portaki_sdk::command(name = "updateConfig")]
-pub fn update_config(_ctx: Context, args: UpdateConfigArgs) -> Result<()> {
+pub fn update_config(ctx: Context, args: UpdateConfigArgs) -> Result<()> {
+    let lang = Localized::lang_code(&ctx.locale);
+    let existing = load_config().unwrap_or_default();
+    let mut thank_you_message = existing.thank_you_message;
+    thank_you_message.set(&lang, args.thank_you_message.trim().to_string());
     save_config(&ModuleConfig {
         review_channel: ReviewChannel::parse(&args.review_channel),
         show_qr_code: args.show_qr_code,
         airbnb_review_url: args.airbnb_review_url,
-        thank_you_message: args.thank_you_message,
+        thank_you_message,
     })
 }
 

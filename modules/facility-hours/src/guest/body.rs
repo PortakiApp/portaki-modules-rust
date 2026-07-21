@@ -18,7 +18,9 @@ pub fn build_hours_body(data: &GuestData, enriched: bool) -> Vec<Component> {
     }
 
     for facility in &data.facilities {
-        let title = facility.title.pick(&data.locale);
+        let title = facility
+            .title
+            .pick_with_fallback(&data.locale, &data.property_locale);
         let hours = facility
             .hours
             .as_deref()
@@ -29,7 +31,7 @@ pub fn build_hours_body(data: &GuestData, enriched: bool) -> Vec<Component> {
                 let joined = facility
                     .lines
                     .iter()
-                    .map(|l| l.pick(&data.locale))
+                    .map(|l| l.pick_with_fallback(&data.locale, &data.property_locale))
                     .filter(|s| !s.trim().is_empty())
                     .collect::<Vec<_>>()
                     .join(" · ");
@@ -47,14 +49,14 @@ pub fn build_hours_body(data: &GuestData, enriched: bool) -> Vec<Component> {
                 item = item.subtitle(json!(hours.clone()));
             }
             for line in &facility.lines {
-                let text = line.pick(&data.locale);
+                let text = line.pick_with_fallback(&data.locale, &data.property_locale);
                 if text.trim().is_empty() {
                     continue;
                 }
                 item = item.child(Text::new().text(json!(text)).variant(json!("caption")));
             }
             if let Some(note) = facility.note.as_ref() {
-                let note_text = note.pick(&data.locale);
+                let note_text = note.pick_with_fallback(&data.locale, &data.property_locale);
                 if !note_text.trim().is_empty() {
                     item = item.child(Text::new().text(json!(note_text)).variant(json!("caption")));
                 }

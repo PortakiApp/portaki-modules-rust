@@ -3,14 +3,19 @@
 use portaki_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::content::{RuleItem, RulesPayload};
+use crate::content::{RuleItem, RulesBundle, RulesPayload};
 use crate::store;
 
-/// One bilingual rule row from the host form (`items.N.*`).
+/// One rule row from the host form (`items.N.*`) for the active locale.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct RuleItemInput {
     #[serde(default)]
     pub icon: String,
+    #[serde(default)]
+    pub title: String,
+    #[serde(default)]
+    pub subtitle: String,
+    /// Legacy bilingual fields.
     #[serde(default)]
     pub title_fr: String,
     #[serde(default)]
@@ -24,7 +29,7 @@ pub struct RuleItemInput {
 /// Arguments for `saveContent`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SaveContentArgs {
-    /// Structured bilingual items (preferred).
+    /// Structured items for the active request locale (preferred).
     #[serde(default)]
     pub items: Vec<RuleItemInput>,
     /// Legacy JSON string for French payload.
@@ -36,26 +41,63 @@ pub struct SaveContentArgs {
 }
 
 #[portaki_sdk::command(name = "saveContent")]
-pub fn save_content(_ctx: Context, args: SaveContentArgs) -> Result<()> {
-    let (fr, en) = if !args.items.is_empty() {
-        build_payloads_from_items(&args.items)
-    } else {
-        (
-            RulesPayload::parse(&args.content_fr),
-            RulesPayload::parse(&args.content_en),
-        )
+pub fn save_content(ctx: Context, args: SaveContentArgs) -> Result<()> {
+    let lang = RulesBundle::lang_code(&ctx.locale);
+    let existing = store::load_content()?;
+    let (prev_fr, prev_en) = match existing {
+        Some(row) => (row.content_fr, row.content_en),
+        None => (String::new(), String::new()),
     };
-    let fr = fr
+    let mut bundle = RulesBundle::from_row(&prev_fr, &prev_en);
+
+    if !args.items.is_empty() {
+        let has_legacy_dual = args.items.iter().any(|i| {
+            !i.title_fr.trim().is_empty()
+                || !i.title_en.trim().is_empty()
+                || !i.subtitle_fr.trim().is_empty()
+                || !i.subtitle_en.trim().is_empty()
+        });
+        if has_legacy_dual {
+            let (fr, en) = build_payloads_from_legacy_items(&args.items);
+            bundle.set("fr", fr.clone());
+            bundle.set("en", en);
+            bundle.sync_icons_from(&fr);
+        } else {
+            let payload = build_payload_for_lang(&args.items);
+            bundle.set(&lang, payload.clone());
+            bundle.sync_icons_from(&payload);
+        }
+    } else if !args.content_fr.trim().is_empty() || !args.content_en.trim().is_empty() {
+        // Legacy raw JSON path — seed/migrate into bundle.
+        let migrated = RulesBundle::from_row(&args.content_fr, &args.content_en);
+        for (k, v) in migrated.by_lang {
+            bundle.set(&k, v);
+        }
+    }
+
+    let json = bundle
         .to_json_string()
-        .map_err(|e| PortakiError::Host(format!("content_fr: {e}")))?;
-    let en = en
-        .to_json_string()
-        .map_err(|e| PortakiError::Host(format!("content_en: {e}")))?;
-    let _ = store::save_content_row(fr, en)?;
+        .map_err(|e| PortakiError::Host(format!("content: {e}")))?;
+    let _ = store::save_content_row(json, String::new())?;
     Ok(())
 }
 
-fn build_payloads_from_items(items: &[RuleItemInput]) -> (RulesPayload, RulesPayload) {
+fn build_payload_for_lang(items: &[RuleItemInput]) -> RulesPayload {
+    let mut out = Vec::new();
+    for item in items {
+        if item.title.trim().is_empty() {
+            continue;
+        }
+        out.push(RuleItem {
+            icon: item.icon.trim().to_string(),
+            title: item.title.trim().to_string(),
+            subtitle: item.subtitle.trim().to_string(),
+        });
+    }
+    RulesPayload { items: out }
+}
+
+fn build_payloads_from_legacy_items(items: &[RuleItemInput]) -> (RulesPayload, RulesPayload) {
     let mut fr_items = Vec::new();
     let mut en_items = Vec::new();
     for item in items {

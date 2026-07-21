@@ -70,23 +70,47 @@ pub fn list_completed_item_ids(stay_id: Uuid) -> Result<Vec<Uuid>> {
 
 /// Replaces all property checklist items.
 pub fn replace_items(items: Vec<(String, String, i32)>) -> Result<()> {
+    replace_items_preserving_ids(
+        items
+            .into_iter()
+            .map(|(label_fr, label_en, sort_order)| (None, label_fr, label_en, sort_order))
+            .collect(),
+    )
+}
+
+/// Replace items while keeping IDs when provided (preserves stay completions + other langs).
+pub fn replace_items_preserving_ids(
+    items: Vec<(Option<Uuid>, String, String, i32)>,
+) -> Result<()> {
     let existing = list_items()?;
-    for row in existing {
-        delete_item(row.id)?;
+    let keep_ids: std::collections::HashSet<Uuid> = items
+        .iter()
+        .filter_map(|(id, _, _, _)| *id)
+        .collect();
+    for row in &existing {
+        if !keep_ids.contains(&row.id) {
+            delete_item(row.id)?;
+        }
     }
     let now = time::now()?;
-    for (index, (label_fr, label_en, sort_order)) in items.into_iter().enumerate() {
+    for (index, (id, label_fr, label_en, sort_order)) in items.into_iter().enumerate() {
         let order = if sort_order == 0 && index > 0 {
             index as i32
         } else {
             sort_order
         };
+        let item_id = id.unwrap_or_else(Uuid::new_v4);
+        let created_at = existing
+            .iter()
+            .find(|row| row.id == item_id)
+            .map(|row| row.created_at)
+            .unwrap_or(now);
         persist_item(ChecklistItem {
-            id: Uuid::new_v4(),
+            id: item_id,
             label_fr,
             label_en,
             sort_order: order,
-            created_at: now,
+            created_at,
         })?;
     }
     Ok(())

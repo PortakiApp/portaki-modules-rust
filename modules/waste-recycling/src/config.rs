@@ -4,29 +4,28 @@ use portaki_sdk::host;
 use portaki_sdk::Result;
 use serde::{Deserialize, Serialize};
 
+use crate::localized::deserialize_localized_field;
+
+pub use crate::localized::Localized;
+
 const CONFIG_KEY: &str = "config";
 
 /// Owner-configurable module settings.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct ModuleConfig {
-    /// Typed bin rows (preferred storage).
     #[serde(default)]
     pub bins: Vec<BinRow>,
-    /// Legacy JSON string — migrated into `bins` on load.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub bins_json: String,
-    /// Free-text collection schedule.
-    #[serde(default)]
-    pub collection_schedule: String,
+    #[serde(default, deserialize_with = "deserialize_localized_field")]
+    pub collection_schedule: Localized,
 }
 
 impl ModuleConfig {
-    /// True when neither bins nor schedule are configured.
     pub fn is_empty(&self) -> bool {
-        self.parse_bins().is_empty() && self.collection_schedule.trim().is_empty()
+        self.parse_bins().is_empty() && self.collection_schedule.is_empty()
     }
 
-    /// Returns typed bins (after legacy migration).
     pub fn parse_bins(&self) -> Vec<BinRow> {
         self.bins
             .iter()
@@ -35,7 +34,6 @@ impl ModuleConfig {
             .collect()
     }
 
-    /// Fills `bins` from legacy `bins_json` when needed.
     pub fn migrate_legacy(&mut self) {
         if !self.bins.is_empty() {
             return;
@@ -61,34 +59,8 @@ pub struct BinRow {
     pub title: Localized,
     #[serde(default)]
     pub items: Vec<Localized>,
-    /// Optional hex color for the bin chip (e.g. `#f4c020`).
     #[serde(default)]
     pub color: Option<String>,
-}
-
-/// FR/EN localized string pair.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
-pub struct Localized {
-    #[serde(default)]
-    pub fr: String,
-    #[serde(default)]
-    pub en: String,
-}
-
-impl Localized {
-    pub fn pick(&self, locale: &str) -> String {
-        if locale.to_ascii_lowercase().starts_with("en") {
-            if !self.en.trim().is_empty() {
-                self.en.clone()
-            } else {
-                self.fr.clone()
-            }
-        } else if !self.fr.trim().is_empty() {
-            self.fr.clone()
-        } else {
-            self.en.clone()
-        }
-    }
 }
 
 /// Maps host color select values to guest hex colors.
@@ -114,7 +86,6 @@ pub fn color_hex_to_name(color: Option<&str>) -> &'static str {
     }
 }
 
-/// Loads configuration from KV or returns defaults.
 pub fn load_config() -> Result<ModuleConfig> {
     let Some(bytes) = host::kv::get(CONFIG_KEY)? else {
         return Ok(ModuleConfig::default());
@@ -126,7 +97,6 @@ pub fn load_config() -> Result<ModuleConfig> {
     Ok(config)
 }
 
-/// Persists configuration to KV.
 pub fn save_config(config: &ModuleConfig) -> Result<()> {
     let bytes = serde_json::to_vec(config).map_err(|error| {
         portaki_sdk::PortakiError::Storage(format!("config serialize: {error}"))

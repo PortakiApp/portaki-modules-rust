@@ -111,6 +111,6 @@ fn update_config_roundtrip() {
                 },
             )
             .expect("ok");
-            assert_eq!(get_config(ctx).expect("cfg").disclaimer, "d");
+            assert_eq!(get_config(ctx).expect("cfg").disclaimer.get("fr"), "d");
         });
 }

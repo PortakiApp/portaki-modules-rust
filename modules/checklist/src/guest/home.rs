@@ -6,6 +6,7 @@ use portaki_sdk::sdui::surface::Surface;
 use serde_json::json;
 
 use super::load::GuestChecklistData;
+use crate::labels;
 
 pub fn build_home_card(data: &GuestChecklistData) -> Surface {
     let progress = format!("{} / {} — {}%", data.done, data.total, data.percent);
@@ -17,7 +18,11 @@ pub fn build_home_card(data: &GuestChecklistData) -> Surface {
 
     for item in &data.items {
         let checked = data.completed.contains(&item.id);
-        let label = localized_label(&data.locale, &item.label_fr, &item.label_en);
+        let label = labels::pick_label(
+            &labels::labels_from_item(item),
+            &data.locale,
+            &data.property_locale,
+        );
         let command_name = if checked {
             "uncompleteItem"
         } else {
@@ -51,16 +56,3 @@ pub fn build_home_card(data: &GuestChecklistData) -> Surface {
     .with_id("home.card")
 }
 
-fn localized_label(locale: &str, label_fr: &str, label_en: &str) -> String {
-    if locale.to_ascii_lowercase().starts_with("en") {
-        if label_en.is_empty() {
-            label_fr.to_string()
-        } else {
-            label_en.to_string()
-        }
-    } else if label_fr.is_empty() {
-        label_en.to_string()
-    } else {
-        label_fr.to_string()
-    }
-}

@@ -3,6 +3,7 @@
 mod commands;
 mod config;
 mod guest;
+mod localized;
 mod queries;
 mod render_host;
 

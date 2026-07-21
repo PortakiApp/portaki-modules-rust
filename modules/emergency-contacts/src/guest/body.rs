@@ -39,7 +39,9 @@ pub fn build_contacts_body(data: &GuestData, show_emergency_banner: bool) -> Vec
     }
 
     for contact in &data.contacts {
-        let label = contact.label.pick(&data.locale);
+        let label = contact
+            .label
+            .pick_with_fallback(&data.locale, &data.property_locale);
         let mut item = ListItem::new()
             .title(json!(label))
             .subtitle(json!(contact.phone.clone()))
@@ -48,7 +50,7 @@ pub fn build_contacts_body(data: &GuestData, show_emergency_banner: bool) -> Vec
             item = item.leading(json!(cat));
         }
         if let Some(note) = contact.note.as_ref() {
-            let note_text = note.pick(&data.locale);
+            let note_text = note.pick_with_fallback(&data.locale, &data.property_locale);
             if !note_text.trim().is_empty() {
                 item = item.child(Text::new().text(json!(note_text)).variant(json!("caption")));
             }

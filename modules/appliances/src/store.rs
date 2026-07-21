@@ -5,6 +5,7 @@ use portaki_sdk::host::time;
 use portaki_sdk::prelude::*;
 use uuid::Uuid;
 
+use crate::content::{AppliancesBundle, AppliancesPayload};
 use crate::entities::AppliancesContent;
 
 use std::cell::RefCell;
@@ -34,17 +35,32 @@ pub fn load_content() -> Result<Option<AppliancesContent>> {
     Ok(page.items.into_iter().next())
 }
 
-pub fn load_payload() -> Result<crate::content::AppliancesPayload> {
+pub fn load_bundle() -> Result<AppliancesBundle> {
     let row = load_content()?;
     Ok(match row {
-        Some(row) => crate::content::load_from_locale_slots(&row.content_fr, &row.content_en),
-        None => crate::content::AppliancesPayload::default(),
+        Some(row) => AppliancesBundle::from_row(&row.content_fr, &row.content_en),
+        None => AppliancesBundle::default(),
     })
 }
 
-/// Persist canonical single-language JSON in `content_fr` (`content_en` cleared).
-pub fn save_payload(payload: &crate::content::AppliancesPayload) -> Result<AppliancesContent> {
-    let json = payload
+pub fn load_payload() -> Result<AppliancesPayload> {
+    load_payload_for("fr", "fr")
+}
+
+pub fn load_payload_for(locale: &str, property_locale: &str) -> Result<AppliancesPayload> {
+    Ok(load_bundle()?.pick(locale, property_locale))
+}
+
+/// Persist payload for one language; merge into N-lang bundle and sync shared fields.
+pub fn save_payload(payload: &AppliancesPayload) -> Result<AppliancesContent> {
+    save_payload_for("fr", payload)
+}
+
+pub fn save_payload_for(locale: &str, payload: &AppliancesPayload) -> Result<AppliancesContent> {
+    let mut bundle = load_bundle()?;
+    bundle.set(locale, payload.clone());
+    bundle.sync_shared_from(payload);
+    let json = bundle
         .to_json_string()
         .map_err(|e| PortakiError::Host(format!("appliances payload: {e}")))?;
     save_content_row(json, String::new())

@@ -4,13 +4,15 @@ use portaki_sdk::host::time;
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::surface::Surface;
 
-use crate::config::{load_config, ModuleConfig};
+use crate::config::{has_content, load_config, ModuleConfig};
 use crate::reveal::{evaluate_reveal, format_available_from, locked_message, RevealDecision};
+use crate::texts::{load_texts_for_guest, ModuleTexts};
 
 use super::empty::{empty_content_state, empty_state_if_module_not_ready};
 
 pub struct GuestData {
     pub config: ModuleConfig,
+    pub texts: ModuleTexts,
     pub address: String,
     pub locale: String,
     pub lat: f64,
@@ -32,7 +34,9 @@ pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad
     }
 
     let config = load_config().unwrap_or_else(|_| ModuleConfig::default());
-    if config.is_empty() {
+    let texts = load_texts_for_guest(&ctx.locale, &ctx.property.locale)
+        .unwrap_or_default();
+    if !has_content(&config, &texts) {
         return Ok(GuestLoad::Empty(Box::new(empty_content_state(surface_id))));
     }
 
@@ -51,6 +55,7 @@ pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad
 
     Ok(GuestLoad::Ready(Box::new(GuestData {
         config,
+        texts,
         address,
         locale: ctx.locale.clone(),
         lat: ctx.property.lat,

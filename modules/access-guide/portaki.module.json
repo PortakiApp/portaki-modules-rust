@@ -31,8 +31,8 @@
   "guestSurfaces": [
     {
       "surfaceId": "explore.detail",
-      "path": "access-guide",
-      "labelKey": "nav.accessGuide"
+      "path": "access-guide/detail",
+      "labelKey": "nav.access-guide"
     }
   ]
 }
