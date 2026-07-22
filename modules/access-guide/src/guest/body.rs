@@ -93,8 +93,11 @@ fn map_at(lat: f64, lng: f64) -> Component {
                 "zoom": 15
             }))
             .markers(json!([{
+                "id": "property",
+                "kind": "property",
                 "lat": lat,
                 "lng": lng,
+                "label": "Logement",
                 "tone": "primary"
             }]))
             .isStatic(json!(true))
