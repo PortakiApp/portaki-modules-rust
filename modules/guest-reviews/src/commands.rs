@@ -1,9 +1,9 @@
 //! Module commands — configuration and Portaki review submit.
 
 use portaki_sdk::host;
+use portaki_sdk::host::events;
 use portaki_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 
 use crate::config::{load_config, save_config, Localized, ModuleConfig, ReviewChannel};
 
@@ -44,10 +44,20 @@ pub struct SubmitReviewArgs {
     pub comment: String,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ReviewSubmittedPayload {
+    property_id: Uuid,
+    rating: u8,
+    comment: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    guest_name: Option<String>,
+}
+
 const REVIEWS_KEY: &str = "reviews";
 
 #[portaki_sdk::command(name = "submitReview")]
-pub fn submit_review(_ctx: Context, args: SubmitReviewArgs) -> Result<()> {
+pub fn submit_review(ctx: Context, args: SubmitReviewArgs) -> Result<()> {
     if !(1..=5).contains(&args.rating) {
         return Err(PortakiError::Host(format!(
             "rating must be 1-5, got {}",
@@ -55,16 +65,36 @@ pub fn submit_review(_ctx: Context, args: SubmitReviewArgs) -> Result<()> {
         )));
     }
 
-    let mut entries: Vec<serde_json::Value> = host::kv::get(REVIEWS_KEY)?
+    let comment = args.comment.trim().to_string();
+    let mut entries: Vec<SubmitReviewArgs> = host::kv::get(REVIEWS_KEY)?
         .and_then(|bytes| serde_json::from_slice(&bytes).ok())
         .unwrap_or_default();
 
-    entries.push(json!({
-        "rating": args.rating,
-        "comment": args.comment.trim(),
-    }));
+    entries.push(SubmitReviewArgs {
+        rating: args.rating,
+        comment: comment.clone(),
+    });
 
     let bytes = serde_json::to_vec(&entries)
         .map_err(|error| PortakiError::Storage(format!("reviews serialize: {error}")))?;
-    host::kv::set(REVIEWS_KEY, &bytes, None)
+    host::kv::set(REVIEWS_KEY, &bytes, None)?;
+
+    let guest_name = ctx
+        .guest
+        .as_ref()
+        .and_then(|g| g.display_name.clone())
+        .map(|name| name.trim().to_string())
+        .filter(|name| !name.is_empty());
+
+    events::emit(
+        "guest-reviews.submitted",
+        &ReviewSubmittedPayload {
+            property_id: ctx.property_id,
+            rating: args.rating,
+            comment,
+            guest_name,
+        },
+    )?;
+
+    Ok(())
 }

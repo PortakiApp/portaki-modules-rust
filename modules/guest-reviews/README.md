@@ -12,6 +12,11 @@ Official Portaki guest reviews module — post-stay thank-you, Airbnb CTA + QR, 
 |------------|----------|---------|
 | `core.storage` | Yes | KV config + submitted Portaki reviews |
 
+## Events
+
+`submitReview` emits `guest-reviews.submitted` (`propertyId`, `rating`, `comment`, optional
+`guestName`). Platform sends host transactional email `new-review`.
+
 ## Surfaces
 
 | Shell | Surface id | Description |
