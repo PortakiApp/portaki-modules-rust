@@ -65,6 +65,12 @@ Reveal logic lives **in this module**. Stay timing comes from generic SDK host f
 Stay-scoped query for Portaki guest emails (`arrival`, `arrival-day`, `new-code`).
 `stay-link` uses the stay page token only — this module returns empty fields for that template.
 
+### Code change event
+
+`updateConfig` emits `access-guide.code-changed` when entry codes change (keybox / door /
+smart-lock / parking). Platform sends guest `new-code` only for stays in phase UPCOMING
+(within 24h before check-in) or ACTIVE.
+
 Args (camelCase):
 
 ```json

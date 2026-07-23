@@ -1,14 +1,21 @@
 //! Module commands — configuration persistence (shared config + locale texts).
 
+use portaki_sdk::host::events;
 use portaki_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::config::{
-    config_from_update_parts, save_config, AccessStep, ArrivalGuide, BuildingAccess,
+    config_from_update_parts, load_config, save_config, AccessStep, ArrivalGuide, BuildingAccess,
     DoorCodeTarget, MethodFields, ModuleConfig, ParkingLayer, PrimaryMethod, RawConfig,
     RevealPolicy, StaffKind,
 };
 use crate::texts::{lang_code, save_texts, ModuleTexts, StepText};
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AccessCodeChangedPayload {
+    property_id: Uuid,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct StepInput {
@@ -544,10 +551,39 @@ fn first_nonempty_str<'a>(candidates: &[&'a str]) -> &'a str {
 #[portaki_sdk::command(name = "updateConfig")]
 pub fn update_config(ctx: Context, args: UpdateConfigArgs) -> Result<()> {
     let lang = lang_code(&ctx.locale);
+    let previous = load_config().unwrap_or_default();
     let (config, texts) = args.into_config_and_texts();
     save_config(&config)?;
     save_texts(&lang, &texts)?;
+
+    // Guest new-code mail — platform fans out to UPCOMING / ACTIVE stays.
+    if entry_codes_fingerprint(&previous) != entry_codes_fingerprint(&config) {
+        events::emit(
+            "access-guide.code-changed",
+            &AccessCodeChangedPayload {
+                property_id: ctx.property_id,
+            },
+        )?;
+    }
+
     Ok(())
+}
+
+/// Stable snapshot of guest-facing entry codes (door / keybox / smart-lock / parking).
+fn entry_codes_fingerprint(config: &ModuleConfig) -> String {
+    let parking = config
+        .parking
+        .as_ref()
+        .and_then(|p| p.code.as_deref())
+        .unwrap_or("")
+        .trim();
+    format!(
+        "{}|{}|{}|{}",
+        config.keybox_code().unwrap_or("").trim(),
+        config.gate_code().unwrap_or("").trim(),
+        config.smart_lock_manual_code().unwrap_or("").trim(),
+        parking,
+    )
 }
 
 #[cfg(test)]
