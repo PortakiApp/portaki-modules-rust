@@ -2,14 +2,13 @@
 
 use chrono::{DateTime, Utc};
 use portaki_sdk::prelude::*;
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::storage;
 
 /// Status DTO returned by `getStatus`.
 #[portaki_sdk::wire]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub struct PreArrivalStatus {
     pub completed: bool,
     #[serde(skip_serializing_if = "Option::is_none")]

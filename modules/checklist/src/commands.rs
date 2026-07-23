@@ -34,7 +34,6 @@ pub struct ReplaceItemsArgs {
 
 /// Arguments for complete / uncomplete.
 #[portaki_sdk::wire]
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ItemIdArgs {
     pub item_id: Uuid,
 }
@@ -134,7 +133,6 @@ struct ProgressPayload {
 }
 
 #[portaki_sdk::wire(serialize)]
-#[derive(Serialize)]
 struct CompletedPayload {
     stay_id: Uuid,
 }

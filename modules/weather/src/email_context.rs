@@ -1,14 +1,13 @@
 //! Guest-email weather summary for Portaki `arrival-day` (and future templates).
 
 use portaki_sdk::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::queries::{get_current, GetCurrentArgs};
 use crate::weather::{resolve_city_label, WeatherCurrent};
 
 /// Arguments for `emailContext`.
 #[portaki_sdk::wire]
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Default)]
 pub struct EmailContextArgs {
     /// Portaki template key (`arrival-day`, …).
     #[serde(default)]
@@ -23,7 +22,7 @@ pub struct EmailContextArgs {
 
 /// Email-ready weather contribution.
 #[portaki_sdk::wire]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub struct EmailContextResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weather_summary: Option<String>,

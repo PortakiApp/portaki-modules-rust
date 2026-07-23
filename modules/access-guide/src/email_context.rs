@@ -6,14 +6,13 @@
 use chrono::{DateTime, Utc};
 use portaki_sdk::host::time;
 use portaki_sdk::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::config::{load_config, DoorCodeTarget, MethodFields, ModuleConfig, PrimaryMethod};
 use crate::reveal::{evaluate_reveal, format_available_from, locked_message, RevealDecision};
 
 /// Arguments for `emailContext`.
 #[portaki_sdk::wire]
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Default)]
 pub struct EmailContextArgs {
     /// Portaki template key (`arrival`, `arrival-day`, `new-code`, …).
     #[serde(default)]
@@ -28,7 +27,7 @@ pub struct EmailContextArgs {
 
 /// Email-ready access-guide contribution.
 #[portaki_sdk::wire]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub struct EmailContextResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub arrival_callout: Option<String>,

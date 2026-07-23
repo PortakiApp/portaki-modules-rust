@@ -37,7 +37,6 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
 }
 
 #[portaki_sdk::wire(serialize)]
-#[derive(Serialize)]
 struct SurfaceInputSelectedId<'a> {
     selected_id: &'a str,
 }

@@ -2,14 +2,13 @@
 
 use chrono::{DateTime, Utc};
 use portaki_sdk::prelude::*;
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::storage;
 
 /// Row returned by list queries.
 #[portaki_sdk::wire]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub struct LostFoundReportRow {
     pub id: Uuid,
     pub stay_id: Uuid,

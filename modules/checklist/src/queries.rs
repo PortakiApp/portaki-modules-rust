@@ -1,7 +1,6 @@
 //! Module queries — checklist items and stay completions.
 
 use portaki_sdk::prelude::*;
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::entities::ChecklistItem;
@@ -9,7 +8,7 @@ use crate::storage;
 
 /// Public item DTO returned by `listItems`.
 #[portaki_sdk::wire]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub struct ChecklistItemDto {
     pub id: Uuid,
     pub label_fr: String,

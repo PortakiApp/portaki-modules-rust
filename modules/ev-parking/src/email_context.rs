@@ -1,7 +1,6 @@
 //! Guest-email EV parking hint for Portaki arrival templates.
 
 use portaki_sdk::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::config::load_config;
 
@@ -10,7 +9,7 @@ pub use portaki_sdk::EmailContextArgs;
 
 /// Email-ready ev-parking contribution.
 #[portaki_sdk::wire]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub struct EmailContextResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ev_parking_spot: Option<String>,

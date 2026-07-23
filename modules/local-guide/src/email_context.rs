@@ -1,7 +1,6 @@
 //! Guest-email local tip for Portaki `arrival-day` / `post-arrival`.
 
 use portaki_sdk::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::config::load_config;
 
@@ -10,7 +9,7 @@ pub use portaki_sdk::EmailContextArgs;
 
 /// Email-ready local-guide contribution.
 #[portaki_sdk::wire]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub struct EmailContextResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub local_tip: Option<String>,

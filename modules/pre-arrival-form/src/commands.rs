@@ -2,13 +2,11 @@
 
 use portaki_sdk::host::events;
 use portaki_sdk::prelude::*;
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::storage;
 
 #[portaki_sdk::wire(serialize)]
-#[derive(Serialize)]
 struct CompletedPayload {
     arrival_time_estimated: Option<String>,
     guest_occasion: Option<String>,
@@ -18,7 +16,6 @@ struct CompletedPayload {
 
 /// Arguments for `submit`.
 #[portaki_sdk::wire]
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SubmitArgs {
     pub arrival_time_estimated: Option<String>,
     pub guest_occasion: Option<String>,

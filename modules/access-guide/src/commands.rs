@@ -12,7 +12,6 @@ use crate::config::{
 use crate::texts::{lang_code, save_texts, ModuleTexts, StepText};
 
 #[portaki_sdk::wire(serialize)]
-#[derive(Serialize)]
 struct AccessCodeChangedPayload {
     property_id: Uuid,
 }

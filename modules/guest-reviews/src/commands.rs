@@ -45,7 +45,6 @@ pub struct SubmitReviewArgs {
 }
 
 #[portaki_sdk::wire(serialize)]
-#[derive(Serialize)]
 struct ReviewSubmittedPayload {
     property_id: Uuid,
     rating: u8,

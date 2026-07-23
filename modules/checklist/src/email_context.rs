@@ -1,7 +1,6 @@
 //! Guest-email checkout tips for Portaki `lost-found` (and future checkout mails).
 
 use portaki_sdk::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::labels::{get_label, labels_from_item, pick_label};
 use crate::storage;
@@ -13,7 +12,7 @@ pub use portaki_sdk::EmailContextArgs;
 
 /// Email-ready checklist contribution.
 #[portaki_sdk::wire]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub struct EmailContextResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub checkout_tips: Option<String>,

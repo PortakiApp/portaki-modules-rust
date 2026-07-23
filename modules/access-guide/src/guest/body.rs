@@ -162,7 +162,7 @@ fn staff_kind_key(kind: StaffKind) -> &'static str {
 }
 
 #[portaki_sdk::wire(serialize)]
-#[derive(Clone, Serialize)]
+#[derive(Clone)]
 struct SmartLockCommandArgs {
     #[serde(skip_serializing_if = "Option::is_none")]
     stay_id: Option<String>,
