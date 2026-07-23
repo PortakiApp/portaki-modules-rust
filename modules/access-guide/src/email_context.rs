@@ -1,4 +1,5 @@
-//! Guest-email snippets for Portaki templates (`arrival`, `arrival-day`, `new-code`).
+//! Guest-email snippets for Portaki templates (`stay-link`, `arrival`, `arrival-day`,
+//! `new-code`).
 //!
 //! Reveal policy is applied here — same rules as guest SDUI. Never return plaintext
 //! codes while locked.
@@ -15,7 +16,7 @@ use crate::reveal::{evaluate_reveal, format_available_from, locked_message, Reve
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct EmailContextArgs {
-    /// Portaki template key (`arrival`, `arrival-day`, `new-code`, …).
+    /// Portaki template key (`stay-link`, `arrival`, `arrival-day`, `new-code`, …).
     #[serde(default)]
     pub template_key: Option<String>,
     /// Formatted check-in clock time for callout copy (`16:00`).
@@ -74,7 +75,9 @@ pub fn build_email_context(ctx: &Context, args: &EmailContextArgs) -> Result<Ema
     let decision = evaluate_reveal(config.reveal_policy, now, checkin_at, &property_timezone);
 
     let template = args.template_key.as_deref().unwrap_or("").trim();
-    let wants_callout = matches!(template, "arrival" | "new-code" | "");
+    // stay-link / arrival / new-code: method callout + code when revealed.
+    // arrival-day: code only (weather is a separate module).
+    let wants_callout = matches!(template, "stay-link" | "arrival" | "new-code" | "");
     let wants_code = wants_callout || template == "arrival-day";
 
     if !wants_callout && !wants_code {
@@ -480,6 +483,80 @@ mod tests {
             .expect("ok");
             assert!(response.arrival_callout.is_none());
             assert_eq!(response.entry_access_code.as_deref(), Some("4821"));
+        });
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn stay_link_returns_callout_and_code_when_revealed() {
+        let (ctx, host) = MockContext::guest()
+            .with_capabilities(&["core.storage"])
+            .with_kv(
+                "config",
+                serde_json::to_vec(&keybox_config(RevealPolicy::Always)).expect("json"),
+            )
+            .build();
+
+        with_host(host, ctx.clone(), || {
+            let response = build_email_context(
+                &ctx,
+                &EmailContextArgs {
+                    template_key: Some("stay-link".into()),
+                    checkin_time_formatted: Some("16:00".into()),
+                    locale: Some("fr".into()),
+                },
+            )
+            .expect("ok");
+            assert!(response.secrets_revealed);
+            assert_eq!(response.entry_access_code.as_deref(), Some("4821"));
+            assert!(response
+                .arrival_callout
+                .as_deref()
+                .unwrap_or("")
+                .contains("boîte à clés"));
+        });
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn stay_link_locked_omits_plaintext_code() {
+        let (mut ctx, host) = MockContext::guest()
+            .with_capabilities(&["core.storage"])
+            .with_kv(
+                "config",
+                serde_json::to_vec(&keybox_config(RevealPolicy::AtCheckin)).expect("json"),
+            )
+            .build();
+        ctx.timezone = "Europe/Paris".into();
+        ctx.property.timezone = "Europe/Paris".into();
+        ctx.stay = Some(StayContext {
+            stay_id: Uuid::nil(),
+            checkin_at: Some(
+                Utc.with_ymd_and_hms(2099, 1, 1, 15, 0, 0)
+                    .single()
+                    .expect("dt"),
+            ),
+            checkout_at: None,
+        });
+
+        with_host(host, ctx.clone(), || {
+            let response = build_email_context(
+                &ctx,
+                &EmailContextArgs {
+                    template_key: Some("stay-link".into()),
+                    checkin_time_formatted: Some("16:00".into()),
+                    locale: Some("fr".into()),
+                },
+            )
+            .expect("ok");
+            assert!(!response.secrets_revealed);
+            assert!(response.entry_access_code.is_none());
+            assert!(response.arrival_callout.is_some());
+            assert!(!response
+                .arrival_callout
+                .as_deref()
+                .unwrap_or("")
+                .contains("4821"));
         });
     }
 }
