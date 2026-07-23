@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/PortakiApp/portaki-sdk/main/schema/module.v1.json",
+  "id": "lost-found",
+  "name": {
+    "fr": "Objets perdus ou trouvés",
+    "en": "Lost & found"
+  },
+  "description": {
+    "fr": "Les voyageurs signalent un objet perdu ou trouvé — l’hôte est prévenu.",
+    "en": "Guests report a lost or found item — the host is notified."
+  },
+  "version": "0.1.0",
+  "author": {
+    "name": "Syntax Labs",
+    "url": "https://syntax-labs.fr",
+    "type": "official"
+  },
+  "icon": "search",
+  "type": "official",
+  "hostSurfaces": [
+    {
+      "type": "property-workspace-tab",
+      "pathSegment": "lost-found",
+      "label": {
+        "fr": "Objets perdus / trouvés",
+        "en": "Lost & found"
+      },
+      "icon": "search"
+    }
+  ]
+}

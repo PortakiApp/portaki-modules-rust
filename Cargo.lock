@@ -158,6 +158,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
+name = "ev-parking"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "extism-pdk",
+ "portaki-sdk",
+ "portaki-sdk-macros",
+ "portaki-test-utils",
+ "serde",
+ "serde_json",
+ "serial_test",
+ "uuid",
+]
+
+[[package]]
 name = "events"
 version = "0.1.0"
 dependencies = [
@@ -450,6 +465,21 @@ name = "log"
 version = "0.4.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad"
+
+[[package]]
+name = "lost-found"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "extism-pdk",
+ "portaki-sdk",
+ "portaki-sdk-macros",
+ "portaki-test-utils",
+ "serde",
+ "serde_json",
+ "serial_test",
+ "uuid",
+]
 
 [[package]]
 name = "manyhow"
