@@ -27,6 +27,9 @@ mod tests {
     #[test]
     fn smart_lock_ops_match_sdk_contract() {
         assert_eq!(super::UNLOCK, smart_lock::UNLOCK);
-        assert_eq!(super::GET_GUEST_CREDENTIAL, smart_lock::GET_GUEST_CREDENTIAL);
+        assert_eq!(
+            super::GET_GUEST_CREDENTIAL,
+            smart_lock::GET_GUEST_CREDENTIAL
+        );
     }
 }
