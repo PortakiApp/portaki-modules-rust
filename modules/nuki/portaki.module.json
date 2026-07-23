@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/PortakiApp/portaki-sdk/main/schema/module.v1.json",
+  "id": "nuki",
+  "name": {
+    "fr": "Nuki",
+    "en": "Nuki"
+  },
+  "description": {
+    "fr": "Serrure Nuki — codes clavier pour le module Accès.",
+    "en": "Nuki smart lock — keypad codes for the Access module."
+  },
+  "version": "0.1.0",
+  "author": {
+    "name": "Syntax Labs",
+    "url": "https://syntax-labs.fr",
+    "type": "official"
+  },
+  "icon": "lock",
+  "type": "official",
+  "hostSurfaces": [
+    {
+      "type": "property-workspace-tab",
+      "pathSegment": "nuki",
+      "label": {
+        "fr": "Nuki",
+        "en": "Nuki"
+      },
+      "icon": "lock"
+    }
+  ]
+}

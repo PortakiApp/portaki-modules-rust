@@ -1,0 +1,38 @@
+{
+  "$schema": "https://raw.githubusercontent.com/PortakiApp/portaki-sdk/main/schema/module.v1.json",
+  "id": "events",
+  "name": {
+    "fr": "Événements",
+    "en": "Local events"
+  },
+  "description": {
+    "fr": "Concerts, marchés et fêtes près du logement, renseignés par l'hôte.",
+    "en": "Concerts, markets, and festivals near the stay — curated by the host."
+  },
+  "version": "0.1.0",
+  "author": {
+    "name": "Syntax Labs",
+    "url": "https://syntax-labs.fr",
+    "type": "official"
+  },
+  "icon": "calendar",
+  "type": "official",
+  "hostSurfaces": [
+    {
+      "type": "property-workspace-tab",
+      "pathSegment": "events",
+      "label": {
+        "fr": "Événements",
+        "en": "Events"
+      },
+      "icon": "calendar"
+    }
+  ],
+  "guestSurfaces": [
+    {
+      "surfaceId": "explore.detail",
+      "path": "events/detail",
+      "labelKey": "nav.events"
+    }
+  ]
+}

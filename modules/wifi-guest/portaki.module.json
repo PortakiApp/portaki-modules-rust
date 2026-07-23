@@ -1,0 +1,38 @@
+{
+  "$schema": "https://raw.githubusercontent.com/PortakiApp/portaki-sdk/main/schema/module.v1.json",
+  "id": "wifi-guest",
+  "name": {
+    "fr": "Wi-Fi invité",
+    "en": "Guest Wi-Fi"
+  },
+  "description": {
+    "fr": "SSID et mot de passe Wi-Fi pour le livret, avec révélation programmée.",
+    "en": "Guest Wi-Fi SSID and password for the booklet, with timed reveal."
+  },
+  "version": "0.1.0",
+  "author": {
+    "name": "Syntax Labs",
+    "url": "https://syntax-labs.fr",
+    "type": "official"
+  },
+  "icon": "wifi",
+  "type": "official",
+  "hostSurfaces": [
+    {
+      "type": "property-workspace-tab",
+      "pathSegment": "wifi-guest",
+      "label": {
+        "fr": "Wi-Fi",
+        "en": "Wi-Fi"
+      },
+      "icon": "wifi"
+    }
+  ],
+  "guestSurfaces": [
+    {
+      "surfaceId": "explore.detail",
+      "path": "wifi-guest/detail",
+      "labelKey": "nav.wifi-guest"
+    }
+  ]
+}

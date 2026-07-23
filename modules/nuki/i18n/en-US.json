@@ -1,0 +1,20 @@
+{
+  "module.displayName": "Nuki",
+  "module.description": "Smart lock provider — keypad codes for guest access",
+  "surface.host.main.title": "Nuki smart lock",
+  "surface.host.main.subtitle": "Configure your lock for the Access module",
+  "host.smartlockId.label": "Smart lock ID",
+  "host.smartlockId.placeholder": "Nuki device ID",
+  "host.keypadCode.label": "Keypad code",
+  "host.keypadCode.placeholder": "6-digit code",
+  "host.deviceName.label": "Device name (optional)",
+  "host.deviceName.placeholder": "Front door",
+  "host.main.help": "Guests receive the keypad code through the Access module when you set primary method to Smart lock and bind this module (provider: nuki). Remote unlock via Nuki Cloud is not active yet — platform connector egress must support POST and Bearer tokens first.",
+  "host.save": "Save",
+  "connector.nuki.name": "Nuki Cloud API",
+  "module.status.incomplete.title": "Incomplete configuration",
+  "module.status.incomplete.description": "Add a keypad code in the host dashboard",
+  "module.status.incomplete.hint": "Open Modules → Nuki",
+  "module.status.inactive.title": "Nuki module disabled",
+  "module.status.inactive.description": "This module is not active on this property"
+}
