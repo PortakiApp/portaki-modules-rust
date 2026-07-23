@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 const CONFIG_KEY: &str = "config";
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ModuleConfig {
     #[serde(default)]
     pub ical_url_primary: String,
@@ -16,17 +16,6 @@ pub struct ModuleConfig {
     pub last_sync_at: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sync_summary: Option<String>,
-}
-
-impl Default for ModuleConfig {
-    fn default() -> Self {
-        Self {
-            ical_url_primary: String::new(),
-            ical_url_secondary: String::new(),
-            last_sync_at: None,
-            sync_summary: None,
-        }
-    }
 }
 
 impl ModuleConfig {
