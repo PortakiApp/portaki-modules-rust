@@ -62,7 +62,7 @@ Reveal logic lives **in this module**. Stay timing comes from generic SDK host f
 
 ### Email context (`emailContext`)
 
-Stay-scoped query for Portaki guest emails (`arrival`, `arrival-day`, `new-code`).
+Stay-scoped query for Portaki guest emails (`stay-link`, `arrival`, `arrival-day`, `new-code`).
 
 Args (camelCase):
 
