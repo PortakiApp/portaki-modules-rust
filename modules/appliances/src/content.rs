@@ -2,7 +2,7 @@
 
 use portaki_sdk::sdui::common::RichTextDoc;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 
 pub const MAX_APPLIANCES: usize = 10;
 pub const MAX_FEATURED: usize = 5;
@@ -592,6 +592,7 @@ fn escape_attr(input: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn migrates_legacy_fr_slots() {

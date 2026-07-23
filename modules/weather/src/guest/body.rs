@@ -38,7 +38,7 @@ pub fn build_current_hero(
     };
     let mut text_stack = Stack::new().gap(4.0).child(
         Temperature::new()
-            .value(temp.round() as f64)
+            .value(temp.round())
             .unit(unit)
             .variant(TempVariant::Hero)
             .tone(tone_for_temp_c(current.temp_c)),

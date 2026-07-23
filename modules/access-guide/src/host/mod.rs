@@ -445,10 +445,6 @@ fn push_in_person_fields(children: &mut Vec<Component>, config: &ModuleConfig) {
     ));
 }
 
-fn format_coord(value: Option<f64>) -> String {
-    value.map(|v| format!("{v:.6}")).unwrap_or_default()
-}
-
 fn push_building_staff_fields(children: &mut Vec<Component>, config: &ModuleConfig) {
     let (kind, desk, hours, contact) = match &config.method {
         MethodFields::BuildingStaff {

@@ -7,7 +7,7 @@ use portaki_sdk::sdui::surface::Surface;
 
 use crate::content::{home_board, station_caption, MODULE_ICON};
 
-pub fn build_home_card(ctx: &GuestContext) -> Surface {
+pub fn build_home_card(_ctx: &GuestContext) -> Surface {
     let mut children: Vec<Component> = vec![Component::Text(
         Text::new()
             .text(station_caption())

@@ -8,6 +8,7 @@ define_surface_ids! {
 }
 
 /// Catalog module id (`train`).
+#[allow(dead_code)]
 pub fn module_id() -> ModuleId {
     ModuleId::from_static("train")
 }

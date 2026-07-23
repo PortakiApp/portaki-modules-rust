@@ -15,9 +15,9 @@ struct DestParams<'a> {
     dest: &'a str,
 }
 
-pub fn build_detail_page(ctx: &GuestContext, selected: &str) -> Surface {
+pub fn build_detail_page(_ctx: &GuestContext, selected: &str) -> Surface {
     Surface::new(Stack::new().gap(12.0).children(vec![
-            Component::Card(from_to_card(ctx, selected)),
+            Component::Card(from_to_card(selected)),
             Component::FilterBar(destination_filter_bar(selected)),
             Component::Text(
                 Text::new()
@@ -35,7 +35,7 @@ pub fn build_detail_page(ctx: &GuestContext, selected: &str) -> Surface {
     .with_id(crate::ids::EXPLORE_DETAIL)
 }
 
-fn from_to_card(ctx: &GuestContext, selected: &str) -> Card {
+fn from_to_card(selected: &str) -> Card {
     Card::new().surface(SurfaceLevel::Elevated).children(vec![
         Component::KeyValue(
             KeyValue::new()
