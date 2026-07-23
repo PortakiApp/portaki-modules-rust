@@ -112,11 +112,7 @@ pub fn build_email_context(ctx: &Context, args: &EmailContextArgs) -> Result<Ema
 
     Ok(EmailContextResponse {
         arrival_callout: callout.filter(|s| !s.trim().is_empty()),
-        entry_access_code: if wants_code {
-            plaintext_code
-        } else {
-            None
-        },
+        entry_access_code: if wants_code { plaintext_code } else { None },
         access_code_label: label.filter(|s| !s.trim().is_empty()),
         secrets_revealed: decision.revealed,
         reveal_available_from: decision.available_from,
@@ -257,9 +253,7 @@ fn method_callout(config: &ModuleConfig, en: bool, time: &str, has_code: bool) -
                     )
                 }
             } else if en {
-                format!(
-                    "Self check-in from {time}. Access instructions are on your stay page."
-                )
+                format!("Self check-in from {time}. Access instructions are on your stay page.")
             } else {
                 format!(
                     "Arrivée autonome dès {time}. Les instructions d'accès sont sur votre page de séjour."
@@ -278,9 +272,7 @@ fn method_callout(config: &ModuleConfig, en: bool, time: &str, has_code: bool) -
                     )
                 }
             } else if en {
-                format!(
-                    "Self check-in from {time}. Access details are on your stay page."
-                )
+                format!("Self check-in from {time}. Access details are on your stay page.")
             } else {
                 format!(
                     "Arrivée autonome dès {time}. Retrouvez les détails d'accès sur votre page de séjour."
@@ -297,9 +289,7 @@ fn method_callout(config: &ModuleConfig, en: bool, time: &str, has_code: bool) -
                     )
                 }
             } else if en {
-                format!(
-                    "Self check-in via smart lock from {time}. Open your stay page to unlock."
-                )
+                format!("Self check-in via smart lock from {time}. Open your stay page to unlock.")
             } else {
                 format!(
                     "Arrivée autonome via serrure connectée dès {time}. Ouvrez votre page de séjour pour déverrouiller."
