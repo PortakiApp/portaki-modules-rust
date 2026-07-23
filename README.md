@@ -53,14 +53,18 @@ On every push to **`main`**, CI builds and publishes:
 | [`appliances`](./modules/appliances) | `ghcr.io/portakiapp/portaki-modules-appliances:<semver>` | Device guides and safety notice |
 | [`checklist`](./modules/checklist) | `ghcr.io/portakiapp/portaki-modules-checklist:<semver>` | Checkout checklist with guest toggles |
 | [`emergency-contacts`](./modules/emergency-contacts) | `ghcr.io/portakiapp/portaki-modules-emergency-contacts:<semver>` | Useful numbers and host line |
+| [`events`](./modules/events) | `ghcr.io/portakiapp/portaki-modules-events:<semver>` | Host-curated local events and map |
 | [`facility-hours`](./modules/facility-hours) | `ghcr.io/portakiapp/portaki-modules-facility-hours:<semver>` | Pool, spa, and shared amenity schedules |
 | [`guest-reviews`](./modules/guest-reviews) | `ghcr.io/portakiapp/portaki-modules-guest-reviews:<semver>` | Post-stay thank-you and review CTAs |
 | [`local-guide`](./modules/local-guide) | `ghcr.io/portakiapp/portaki-modules-local-guide:<semver>` | Nearby spots and host picks |
+| [`nuki`](./modules/nuki) | `ghcr.io/portakiapp/portaki-modules-nuki:<semver>` | Nuki smart-lock provider for access-guide |
 | [`pre-arrival-form`](./modules/pre-arrival-form) | `ghcr.io/portakiapp/portaki-modules-pre-arrival-form:<semver>` | ETA, occasion, allergies, message to host |
 | [`rules`](./modules/rules) | `ghcr.io/portakiapp/portaki-modules-rules:<semver>` | Structured bilingual house rules |
 | [`sections`](./modules/sections) | `ghcr.io/portakiapp/portaki-modules-sections:<semver>` | Editorial title + markdown body blocks |
+| [`train`](./modules/train) | `ghcr.io/portakiapp/portaki-modules-train:<semver>` | Nearby station departure board |
 | [`waste-recycling`](./modules/waste-recycling) | `ghcr.io/portakiapp/portaki-modules-waste-recycling:<semver>` | Bins and collection schedule |
 | [`weather`](./modules/weather) | `ghcr.io/portakiapp/portaki-modules-weather:<semver>` | Current weather and 5-day forecast |
+| [`wifi-guest`](./modules/wifi-guest) | `ghcr.io/portakiapp/portaki-modules-wifi-guest:<semver>` | Guest Wi-Fi SSID and password with timed reveal |
 
 ## Structure
 
@@ -72,14 +76,18 @@ portaki-modules/
 │   ├── appliances/
 │   ├── checklist/
 │   ├── emergency-contacts/
+│   ├── events/
 │   ├── facility-hours/
 │   ├── guest-reviews/
 │   ├── local-guide/
+│   ├── nuki/
 │   ├── pre-arrival-form/
 │   ├── rules/
 │   ├── sections/
+│   ├── train/
 │   ├── waste-recycling/
-│   └── weather/
+│   ├── weather/
+│   └── wifi-guest/
 └── .github/workflows/
     └── ci.yml                 # quality gates; publish to GHCR on main
 ```
