@@ -1,4 +1,6 @@
 //! Portaki Nuki module — smart-lock provider for `access.smart_lock`.
+//!
+//! Requires `portaki` CLI ≥ 2.1.0 (CapabilityId catalog includes `access.smart_lock`).
 
 mod commands;
 mod config;
