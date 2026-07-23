@@ -5,8 +5,8 @@ use portaki_sdk::capability;
 use serial_test::serial;
 
 use access_guide::{
-    get_config, render_explore_detail, render_home_card, update_config, MethodFields,
-    PrimaryMethod, RevealPolicy, UpdateConfigArgs,
+    get_config, render_explore_detail, render_home_card, render_host_main, update_config,
+    MethodFields, PrimaryMethod, RevealPolicy, UpdateConfigArgs,
 };
 use portaki_sdk::context::StayContext;
 use portaki_sdk::host::with_host;
@@ -294,6 +294,82 @@ fn smart_lock_provider_hides_cta_when_not_revealed() {
         assert!(!json.contains("9999"));
         assert!(json.contains("••••••"));
     });
+}
+
+#[test]
+#[serial]
+fn host_main_hides_reveal_for_no_code_methods_without_layers() {
+    for method in [
+        PrimaryMethod::InPerson,
+        PrimaryMethod::BuildingStaff,
+        PrimaryMethod::HostGreets,
+        PrimaryMethod::Other,
+    ] {
+        MockContext::host()
+            .with_capabilities(&[capability::core::STORAGE])
+            .run(|ctx| {
+                let mut ctx = ctx;
+                ctx.input = json!({
+                    "primary_method": method.as_wire(),
+                    "building_access_enabled": false,
+                    "parking_enabled": false,
+                });
+                let surface = render_host_main(ctx);
+                let json = serde_json::to_string(&surface).expect("json");
+                assert!(
+                    !json.contains("i18n:host.section.reveal"),
+                    "reveal section must stay hidden for {method:?}"
+                );
+            });
+    }
+}
+
+#[test]
+#[serial]
+fn host_main_shows_reveal_for_code_methods() {
+    for method in [
+        PrimaryMethod::Keybox,
+        PrimaryMethod::DoorCode,
+        PrimaryMethod::SmartLock,
+    ] {
+        MockContext::host()
+            .with_capabilities(&[capability::core::STORAGE])
+            .run(|ctx| {
+                let mut ctx = ctx;
+                ctx.input = json!({
+                    "primary_method": method.as_wire(),
+                    "building_access_enabled": false,
+                    "parking_enabled": false,
+                });
+                let surface = render_host_main(ctx);
+                let json = serde_json::to_string(&surface).expect("json");
+                assert!(
+                    json.contains("i18n:host.section.reveal"),
+                    "reveal section must show for {method:?}"
+                );
+            });
+    }
+}
+
+#[test]
+#[serial]
+fn host_main_shows_reveal_for_in_person_when_building_layer_enabled() {
+    MockContext::host()
+        .with_capabilities(&[capability::core::STORAGE])
+        .run(|ctx| {
+            let mut ctx = ctx;
+            ctx.input = json!({
+                "primary_method": PrimaryMethod::InPerson.as_wire(),
+                "building_access_enabled": true,
+                "parking_enabled": false,
+            });
+            let surface = render_host_main(ctx);
+            let json = serde_json::to_string(&surface).expect("json");
+            assert!(
+                json.contains("i18n:host.section.reveal"),
+                "building digicode still needs reveal timing"
+            );
+        });
 }
 
 #[test]

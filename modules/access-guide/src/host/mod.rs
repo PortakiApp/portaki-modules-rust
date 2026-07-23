@@ -48,7 +48,11 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         submit_args,
     );
 
-    let form_children: Vec<Component> = vec![
+    // Reveal timing only applies when there is (or can be) a code: primary
+    // method with credential, and/or optional building / parking layers.
+    let show_reveal = draft_method.involves_access_code() || building_enabled || parking_enabled;
+
+    let mut form_children: Vec<Component> = vec![
         Card::new()
             .title("i18n:host.section.primary")
             .subtitle("i18n:host.section.primary.help")
@@ -75,22 +79,32 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
             .icon("map-pin")
             .children(arrival_children(&config, &texts, steps_count))
             .into(),
-        Card::new()
-            .title("i18n:host.section.reveal")
-            .subtitle("i18n:host.section.reveal.help")
-            .icon("clock-circle")
-            .children(vec![reveal_choice_list(config.reveal_policy).into()])
-            .into(),
+    ];
+
+    if show_reveal {
+        form_children.push(
+            Card::new()
+                .title("i18n:host.section.reveal")
+                .subtitle("i18n:host.section.reveal.help")
+                .icon("clock-circle")
+                .children(vec![reveal_choice_list(config.reveal_policy).into()])
+                .into(),
+        );
+    }
+
+    form_children.push(
         Text::new()
             .text("i18n:host.main.help")
             .variant(TextVariant::Caption)
             .into(),
+    );
+    form_children.push(
         Button::new()
             .label("i18n:host.save")
             .action(save_action)
             .tone(Tone::Primary)
             .into(),
-    ];
+    );
 
     Surface::new(Page::new().child(Form::new().children(form_children)))
         .with_id(crate::ids::HOST_MAIN)

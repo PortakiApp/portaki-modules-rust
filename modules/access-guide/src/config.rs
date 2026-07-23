@@ -60,6 +60,15 @@ impl PrimaryMethod {
         Self::HostGreets,
         Self::Other,
     ];
+
+    /// Whether this primary method can carry an access code / credential.
+    ///
+    /// No-code methods (`in_person`, `building_staff`, `host_greets`, `other`)
+    /// do not — host reveal timing UI is hidden unless a code-bearing layer
+    /// (building / parking) is also enabled.
+    pub const fn involves_access_code(self) -> bool {
+        matches!(self, Self::Keybox | Self::DoorCode | Self::SmartLock)
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -896,6 +905,17 @@ mod tests {
             let back: PrimaryMethod = serde_json::from_value(value).expect("deserialize");
             assert_eq!(back, method);
         }
+    }
+
+    #[test]
+    fn involves_access_code_for_code_methods_only() {
+        assert!(PrimaryMethod::Keybox.involves_access_code());
+        assert!(PrimaryMethod::DoorCode.involves_access_code());
+        assert!(PrimaryMethod::SmartLock.involves_access_code());
+        assert!(!PrimaryMethod::InPerson.involves_access_code());
+        assert!(!PrimaryMethod::BuildingStaff.involves_access_code());
+        assert!(!PrimaryMethod::HostGreets.involves_access_code());
+        assert!(!PrimaryMethod::Other.involves_access_code());
     }
 
     #[test]
