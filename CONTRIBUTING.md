@@ -19,9 +19,13 @@ cargo install --git https://github.com/PortakiApp/portaki-sdk --branch main --lo
 4. Follow the Wasm crate layout: `ids.rs` (`define_surface_ids!` / `define_operation_names!` /
    `define_event_types!`), `guest/`, `host/` (omit if guest-only), `connectors` when needed.
    Boundary builders (`Action::command` / `open_overlay` / `emit` / `navigate`,
-   `Surface::with_id`, `events::emit`) take typed consts from `ids` — no bare
-   `"home.card"` / `"updateConfig"` at use sites. Declaration sites
-   (`define_*!`, `#[surface(id = …)]`, `#[command(name = …)]`) may use literals once.
+   `Surface::with_id`, `events::emit`) take typed consts from `ids` (or
+   `contracts::*`) — no bare `"home.card"` / `"updateConfig"` at use sites.
+   `ids.rs` must catalog every surface, command, query, and event
+   (`define_surface_ids!` / `define_operation_names!` / `define_event_types!`).
+   Declaration sites (`define_*!`, `#[surface]` / `#[command]` / `#[query]` /
+   `#[event_handler]`) may use literals once — macros cannot take `ids::CONST`
+   paths (emission needs the wire string at expand).
 5. Annotate the crate with `#[portaki_module(id = "…")]` in `lib.rs`.
 6. Add per-module `.cargo/config.toml` with `target-dir = "target"` so `portaki build` / `portaki lint` find macro emissions (workspace builds otherwise use the repo-root `target/`).
 7. Regenerate release-please package discovery (required — do not hand-edit package paths):

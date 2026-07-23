@@ -16,7 +16,9 @@ pub struct BookingConfirmedEvent {
     pub property_id: Uuid,
 }
 
-#[portaki_sdk::event_handler(event_type = "core.booking.confirmed")]
+// Wire string must match `ids::BOOKING_CONFIRMED` / `contracts::platform::BOOKING_CONFIRMED`.
+// Macros cannot take `ids::CONST` paths (OUT_DIR emission needs the literal at expand).
+#[portaki_sdk::event_handler(event_type = EventType::new("core.booking.confirmed"))]
 pub fn on_booking_confirmed(ctx: Context, _event: BookingConfirmedEvent) -> Result<()> {
     if !has_open_weather(&ctx) {
         return Ok(());
