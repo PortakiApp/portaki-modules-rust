@@ -21,7 +21,11 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         facilities_json: String::new(),
         general_note: general_note.clone(),
     };
-    let save_action = Action::command(&crate::ids::module_id(), crate::ids::UPDATE_CONFIG, submit_args);
+    let save_action = Action::command(
+        &crate::ids::module_id(),
+        crate::ids::UPDATE_CONFIG,
+        submit_args,
+    );
 
     let mut form_children: Vec<Component> = Vec::new();
     for index in 0..FACILITY_SLOTS {
@@ -65,7 +69,10 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     .with_id(crate::ids::HOST_MAIN)
 }
 
-fn facilities_to_submit(facilities: &[FacilityRow], lang: &str) -> Vec<crate::commands::FacilityInput> {
+fn facilities_to_submit(
+    facilities: &[FacilityRow],
+    lang: &str,
+) -> Vec<crate::commands::FacilityInput> {
     facilities
         .iter()
         .map(|f| crate::commands::FacilityInput {

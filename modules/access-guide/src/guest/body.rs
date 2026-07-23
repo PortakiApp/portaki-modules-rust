@@ -26,11 +26,7 @@ fn external_action(url: &str) -> Action {
     Action::external(url)
 }
 
-fn command_action(
-    module_id: &ModuleId,
-    name: OperationName,
-    args: impl Serialize,
-) -> Action {
+fn command_action(module_id: &ModuleId, name: OperationName, args: impl Serialize) -> Action {
     Action::command(module_id, name, args)
 }
 
@@ -70,11 +66,9 @@ fn map_at(lat: f64, lng: f64) -> Component {
     Component::Map(
         Map::new()
             .viewport(MapViewport::new(lat, lng, Some(15.0)))
-            .markers(vec![
-                MapMarker::new("property", lat, lng)
-                    .label("Logement")
-                    .kind(MapMarkerKind::Property),
-            ])
+            .markers(vec![MapMarker::new("property", lat, lng)
+                .label("Logement")
+                .kind(MapMarkerKind::Property)])
             .isStatic(true)
             .interactionMode(MapInteractionMode::None),
     )

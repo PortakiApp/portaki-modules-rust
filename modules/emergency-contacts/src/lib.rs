@@ -4,17 +4,17 @@ mod commands;
 mod config;
 mod email_context;
 mod guest;
-mod localized;
-mod queries;
 mod host;
 mod ids;
+mod localized;
+mod queries;
 
 pub use commands::{update_config, ContactInput, UpdateConfigArgs};
 pub use config::{load_config, ModuleConfig};
 pub use email_context::{email_context, EmailContextArgs, EmailContextResponse};
 pub use guest::{render_explore_detail, render_home_card};
-pub use queries::get_config;
 pub use host::render_host_main;
+pub use queries::get_config;
 
 portaki_sdk::portaki_module!(
     id = "emergency-contacts",

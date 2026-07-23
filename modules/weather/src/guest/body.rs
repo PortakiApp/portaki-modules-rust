@@ -94,10 +94,5 @@ fn build_forecast_strip(forecast: &WeatherForecast, units: &WeatherUnits) -> Com
         .map(|day| build_forecast_day_column(day, unit, units))
         .collect();
 
-    Component::Grid(
-        Grid::new()
-            .columns(5)
-            .gap(6.0)
-            .children(day_columns),
-    )
+    Component::Grid(Grid::new().columns(5).gap(6.0).children(day_columns))
 }

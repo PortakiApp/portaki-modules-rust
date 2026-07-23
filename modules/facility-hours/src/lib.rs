@@ -3,16 +3,16 @@
 mod commands;
 mod config;
 mod guest;
-mod localized;
-mod queries;
 mod host;
 mod ids;
+mod localized;
+mod queries;
 
 pub use commands::{update_config, FacilityInput, UpdateConfigArgs};
 pub use config::{load_config, ModuleConfig};
 pub use guest::{render_explore_detail, render_home_card};
-pub use queries::get_config;
 pub use host::render_host_main;
+pub use queries::get_config;
 
 portaki_sdk::portaki_module!(
     id = "facility-hours",

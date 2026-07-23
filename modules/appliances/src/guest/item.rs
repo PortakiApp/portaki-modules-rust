@@ -1,5 +1,9 @@
 //! Guest explore item — appliance how-to detail (Portaki Guest design).
 
+use crate::content::{
+    description_plain_text, description_to_html, extract_howto_steps, Appliance, ApplianceStatus,
+    AppliancesPayload,
+};
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::common::SurfaceLevel;
@@ -7,10 +11,6 @@ use portaki_sdk::sdui::primitives::{
     Button, Card, EmptyState, Eyebrow, InfoBanner, Link, ListItem, RichText, Stack, Text,
 };
 use portaki_sdk::sdui::surface::Surface;
-use crate::content::{
-    description_plain_text, description_to_html, extract_howto_steps, Appliance, ApplianceStatus,
-    AppliancesPayload,
-};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -93,8 +93,7 @@ fn device_detail_children(device: &Appliance) -> Vec<Component> {
 
     if !device.manual_url.trim().is_empty() {
         let url = device.manual_url.trim().to_string();
-        let action =
-            Action::external(url.clone());
+        let action = Action::external(url.clone());
         children.push(Component::Link(
             Link::new()
                 .label("i18n:explore.item.manual")

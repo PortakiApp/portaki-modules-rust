@@ -4,10 +4,10 @@ mod commands;
 mod content;
 mod entities;
 mod guest;
-mod queries;
 mod host;
-mod store;
 mod ids;
+mod queries;
+mod store;
 
 pub use commands::{
     delete_appliance, reorder_appliances, replace_devices, save_appliance, save_safety_notice,
@@ -17,8 +17,8 @@ pub use commands::{
 pub use content::{Appliance, ApplianceStatus, AppliancesPayload, MAX_APPLIANCES, MAX_FEATURED};
 pub use entities::AppliancesContent;
 pub use guest::{render_explore_detail, render_explore_item, render_home_card};
-pub use queries::{get_content, AppliancesContentView, GetContentArgs};
 pub use host::render_host_main;
+pub use queries::{get_content, AppliancesContentView, GetContentArgs};
 pub use store::reset_test_store;
 
 /// Test-only: write raw JSON into the content slot (legacy or v2).

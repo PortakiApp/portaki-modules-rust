@@ -28,7 +28,9 @@ pub fn build_home_card(payload: &RulesPayload) -> Surface {
             .action(Action::open_overlay(
                 OverlayPresentation::Fullscreen,
                 crate::ids::EXPLORE_DETAIL,
-                OverlayArgs::new().icon("scale").title("i18n:home.card.title"),
+                OverlayArgs::new()
+                    .icon("scale")
+                    .title("i18n:home.card.title"),
             ))
             .children(children),
     )
@@ -41,9 +43,7 @@ pub fn rule_list_item(item: &RuleItem) -> Component {
     } else {
         item.icon.clone()
     };
-    let mut list = ListItem::new()
-        .title(item.title.clone())
-        .leading(icon_name);
+    let mut list = ListItem::new().title(item.title.clone()).leading(icon_name);
     if !item.subtitle.trim().is_empty() {
         list = list.subtitle(item.subtitle.clone());
     }

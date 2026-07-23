@@ -38,11 +38,7 @@ pub fn build_home_card(data: &GuestChecklistData) -> Surface {
         children.push(
             Pressable::new()
                 .action(action)
-                .child(
-                    ChecklistItemView::new()
-                        .label(label)
-                        .checked(checked),
-                )
+                .child(ChecklistItemView::new().label(label).checked(checked))
                 .into(),
         );
     }

@@ -21,7 +21,11 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         spots_json: String::new(),
         disclaimer: disclaimer.clone(),
     };
-    let save_action = Action::command(&crate::ids::module_id(), crate::ids::UPDATE_CONFIG, submit_args);
+    let save_action = Action::command(
+        &crate::ids::module_id(),
+        crate::ids::UPDATE_CONFIG,
+        submit_args,
+    );
 
     let mut form_children: Vec<Component> = Vec::new();
     for index in 0..SPOT_SLOTS {

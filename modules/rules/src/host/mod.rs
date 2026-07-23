@@ -33,7 +33,11 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         content_fr: String::new(),
         content_en: String::new(),
     };
-    let save_action = Action::command(&crate::ids::module_id(), crate::ids::SAVE_CONTENT, submit_args);
+    let save_action = Action::command(
+        &crate::ids::module_id(),
+        crate::ids::SAVE_CONTENT,
+        submit_args,
+    );
 
     let mut form_children: Vec<Component> = Vec::new();
     for index in 0..ITEM_SLOTS {
@@ -133,13 +137,13 @@ fn push_rule_slot(children: &mut Vec<Component>, index: usize, item: Option<&Rul
                 Select::new()
                     .name(format!("items.{index}.icon"))
                     .options(vec![
-                                        ChoiceOption::new("clock-circle", "i18n:host.rule.icon.quiet"),
-                                        ChoiceOption::new("x", "i18n:host.rule.icon.no"),
-                                        ChoiceOption::new("users", "i18n:host.rule.icon.guests"),
-                                        ChoiceOption::new("check-circle", "i18n:host.rule.icon.ok"),
-                                        ChoiceOption::new("paw-print", "i18n:host.rule.icon.pets"),
-                                        ChoiceOption::new("volume-x", "i18n:host.rule.icon.noise"),
-                                    ])
+                        ChoiceOption::new("clock-circle", "i18n:host.rule.icon.quiet"),
+                        ChoiceOption::new("x", "i18n:host.rule.icon.no"),
+                        ChoiceOption::new("users", "i18n:host.rule.icon.guests"),
+                        ChoiceOption::new("check-circle", "i18n:host.rule.icon.ok"),
+                        ChoiceOption::new("paw-print", "i18n:host.rule.icon.pets"),
+                        ChoiceOption::new("volume-x", "i18n:host.rule.icon.noise"),
+                    ])
                     .value(icon),
             )
             .into(),

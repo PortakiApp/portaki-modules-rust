@@ -2,7 +2,6 @@
 
 use portaki_sdk::prelude::*;
 
-
 use portaki_sdk::sdui::primitives::Card;
 use portaki_sdk::sdui::surface::Surface;
 
@@ -19,7 +18,9 @@ pub fn build_home_card(data: &GuestData) -> Surface {
             .action(Action::open_overlay(
                 OverlayPresentation::Fullscreen,
                 crate::ids::EXPLORE_DETAIL,
-                OverlayArgs::new().icon("car").title("i18n:nav.access-guide"),
+                OverlayArgs::new()
+                    .icon("car")
+                    .title("i18n:nav.access-guide"),
             ))
             .children(build_access_glance(data)),
     )

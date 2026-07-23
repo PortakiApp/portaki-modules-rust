@@ -16,7 +16,9 @@ pub fn build_home_card(sections: &[SectionView]) -> Surface {
             .action(Action::open_overlay(
                 OverlayPresentation::BottomSheet,
                 crate::ids::EXPLORE_SHEET,
-                OverlayArgs::new().icon("home").title("i18n:home.card.title"),
+                OverlayArgs::new()
+                    .icon("home")
+                    .title("i18n:home.card.title"),
             ))
             .children(section_blocks(sections, CARD_SECTION_LIMIT)),
     )

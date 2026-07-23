@@ -55,7 +55,11 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         body_markdown_fr: String::new(),
         body_markdown_en: String::new(),
     };
-    let save_action = Action::command(&crate::ids::module_id(), crate::ids::SAVE_SECTION, submit_args);
+    let save_action = Action::command(
+        &crate::ids::module_id(),
+        crate::ids::SAVE_SECTION,
+        submit_args,
+    );
 
     Surface::new(
         Page::new()
@@ -77,22 +81,14 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
                         Field::new()
                             .name("body_markdown")
                             .label("i18n:host.body.label")
-                            .child(
-                                TextArea::new()
-                                    .name("body_markdown")
-                                    .value(body),
-                            ),
+                            .child(TextArea::new().name("body_markdown").value(body)),
                     )
                     .child(
                         Text::new()
                             .text("i18n:host.main.help")
                             .variant(TextVariant::Caption),
                     )
-                    .child(
-                        Button::new()
-                            .label("i18n:host.save")
-                            .action(save_action),
-                    ),
+                    .child(Button::new().label("i18n:host.save").action(save_action)),
             ),
     )
     .with_id(crate::ids::HOST_MAIN)

@@ -9,12 +9,12 @@ use portaki_test_utils::{MockContext, Property};
 use serde_json::json;
 use std::sync::atomic::Ordering;
 
+use portaki_sdk::prelude::EmailTemplateKey;
 use weather::{
     email_context, get_current, get_forecast, on_booking_confirmed, refresh_forecast,
     render_explore_forecast, render_home_card, reset_test_harness, CONNECTOR_CURRENT_CALLS,
     CONNECTOR_FORECAST_CALLS,
 };
-use portaki_sdk::prelude::EmailTemplateKey;
 use weather::{BookingConfirmedEvent, EmailContextArgs, GetCurrentArgs, GetForecastArgs};
 
 fn sample_current_json() -> String {
@@ -99,7 +99,10 @@ fn home_card_renders_with_capability_pool() {
     reset_test_harness();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&[capability::core::STORAGE, capability::external::OPEN_WEATHER_POOL])
+        .with_capabilities(&[
+            capability::core::STORAGE,
+            capability::external::OPEN_WEATHER_POOL,
+        ])
         .with_connector_response("open-weather", "current", sample_current_json())
         .with_connector_response("open-weather", "forecast", sample_forecast_json())
         .run(|ctx| {
@@ -119,7 +122,10 @@ fn email_context_returns_french_summary() {
     reset_test_harness();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&[capability::core::STORAGE, capability::external::OPEN_WEATHER_POOL])
+        .with_capabilities(&[
+            capability::core::STORAGE,
+            capability::external::OPEN_WEATHER_POOL,
+        ])
         .with_connector_response("open-weather", "current", sample_current_json())
         .with_connector_response("open-weather", "forecast", sample_forecast_json())
         .with_translation("email.place.inCity", "à {name}")
@@ -166,7 +172,10 @@ fn get_current_uses_cache_on_second_call() {
 
     let builder = MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&[capability::core::STORAGE, capability::external::OPEN_WEATHER_POOL])
+        .with_capabilities(&[
+            capability::core::STORAGE,
+            capability::external::OPEN_WEATHER_POOL,
+        ])
         .with_connector_response("open-weather", "current", sample_current_json())
         .with_connector_response("open-weather", "forecast", sample_forecast_json());
 
@@ -206,7 +215,10 @@ fn refresh_forecast_invalidates_cache() {
 
     let builder = MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&[capability::core::STORAGE, capability::external::OPEN_WEATHER_POOL])
+        .with_capabilities(&[
+            capability::core::STORAGE,
+            capability::external::OPEN_WEATHER_POOL,
+        ])
         .with_connector_response("open-weather", "current", sample_current_json())
         .with_connector_response("open-weather", "forecast", sample_forecast_json());
 
@@ -245,7 +257,10 @@ fn forecast_renders_5_days() {
     reset_test_harness();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&[capability::core::STORAGE, capability::external::OPEN_WEATHER_BYOK])
+        .with_capabilities(&[
+            capability::core::STORAGE,
+            capability::external::OPEN_WEATHER_BYOK,
+        ])
         .with_connector_response("open-weather", "current", sample_current_json())
         .with_connector_response("open-weather", "forecast", sample_forecast_json())
         .run(|ctx| {
@@ -267,7 +282,10 @@ fn on_booking_confirmed_prewarms_cache() {
 
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&[capability::core::STORAGE, capability::external::OPEN_WEATHER_POOL])
+        .with_capabilities(&[
+            capability::core::STORAGE,
+            capability::external::OPEN_WEATHER_POOL,
+        ])
         .with_connector_response("open-weather", "current", sample_current_json())
         .with_connector_response("open-weather", "forecast", sample_forecast_json())
         .run(|ctx| {
@@ -292,7 +310,10 @@ fn get_forecast_returns_five_days() {
 
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&[capability::core::STORAGE, capability::external::OPEN_WEATHER_POOL])
+        .with_capabilities(&[
+            capability::core::STORAGE,
+            capability::external::OPEN_WEATHER_POOL,
+        ])
         .with_connector_response("open-weather", "current", sample_current_json())
         .with_connector_response("open-weather", "forecast", sample_forecast_json())
         .run(|ctx| {

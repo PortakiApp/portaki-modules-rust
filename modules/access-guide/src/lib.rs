@@ -4,11 +4,11 @@ mod commands;
 mod config;
 mod email_context;
 mod guest;
-mod queries;
 mod host;
+mod ids;
+mod queries;
 mod reveal;
 mod texts;
-mod ids;
 
 pub use commands::{update_config, StepInput, UpdateConfigArgs};
 pub use config::{
@@ -17,8 +17,8 @@ pub use config::{
 };
 pub use email_context::{email_context, EmailContextArgs, EmailContextResponse};
 pub use guest::{render_explore_detail, render_home_card};
-pub use queries::get_config;
 pub use host::render_host_main;
+pub use queries::get_config;
 pub use texts::{lang_code, load_texts, ModuleTexts, StepText};
 
 portaki_sdk::portaki_module!(

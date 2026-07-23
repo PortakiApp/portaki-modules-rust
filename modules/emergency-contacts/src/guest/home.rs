@@ -2,7 +2,6 @@
 
 use portaki_sdk::prelude::*;
 
-
 use portaki_sdk::sdui::primitives::Card;
 use portaki_sdk::sdui::surface::Surface;
 
@@ -17,7 +16,9 @@ pub fn build_home_card(data: &GuestData) -> Surface {
             .action(Action::open_overlay(
                 OverlayPresentation::BottomSheet,
                 crate::ids::EXPLORE_DETAIL,
-                OverlayArgs::new().icon("phone").title("i18n:home.card.title"),
+                OverlayArgs::new()
+                    .icon("phone")
+                    .title("i18n:home.card.title"),
             ))
             .children(build_contacts_body(data, false)),
     )

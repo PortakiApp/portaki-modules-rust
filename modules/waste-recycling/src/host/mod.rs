@@ -22,7 +22,9 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         bins_json: String::new(),
         collection_schedule: collection_schedule.clone(),
     };
-    let save_action = Action::command(&crate::ids::module_id(), crate::ids::UPDATE_CONFIG,
+    let save_action = Action::command(
+        &crate::ids::module_id(),
+        crate::ids::UPDATE_CONFIG,
         submit_args,
     );
 
@@ -69,14 +71,20 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
 }
 
 fn bins_to_submit(bins: &[BinRow], lang: &str) -> Vec<crate::commands::BinInput> {
-    bins
-        .iter()
+    bins.iter()
         .map(|b| crate::commands::BinInput {
             title: b.title.get(lang).to_string(),
             title_fr: String::new(),
             title_en: String::new(),
-            items: b.items.iter().map(|i| i.get(lang)).collect::<Vec<_>>().join("
-"),
+            items: b
+                .items
+                .iter()
+                .map(|i| i.get(lang))
+                .collect::<Vec<_>>()
+                .join(
+                    "
+",
+                ),
             items_fr: String::new(),
             color: b.color.clone().unwrap_or_default(),
         })
@@ -129,12 +137,12 @@ fn push_bin_slot(children: &mut Vec<Component>, index: usize, bin: Option<&BinRo
                 Select::new()
                     .name(format!("bins.{index}.color"))
                     .options(vec![
-                                        ChoiceOption::new("", "i18n:host.bin.color.none"),
-                                        ChoiceOption::new("yellow", "i18n:host.bin.color.yellow"),
-                                        ChoiceOption::new("green", "i18n:host.bin.color.green"),
-                                        ChoiceOption::new("brown", "i18n:host.bin.color.brown"),
-                                        ChoiceOption::new("grey", "i18n:host.bin.color.grey"),
-                                    ])
+                        ChoiceOption::new("", "i18n:host.bin.color.none"),
+                        ChoiceOption::new("yellow", "i18n:host.bin.color.yellow"),
+                        ChoiceOption::new("green", "i18n:host.bin.color.green"),
+                        ChoiceOption::new("brown", "i18n:host.bin.color.brown"),
+                        ChoiceOption::new("grey", "i18n:host.bin.color.grey"),
+                    ])
                     .value(color),
             )
             .into(),

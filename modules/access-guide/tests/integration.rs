@@ -1,7 +1,7 @@
 //! Integration-style unit tests with `portaki-test-utils`.
 
-use portaki_sdk::capability;
 use chrono::{TimeZone, Utc};
+use portaki_sdk::capability;
 use serial_test::serial;
 
 use access_guide::{

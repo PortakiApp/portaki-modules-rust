@@ -20,7 +20,11 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         contacts_json: String::new(),
         host_visible_phone: config.host_visible_phone.clone(),
     };
-    let save_action = Action::command(&crate::ids::module_id(), crate::ids::UPDATE_CONFIG, submit_args);
+    let save_action = Action::command(
+        &crate::ids::module_id(),
+        crate::ids::UPDATE_CONFIG,
+        submit_args,
+    );
 
     let mut form_children: Vec<Component> = vec![Field::new()
         .name("host_visible_phone")

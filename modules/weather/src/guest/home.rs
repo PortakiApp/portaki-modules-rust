@@ -2,7 +2,6 @@
 
 use portaki_sdk::prelude::*;
 
-
 use portaki_sdk::sdui::primitives::Card;
 use portaki_sdk::sdui::surface::Surface;
 
@@ -17,7 +16,9 @@ pub fn build_home_card(data: &GuestWeatherData) -> Surface {
             .action(Action::open_overlay(
                 OverlayPresentation::BottomSheet,
                 crate::ids::EXPLORE_FORECAST,
-                OverlayArgs::new().icon("cloud-sun").title("i18n:nav.weather"),
+                OverlayArgs::new()
+                    .icon("cloud-sun")
+                    .title("i18n:nav.weather"),
             ))
             .children(build_weather_glance(
                 &data.current,

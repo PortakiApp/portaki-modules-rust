@@ -39,14 +39,10 @@ pub fn build_home_card(data: &GuestData) -> Surface {
         let url = data.airbnb_url.clone().unwrap_or_default();
         let action = Action::external(url.clone());
         children.push(Component::Button(
-            Button::new()
-                .label("i18n:guest.airbnbCta")
-                .action(action),
+            Button::new().label("i18n:guest.airbnbCta").action(action),
         ));
         if data.show_qr && !url.is_empty() {
-            children.push(Component::QRCode(
-                QRCode::new().value(url).size(144.0),
-            ));
+            children.push(Component::QRCode(QRCode::new().value(url).size(144.0)));
             children.push(Component::Text(
                 Text::new()
                     .text("i18n:guest.scanQr")
@@ -64,7 +60,9 @@ pub fn build_home_card(data: &GuestData) -> Surface {
             ));
         }
 
-        let submit_action = Action::command(&crate::ids::module_id(), crate::ids::SUBMIT_REVIEW,
+        let submit_action = Action::command(
+            &crate::ids::module_id(),
+            crate::ids::SUBMIT_REVIEW,
             crate::commands::SubmitReviewArgs {
                 rating: 5,
                 comment: String::new(),
@@ -81,12 +79,12 @@ pub fn build_home_card(data: &GuestData) -> Surface {
                             Select::new()
                                 .name("rating")
                                 .options(vec![
-                                        ChoiceOption::new("1", "★"),
-                                        ChoiceOption::new("2", "★★"),
-                                        ChoiceOption::new("3", "★★★"),
-                                        ChoiceOption::new("4", "★★★★"),
-                                        ChoiceOption::new("5", "★★★★★"),
-                                    ])
+                                    ChoiceOption::new("1", "★"),
+                                    ChoiceOption::new("2", "★★"),
+                                    ChoiceOption::new("3", "★★★"),
+                                    ChoiceOption::new("4", "★★★★"),
+                                    ChoiceOption::new("5", "★★★★★"),
+                                ])
                                 .value("5"),
                         ),
                 )

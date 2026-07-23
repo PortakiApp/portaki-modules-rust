@@ -7,10 +7,6 @@ use super::home::rules_stack;
 use crate::content::RulesPayload;
 
 pub fn build_detail_page(payload: &RulesPayload) -> Surface {
-    Surface::new(
-        Stack::new()
-            .gap(0.0)
-            .child(rules_stack(&payload.items)),
-    )
-    .with_id(crate::ids::EXPLORE_DETAIL)
+    Surface::new(Stack::new().gap(0.0).child(rules_stack(&payload.items)))
+        .with_id(crate::ids::EXPLORE_DETAIL)
 }

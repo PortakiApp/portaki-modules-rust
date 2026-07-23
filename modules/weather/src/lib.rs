@@ -8,18 +8,18 @@ mod email_context;
 mod entities;
 mod events;
 mod guest;
-mod queries;
 mod host;
-mod weather;
 mod ids;
+mod queries;
+mod weather;
 
 pub use commands::{refresh_forecast, update_config};
 pub use email_context::{email_context, EmailContextArgs, EmailContextResponse};
 pub use entities::{WeatherCache, WeatherUnits};
 pub use events::{on_booking_confirmed, BookingConfirmedEvent};
 pub use guest::{render_explore_forecast, render_home_card};
-pub use queries::{get_current, get_forecast, GetCurrentArgs, GetForecastArgs};
 pub use host::render_host_main;
+pub use queries::{get_current, get_forecast, GetCurrentArgs, GetForecastArgs};
 pub use weather::{has_open_weather, WeatherCurrent, WeatherForecast};
 
 pub use cache::{reset_test_cache, reset_test_harness};

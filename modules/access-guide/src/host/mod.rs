@@ -42,7 +42,11 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         reveal_policy: Some(config.reveal_policy),
         ..Default::default()
     };
-    let save_action = Action::command(&crate::ids::module_id(), crate::ids::UPDATE_CONFIG, submit_args);
+    let save_action = Action::command(
+        &crate::ids::module_id(),
+        crate::ids::UPDATE_CONFIG,
+        submit_args,
+    );
 
     let form_children: Vec<Component> = vec![
         Card::new()
@@ -88,7 +92,8 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
             .into(),
     ];
 
-    Surface::new(Page::new().child(Form::new().children(form_children))).with_id(crate::ids::HOST_MAIN)
+    Surface::new(Page::new().child(Form::new().children(form_children)))
+        .with_id(crate::ids::HOST_MAIN)
 }
 
 // ── Draft helpers ────────────────────────────────────────────────────────────
@@ -159,13 +164,42 @@ fn method_choice_list(selected: PrimaryMethod) -> ChoiceList {
         .emitOnChange(true)
         .layout(ChoiceListLayout::Cards)
         .choices(vec![
-            ChoiceOption::new(PrimaryMethod::Keybox.as_wire(), "i18n:host.method.keybox").description("i18n:host.method.keybox.desc").icon("key"),
-            ChoiceOption::new(PrimaryMethod::DoorCode.as_wire(), "i18n:host.method.door_code").description("i18n:host.method.door_code.desc").icon("grid"),
-            ChoiceOption::new(PrimaryMethod::SmartLock.as_wire(), "i18n:host.method.smart_lock").description("i18n:host.method.smart_lock.desc").icon("lock"),
-            ChoiceOption::new(PrimaryMethod::InPerson.as_wire(), "i18n:host.method.in_person").description("i18n:host.method.in_person.desc").icon("users"),
-            ChoiceOption::new(PrimaryMethod::BuildingStaff.as_wire(), "i18n:host.method.building_staff").description("i18n:host.method.building_staff.desc").icon("building"),
-            ChoiceOption::new(PrimaryMethod::HostGreets.as_wire(), "i18n:host.method.host_greets").description("i18n:host.method.host_greets.desc").icon("smile"),
-            ChoiceOption::new(PrimaryMethod::Other.as_wire(), "i18n:host.method.other").description("i18n:host.method.other.desc").icon("more-horizontal"),
+            ChoiceOption::new(PrimaryMethod::Keybox.as_wire(), "i18n:host.method.keybox")
+                .description("i18n:host.method.keybox.desc")
+                .icon("key"),
+            ChoiceOption::new(
+                PrimaryMethod::DoorCode.as_wire(),
+                "i18n:host.method.door_code",
+            )
+            .description("i18n:host.method.door_code.desc")
+            .icon("grid"),
+            ChoiceOption::new(
+                PrimaryMethod::SmartLock.as_wire(),
+                "i18n:host.method.smart_lock",
+            )
+            .description("i18n:host.method.smart_lock.desc")
+            .icon("lock"),
+            ChoiceOption::new(
+                PrimaryMethod::InPerson.as_wire(),
+                "i18n:host.method.in_person",
+            )
+            .description("i18n:host.method.in_person.desc")
+            .icon("users"),
+            ChoiceOption::new(
+                PrimaryMethod::BuildingStaff.as_wire(),
+                "i18n:host.method.building_staff",
+            )
+            .description("i18n:host.method.building_staff.desc")
+            .icon("building"),
+            ChoiceOption::new(
+                PrimaryMethod::HostGreets.as_wire(),
+                "i18n:host.method.host_greets",
+            )
+            .description("i18n:host.method.host_greets.desc")
+            .icon("smile"),
+            ChoiceOption::new(PrimaryMethod::Other.as_wire(), "i18n:host.method.other")
+                .description("i18n:host.method.other.desc")
+                .icon("more-horizontal"),
         ])
 }
 
@@ -175,10 +209,27 @@ fn reveal_choice_list(policy: RevealPolicy) -> ChoiceList {
         .value(policy.as_wire())
         .layout(ChoiceListLayout::Compact)
         .choices(vec![
-            ChoiceOption::new(RevealPolicy::Always.as_wire(), "i18n:host.reveal.always").description("i18n:host.reveal.always.desc").icon("clock-circle"),
-            ChoiceOption::new(RevealPolicy::HoursBefore24.as_wire(), "i18n:host.reveal.hoursBefore24").description("i18n:host.reveal.hoursBefore24.desc").icon("clock-circle"),
-            ChoiceOption::new(RevealPolicy::DayBefore16h.as_wire(), "i18n:host.reveal.dayBefore16h").description("i18n:host.reveal.dayBefore16h.desc").icon("clock-circle"),
-            ChoiceOption::new(RevealPolicy::AtCheckin.as_wire(), "i18n:host.reveal.atCheckin").description("i18n:host.reveal.atCheckin.desc").icon("clock-circle"),
+            ChoiceOption::new(RevealPolicy::Always.as_wire(), "i18n:host.reveal.always")
+                .description("i18n:host.reveal.always.desc")
+                .icon("clock-circle"),
+            ChoiceOption::new(
+                RevealPolicy::HoursBefore24.as_wire(),
+                "i18n:host.reveal.hoursBefore24",
+            )
+            .description("i18n:host.reveal.hoursBefore24.desc")
+            .icon("clock-circle"),
+            ChoiceOption::new(
+                RevealPolicy::DayBefore16h.as_wire(),
+                "i18n:host.reveal.dayBefore16h",
+            )
+            .description("i18n:host.reveal.dayBefore16h.desc")
+            .icon("clock-circle"),
+            ChoiceOption::new(
+                RevealPolicy::AtCheckin.as_wire(),
+                "i18n:host.reveal.atCheckin",
+            )
+            .description("i18n:host.reveal.atCheckin.desc")
+            .icon("clock-circle"),
         ])
 }
 
@@ -227,11 +278,7 @@ fn push_keybox_fields(children: &mut Vec<Component>, config: &ModuleConfig, text
             .into(),
     );
     children.push(secret_field("keybox_code", "i18n:host.keybox.code", code));
-    children.push(
-        FieldHint::new()
-            .text("i18n:host.keybox.code.hint")
-            .into(),
-    );
+    children.push(FieldHint::new().text("i18n:host.keybox.code.hint").into());
     children.push(rich_text_field(
         "keybox_instructions",
         "i18n:host.keybox.instructions",
@@ -256,10 +303,10 @@ fn push_door_code_fields(
                 Select::new()
                     .name("door_code_target")
                     .options(vec![
-                                        ChoiceOption::new("gate", "i18n:host.doorCode.target.gate"),
-                                        ChoiceOption::new("building", "i18n:host.doorCode.target.building"),
-                                        ChoiceOption::new("apartment", "i18n:host.doorCode.target.apartment"),
-                                    ])
+                        ChoiceOption::new("gate", "i18n:host.doorCode.target.gate"),
+                        ChoiceOption::new("building", "i18n:host.doorCode.target.building"),
+                        ChoiceOption::new("apartment", "i18n:host.doorCode.target.apartment"),
+                    ])
                     .value(door_target_str(target)),
             )
             .into(),
@@ -270,11 +317,7 @@ fn push_door_code_fields(
             .into(),
     );
     children.push(secret_field("door_code", "i18n:host.doorCode.code", code));
-    children.push(
-        FieldHint::new()
-            .text("i18n:host.doorCode.code.hint")
-            .into(),
-    );
+    children.push(FieldHint::new().text("i18n:host.doorCode.code.hint").into());
     children.push(rich_text_field(
         "door_code_instructions",
         "i18n:host.doorCode.instructions",
@@ -323,10 +366,8 @@ fn push_smart_lock_binding(children: &mut Vec<Component>, config: &ModuleConfig)
                 Select::new()
                     .name("smart_lock_provider_module_id")
                     .options({
-                        let mut opts = vec![ChoiceOption::new(
-                            "",
-                            "i18n:host.smartLock.provider.manual",
-                        )];
+                        let mut opts =
+                            vec![ChoiceOption::new("", "i18n:host.smartLock.provider.manual")];
                         let mut seen = std::collections::BTreeSet::new();
                         for peer in &peers {
                             if peer.module_id.trim().is_empty()
@@ -431,9 +472,9 @@ fn push_building_staff_fields(children: &mut Vec<Component>, config: &ModuleConf
                 Select::new()
                     .name("building_staff_kind")
                     .options(vec![
-                                        ChoiceOption::new("reception", "i18n:host.buildingStaff.kind.reception"),
-                                        ChoiceOption::new("caretaker", "i18n:host.buildingStaff.kind.caretaker"),
-                                    ])
+                        ChoiceOption::new("reception", "i18n:host.buildingStaff.kind.reception"),
+                        ChoiceOption::new("caretaker", "i18n:host.buildingStaff.kind.caretaker"),
+                    ])
                     .value(staff_kind_str(kind)),
             )
             .into(),
@@ -658,11 +699,11 @@ fn step_row(
                     Select::new()
                         .name(format!("steps.{index}.kind"))
                         .options(vec![
-                                        ChoiceOption::new("parking", "i18n:host.step.kind.parking"),
-                                        ChoiceOption::new("door", "i18n:host.step.kind.door"),
-                                        ChoiceOption::new("elevator", "i18n:host.step.kind.elevator"),
-                                        ChoiceOption::new("other", "i18n:host.step.kind.other"),
-                                    ])
+                            ChoiceOption::new("parking", "i18n:host.step.kind.parking"),
+                            ChoiceOption::new("door", "i18n:host.step.kind.door"),
+                            ChoiceOption::new("elevator", "i18n:host.step.kind.elevator"),
+                            ChoiceOption::new("other", "i18n:host.step.kind.other"),
+                        ])
                         .value(kind),
                 )
                 .into(),

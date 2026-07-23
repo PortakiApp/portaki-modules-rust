@@ -23,7 +23,11 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         units: units_value.to_string(),
         refresh_interval: config.refresh_interval.clone(),
     };
-    let save_action = Action::command(&crate::ids::module_id(), crate::ids::UPDATE_CONFIG, submit_args);
+    let save_action = Action::command(
+        &crate::ids::module_id(),
+        crate::ids::UPDATE_CONFIG,
+        submit_args,
+    );
 
     Surface::new(
         Page::new()
@@ -69,11 +73,7 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
                             .text("i18n:host.main.help")
                             .variant(TextVariant::Caption),
                     )
-                    .child(
-                        Button::new()
-                            .label("i18n:host.save")
-                            .action(save_action),
-                    ),
+                    .child(Button::new().label("i18n:host.save").action(save_action)),
             ),
     )
     .with_id(crate::ids::HOST_MAIN)

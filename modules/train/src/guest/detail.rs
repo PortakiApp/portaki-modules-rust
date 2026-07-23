@@ -80,10 +80,7 @@ fn schedule_card(selected: &str) -> Card {
                 TimedEntry::new()
                     .time(departure.time)
                     .title(selected)
-                    .subtitle(format!(
-                        "{} · {}",
-                        departure.platform, departure.note
-                    )),
+                    .subtitle(format!("{} · {}", departure.platform, departure.note)),
             )
         })
         .collect();

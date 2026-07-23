@@ -69,23 +69,17 @@ Details: [`.github/CI.md`](./.github/CI.md).
 
 ## SDK dependency
 
-Local sibling checkout (this workspace):
-
-```toml
-# Cargo.toml [workspace.dependencies]
-portaki-sdk = { path = "../portaki-sdk/crates/portaki-sdk" }
-portaki-sdk-macros = { path = "../portaki-sdk/crates/portaki-sdk-macros" }
-portaki-connectors = { path = "../portaki-sdk/crates/portaki-connectors" }
-portaki-test-utils = { path = "../portaki-sdk/crates/portaki-test-utils" }
-```
+The workspace pins `portaki-sdk` (and related crates) via git `branch = "main"` on
+[`PortakiApp/portaki-sdk`](https://github.com/PortakiApp/portaki-sdk).
 
 Requires **portaki-sdk ≥ 2.1.0** (typed boundary ids — `SurfaceId`, `OperationName`,
 `EventType`, `ModuleId`, `define_*!` catalogs). See
-[typed-ids.md](../portaki-sdk/docs/typed-ids.md) and
-[module-layout.md](../portaki-sdk/docs/module-layout.md).
+[docs/module-layout.md](./docs/module-layout.md) and the SDK docs
+`typed-ids.md` / `module-layout.md`.
 
-Published / CI remotes may pin a git tag or crates.io release of the same major;
-keep the API contract aligned with 2.1.0+.
+Do **not** path-patch individual SDK crates into this workspace for CI — that
+breaks remote builds. Use a local path override only in a private
+`.cargo/config.toml` (gitignored) if needed.
 
 ## Pull requests
 

@@ -191,7 +191,11 @@ fn arrival_callout(
         let locked = locked_message(when.as_deref());
         return match method {
             PrimaryMethod::Keybox | PrimaryMethod::DoorCode | PrimaryMethod::SmartLock => {
-                t!("email.callout.locked.selfCheckin", time = time, locked = locked)
+                t!(
+                    "email.callout.locked.selfCheckin",
+                    time = time,
+                    locked = locked
+                )
             }
             _ => method_callout(config, time, false),
         };
@@ -228,7 +232,11 @@ fn method_callout(config: &ModuleConfig, time: &str, has_code: bool) -> Result<S
             if place.is_empty() {
                 t!("email.callout.inPerson.noPlace", time = time)
             } else {
-                t!("email.callout.inPerson.withPlace", place = place, time = time)
+                t!(
+                    "email.callout.inPerson.withPlace",
+                    place = place,
+                    time = time
+                )
             }
         }
         MethodFields::BuildingStaff { .. } => t!("email.callout.buildingStaff", time = time),

@@ -7,10 +7,6 @@ use super::body::build_access_detail;
 use super::load::GuestData;
 
 pub fn build_detail_surface(data: &GuestData) -> Surface {
-    Surface::new(
-        Stack::new()
-            .gap(12.0)
-            .children(build_access_detail(data)),
-    )
-    .with_id(crate::ids::EXPLORE_DETAIL)
+    Surface::new(Stack::new().gap(12.0).children(build_access_detail(data)))
+        .with_id(crate::ids::EXPLORE_DETAIL)
 }

@@ -60,7 +60,6 @@ fn emit_select(selected_id: &str) -> Action {
     )
 }
 
-
 fn build_list_card(devices: &[Appliance], selected_id: &str) -> Component {
     let mut stack_children: Vec<Component> = Vec::new();
 
@@ -113,14 +112,12 @@ fn build_list_card(devices: &[Appliance], selected_id: &str) -> Component {
 fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
     if selected_id.is_empty() {
         return Component::Card(
-            Card::new()
-                .title("i18n:host.detail.card.title")
-                .child(
-                    EmptyState::new()
-                        .title("i18n:host.detail.empty.title")
-                        .description("i18n:host.detail.empty.description")
-                        .icon("plug"),
-                ),
+            Card::new().title("i18n:host.detail.card.title").child(
+                EmptyState::new()
+                    .title("i18n:host.detail.empty.title")
+                    .description("i18n:host.detail.empty.description")
+                    .icon("plug"),
+            ),
         );
     }
 
@@ -133,14 +130,12 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
 
     if !is_new && device.is_none() {
         return Component::Card(
-            Card::new()
-                .title("i18n:host.detail.card.title")
-                .child(
-                    EmptyState::new()
-                        .title("i18n:host.detail.missing.title")
-                        .description("i18n:host.detail.missing.description")
-                        .icon("plug"),
-                ),
+            Card::new().title("i18n:host.detail.card.title").child(
+                EmptyState::new()
+                    .title("i18n:host.detail.missing.title")
+                    .description("i18n:host.detail.missing.description")
+                    .icon("plug"),
+            ),
         );
     }
 
@@ -160,7 +155,11 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
         })
         .unwrap_or("active");
 
-    let save_action = Action::command(&crate::ids::module_id(), crate::ids::SAVE_APPLIANCE, EmptyArgs {});
+    let save_action = Action::command(
+        &crate::ids::module_id(),
+        crate::ids::SAVE_APPLIANCE,
+        EmptyArgs {},
+    );
 
     let mut form_children: Vec<Component> = vec![
         TextInput::new().name("id").value(id).into(),
@@ -177,20 +176,12 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
         Field::new()
             .name("location")
             .label("i18n:host.device.location")
-            .child(
-                TextInput::new()
-                    .name("location")
-                    .value(location),
-            )
+            .child(TextInput::new().name("location").value(location))
             .into(),
         Field::new()
             .name("description")
             .label("i18n:host.device.description")
-            .child(
-                RichTextEditor::new()
-                    .name("description")
-                    .value(description),
-            )
+            .child(RichTextEditor::new().name("description").value(description))
             .into(),
         Field::new()
             .name("manualUrl")
@@ -205,11 +196,7 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
         Field::new()
             .name("featured")
             .label("i18n:host.device.featured")
-            .child(
-                Toggle::new()
-                    .name("featured")
-                    .checked(featured),
-            )
+            .child(Toggle::new().name("featured").checked(featured))
             .into(),
         Field::new()
             .name("status")
@@ -218,9 +205,9 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
                 Select::new()
                     .name("status")
                     .options(vec![
-                                        ChoiceOption::new("active", "i18n:host.device.status.active"),
-                                        ChoiceOption::new("hidden", "i18n:host.device.status.hidden"),
-                                    ])
+                        ChoiceOption::new("active", "i18n:host.device.status.active"),
+                        ChoiceOption::new("hidden", "i18n:host.device.status.hidden"),
+                    ])
                     .value(status),
             )
             .into(),
@@ -260,7 +247,11 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
 }
 
 fn build_safety_accordion(safety_notice: &str) -> Component {
-    let save_action = Action::command(&crate::ids::module_id(), crate::ids::SAVE_SAFETY_NOTICE, EmptyArgs {});
+    let save_action = Action::command(
+        &crate::ids::module_id(),
+        crate::ids::SAVE_SAFETY_NOTICE,
+        EmptyArgs {},
+    );
     let has_value = !description_plain_text(safety_notice).trim().is_empty();
     // Shell Accordion: `:collapsed` → closed by default; otherwise open.
     let accordion_id = if has_value {
@@ -270,10 +261,12 @@ fn build_safety_accordion(safety_notice: &str) -> Component {
     };
 
     Component::Accordion(
-        Accordion::new().id(accordion_id).child(
-            Card::new()
-                .title("i18n:host.safety")
-                .child(Form::new().children(vec![
+        Accordion::new()
+            .id(accordion_id)
+            .child(
+                Card::new()
+                    .title("i18n:host.safety")
+                    .child(Form::new().children(vec![
                     Text::new()
                         .text("i18n:host.safety.hint")
                         .variant(TextVariant::Caption)
@@ -292,7 +285,7 @@ fn build_safety_accordion(safety_notice: &str) -> Component {
                         .tone(Tone::Primary)
                         .into(),
                 ])),
-        ),
+            ),
     )
 }
 

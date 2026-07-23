@@ -30,7 +30,9 @@ pub fn load_guest_checklist(ctx: &GuestContext) -> Result<GuestLoad> {
 
     let items = storage::list_items()?;
     if items.is_empty() {
-        return Ok(GuestLoad::Empty(Box::new(empty_no_items_card(crate::ids::HOME_CARD))));
+        return Ok(GuestLoad::Empty(Box::new(empty_no_items_card(
+            crate::ids::HOME_CARD,
+        ))));
     }
 
     let stay_id = ctx.guest.as_ref().map(|guest| guest.session_id);

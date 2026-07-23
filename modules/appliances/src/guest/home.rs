@@ -40,7 +40,10 @@ pub fn build_home_card(payload: &AppliancesPayload) -> Surface {
 
 /// List row matching Portaki Guest design: emoji leading, name, location, chevron.
 pub fn device_list_item(device: &Appliance) -> Component {
-    let action = Action::navigate(NavigateTarget::path(format!("appliances/{}", device.id)), None);
+    let action = Action::navigate(
+        NavigateTarget::path(format!("appliances/{}", device.id)),
+        None,
+    );
 
     let mut item = ListItem::new()
         .title(device.name.clone())
