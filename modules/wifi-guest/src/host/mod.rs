@@ -1,7 +1,6 @@
 //! Host dashboard surfaces.
 
 use portaki_sdk::prelude::*;
-use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::common::Tone;
 use portaki_sdk::sdui::primitives::{
     Button, Card, ChoiceList, Field, Form, Page, SecretInput, Text, TextInput,
@@ -20,11 +19,7 @@ pub fn render_host_main(_ctx: HostContext) -> Surface {
         hint: config.hint.clone().unwrap_or_default(),
         reveal_policy: config.reveal_policy,
     };
-    let save_action = Action::command(
-        &crate::ids::module_id(),
-        crate::ids::UPDATE_CONFIG,
-        submit_args,
-    );
+    let save_action = crate::ids::module_id().command(crate::ids::UPDATE_CONFIG, submit_args);
 
     let form_children: Vec<Component> = vec![
         Field::new()

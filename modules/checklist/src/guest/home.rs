@@ -2,7 +2,6 @@
 
 use portaki_sdk::prelude::*;
 
-use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{Card, ChecklistItem as ChecklistItemView, Pressable, Text};
 use portaki_sdk::sdui::surface::Surface;
 
@@ -29,8 +28,7 @@ pub fn build_home_card(data: &GuestChecklistData) -> Surface {
         } else {
             crate::ids::COMPLETE_ITEM
         };
-        let action = Action::command(
-            &crate::ids::module_id(),
+        let action = crate::ids::module_id().command(
             command_name,
             crate::commands::ItemIdArgs { item_id: item.id },
         );

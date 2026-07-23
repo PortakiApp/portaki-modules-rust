@@ -33,8 +33,8 @@ pub struct ReplaceItemsArgs {
 }
 
 /// Arguments for complete / uncomplete.
+#[portaki_sdk::wire]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct ItemIdArgs {
     pub item_id: Uuid,
 }
@@ -133,8 +133,8 @@ struct ProgressPayload {
     percentage: u8,
 }
 
+#[portaki_sdk::wire(serialize)]
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 struct CompletedPayload {
     stay_id: Uuid,
 }

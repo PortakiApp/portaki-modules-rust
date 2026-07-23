@@ -2,14 +2,13 @@
 
 use portaki_sdk::prelude::*;
 
-use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{
     Button, Card, Field, Form, Text, TextArea, TextInput, TimePicker,
 };
 use portaki_sdk::sdui::surface::Surface;
 
 pub fn build_form_card() -> Surface {
-    let submit_action = Action::command(&crate::ids::module_id(), crate::ids::SUBMIT, EmptyArgs {});
+    let submit_action = crate::ids::module_id().command_empty(crate::ids::SUBMIT);
 
     Surface::new(
         Card::new()

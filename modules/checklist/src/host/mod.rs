@@ -4,7 +4,6 @@
 //! (dashboard resolves module id when `hostSurfaces` pathSegment matches).
 
 use portaki_sdk::prelude::*;
-use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{Button, Field, Form, Page, Text, TextInput};
 use portaki_sdk::sdui::surface::Surface;
 
@@ -29,8 +28,7 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         })
         .collect();
 
-    let save_action = Action::command(
-        &crate::ids::module_id(),
+    let save_action = crate::ids::module_id().command(
         crate::ids::REPLACE_ITEMS,
         crate::commands::ReplaceItemsArgs {
             items: submit_items,

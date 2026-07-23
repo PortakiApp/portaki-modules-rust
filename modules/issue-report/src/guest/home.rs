@@ -2,7 +2,6 @@
 
 use portaki_sdk::prelude::*;
 
-use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{
     Button, Card, ChoiceList, Field, Form, ListItem, Stack, Text, TextArea, TextInput,
 };
@@ -58,7 +57,7 @@ fn report_list_item(report: &IssueReport) -> ListItem {
 }
 
 fn build_form() -> Form {
-    let submit_action = Action::command(&crate::ids::module_id(), crate::ids::SUBMIT, EmptyArgs {});
+    let submit_action = crate::ids::module_id().command_empty(crate::ids::SUBMIT);
 
     Form::new()
         .child(

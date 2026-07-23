@@ -44,8 +44,8 @@ pub struct SubmitReviewArgs {
     pub comment: String,
 }
 
+#[portaki_sdk::wire(serialize)]
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 struct ReviewSubmittedPayload {
     property_id: Uuid,
     rating: u8,

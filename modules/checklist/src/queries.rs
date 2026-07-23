@@ -8,8 +8,8 @@ use crate::entities::ChecklistItem;
 use crate::storage;
 
 /// Public item DTO returned by `listItems`.
+#[portaki_sdk::wire]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
 pub struct ChecklistItemDto {
     pub id: Uuid,
     pub label_fr: String,

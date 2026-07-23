@@ -60,8 +60,7 @@ pub fn build_home_card(data: &GuestData) -> Surface {
             ));
         }
 
-        let submit_action = Action::command(
-            &crate::ids::module_id(),
+        let submit_action = crate::ids::module_id().command(
             crate::ids::SUBMIT_REVIEW,
             crate::commands::SubmitReviewArgs {
                 rating: 5,

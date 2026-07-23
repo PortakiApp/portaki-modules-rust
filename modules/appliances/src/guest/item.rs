@@ -12,8 +12,8 @@ use portaki_sdk::sdui::primitives::{
 };
 use portaki_sdk::sdui::surface::Surface;
 
+#[portaki_sdk::wire(serialize)]
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 struct OpenHostChatPayload<'a> {
     appliance_id: &'a str,
     appliance_name: &'a str,

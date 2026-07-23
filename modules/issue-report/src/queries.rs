@@ -8,8 +8,8 @@ use uuid::Uuid;
 use crate::storage;
 
 /// Row returned by list queries.
+#[portaki_sdk::wire]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
 pub struct IssueReportRow {
     pub id: Uuid,
     pub stay_id: Uuid,

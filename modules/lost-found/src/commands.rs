@@ -9,8 +9,8 @@ use crate::config::{save_config, ModuleConfig};
 use crate::kind;
 use crate::storage;
 
+#[portaki_sdk::wire(serialize)]
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 struct SubmittedPayload {
     property_id: Uuid,
     kind: String,
@@ -23,8 +23,8 @@ struct SubmittedPayload {
 }
 
 /// Arguments for `submit`.
+#[portaki_sdk::wire]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct SubmitArgs {
     pub kind: String,
     pub item_description: String,

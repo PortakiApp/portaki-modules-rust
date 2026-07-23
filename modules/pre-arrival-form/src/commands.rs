@@ -7,8 +7,8 @@ use uuid::Uuid;
 
 use crate::storage;
 
+#[portaki_sdk::wire(serialize)]
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 struct CompletedPayload {
     arrival_time_estimated: Option<String>,
     guest_occasion: Option<String>,
@@ -17,8 +17,8 @@ struct CompletedPayload {
 }
 
 /// Arguments for `submit`.
+#[portaki_sdk::wire]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct SubmitArgs {
     pub arrival_time_estimated: Option<String>,
     pub guest_occasion: Option<String>,

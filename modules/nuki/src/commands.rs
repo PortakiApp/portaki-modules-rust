@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::{load_config, save_config, ModuleConfig};
 
+#[portaki_sdk::wire]
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct StayArgs {
     pub stay_id: Option<String>,
 }
@@ -22,8 +22,8 @@ pub struct UpdateConfigArgs {
     pub device_name: String,
 }
 
+#[portaki_sdk::wire(serialize)]
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct GuestCredentialResponse {
     #[serde(rename = "type")]
     pub credential_type: &'static str,
@@ -39,8 +39,8 @@ pub struct UnlockResponse {
     pub code: String,
 }
 
+#[portaki_sdk::wire(serialize)]
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
 struct UnlockConnectorArgs {
     smartlock_id: String,
 }

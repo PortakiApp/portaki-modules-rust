@@ -5,19 +5,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::load_config;
 
-/// Arguments for `emailContext`.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct EmailContextArgs {
-    #[serde(default)]
-    pub template_key: Option<EmailTemplateKey>,
-    #[serde(default)]
-    pub locale: Option<String>,
-}
+/// Gateway `emailContext` args — shared SDK wire type.
+pub use portaki_sdk::EmailContextArgs;
 
 /// Email-ready emergency-contacts contribution.
+#[portaki_sdk::wire]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
 pub struct EmailContextResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub host_phone: Option<String>,
@@ -30,13 +23,13 @@ pub fn email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContex
 }
 
 pub fn build_email_context(_ctx: Context, args: EmailContextArgs) -> Result<EmailContextResponse> {
-    match args.template_key {
-        None
-        | Some(EmailTemplateKey::Arrival)
-        | Some(EmailTemplateKey::ArrivalDay)
-        | Some(EmailTemplateKey::PostArrival)
-        | Some(EmailTemplateKey::LostFound) => {}
-        Some(_) => return Ok(EmailContextResponse { host_phone: None }),
+    if !args.allows_template(&[
+        EmailTemplateKey::Arrival,
+        EmailTemplateKey::ArrivalDay,
+        EmailTemplateKey::PostArrival,
+        EmailTemplateKey::LostFound,
+    ]) {
+        return Ok(EmailContextResponse { host_phone: None });
     }
 
     let config = load_config().unwrap_or_default();
@@ -77,6 +70,7 @@ mod tests {
                 EmailContextArgs {
                     template_key: Some(EmailTemplateKey::Arrival),
                     locale: None,
+                    ..Default::default()
                 },
             )
             .unwrap();
@@ -104,6 +98,7 @@ mod tests {
                 EmailContextArgs {
                     template_key: Some(EmailTemplateKey::StayLink),
                     locale: None,
+                    ..Default::default()
                 },
             )
             .unwrap();

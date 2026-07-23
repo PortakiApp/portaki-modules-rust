@@ -8,7 +8,6 @@ use portaki_sdk::sdui::primitives::{
     Stack, Text, TextInput, Toggle,
 };
 use portaki_sdk::sdui::surface::Surface;
-use serde_json::Value;
 
 use crate::content::{description_plain_text, Appliance, ApplianceStatus, MAX_APPLIANCES};
 use crate::store;
@@ -19,7 +18,7 @@ const SELECT_NEW: &str = "__new__";
 #[portaki_sdk::surface(host, id = "main")]
 pub fn render_host_main(ctx: HostContext) -> Surface {
     let payload = store::load_payload_for(&ctx.locale, &ctx.property.locale).unwrap_or_default();
-    let selected_id = selected_id_from_input(&ctx.input);
+    let selected_id = ctx.input_str("selectedId").unwrap_or("").to_string();
 
     let safety = build_safety_accordion(&payload.safety_notice);
     let list_card = build_list_card(&payload.devices, &selected_id);
@@ -37,18 +36,8 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     .with_id(crate::ids::HOST_MAIN)
 }
 
-fn selected_id_from_input(input: &Value) -> String {
-    input
-        .get("selectedId")
-        .and_then(|value| value.as_str())
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .unwrap_or("")
-        .to_string()
-}
-
+#[portaki_sdk::wire(serialize)]
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 struct SurfaceInputSelectedId<'a> {
     selected_id: &'a str,
 }
@@ -155,11 +144,7 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
         })
         .unwrap_or("active");
 
-    let save_action = Action::command(
-        &crate::ids::module_id(),
-        crate::ids::SAVE_APPLIANCE,
-        EmptyArgs {},
-    );
+    let save_action = crate::ids::module_id().command_empty(crate::ids::SAVE_APPLIANCE);
 
     let mut form_children: Vec<Component> = vec![
         TextInput::new().name("id").value(id).into(),
@@ -219,8 +204,7 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
     ];
 
     if let Some(existing) = device {
-        let delete_action = Action::command(
-            &crate::ids::module_id(),
+        let delete_action = crate::ids::module_id().command(
             crate::ids::DELETE_APPLIANCE,
             crate::commands::DeleteApplianceArgs {
                 id: existing.id.clone(),
@@ -247,11 +231,7 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
 }
 
 fn build_safety_accordion(safety_notice: &str) -> Component {
-    let save_action = Action::command(
-        &crate::ids::module_id(),
-        crate::ids::SAVE_SAFETY_NOTICE,
-        EmptyArgs {},
-    );
+    let save_action = crate::ids::module_id().command_empty(crate::ids::SAVE_SAFETY_NOTICE);
     let has_value = !description_plain_text(safety_notice).trim().is_empty();
     // Shell Accordion: `:collapsed` → closed by default; otherwise open.
     let accordion_id = if has_value {

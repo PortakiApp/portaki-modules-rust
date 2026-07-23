@@ -7,19 +7,12 @@ use crate::queries::{get_content, GetContentArgs};
 
 const MAX_RULES: usize = 3;
 
-/// Arguments for `emailContext`.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct EmailContextArgs {
-    #[serde(default)]
-    pub template_key: Option<EmailTemplateKey>,
-    #[serde(default)]
-    pub locale: Option<String>,
-}
+/// Gateway `emailContext` args — shared SDK wire type.
+pub use portaki_sdk::EmailContextArgs;
 
 /// Email-ready house-rules contribution.
+#[portaki_sdk::wire]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
 pub struct EmailContextResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub house_rules_teaser: Option<String>,
@@ -32,24 +25,17 @@ pub fn email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContex
 }
 
 pub fn build_email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContextResponse> {
-    match args.template_key {
-        None
-        | Some(EmailTemplateKey::StayLink)
-        | Some(EmailTemplateKey::Arrival)
-        | Some(EmailTemplateKey::PostArrival) => {}
-        Some(_) => {
-            return Ok(EmailContextResponse {
-                house_rules_teaser: None,
-            });
-        }
+    if !args.allows_template(&[
+        EmailTemplateKey::StayLink,
+        EmailTemplateKey::Arrival,
+        EmailTemplateKey::PostArrival,
+    ]) {
+        return Ok(EmailContextResponse {
+            house_rules_teaser: None,
+        });
     }
 
-    let locale = args
-        .locale
-        .as_deref()
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .unwrap_or(ctx.locale.as_str());
+    let locale = args.locale_or(ctx.locale.as_str());
 
     let view = get_content(
         ctx.clone(),
@@ -124,6 +110,7 @@ mod tests {
                 EmailContextArgs {
                     template_key: Some(EmailTemplateKey::Arrival),
                     locale: Some("fr".into()),
+                    ..Default::default()
                 },
             )
             .unwrap();
@@ -145,6 +132,7 @@ mod tests {
             EmailContextArgs {
                 template_key: Some(EmailTemplateKey::ArrivalDay),
                 locale: None,
+                ..Default::default()
             },
         )
         .unwrap();

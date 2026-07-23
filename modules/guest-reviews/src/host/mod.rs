@@ -1,7 +1,6 @@
 //! Host dashboard surfaces.
 
 use portaki_sdk::prelude::*;
-use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{
     Button, Field, Form, Page, Select, Text, TextArea, TextInput, Toggle,
 };
@@ -21,11 +20,7 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         airbnb_review_url: config.airbnb_review_url.clone(),
         thank_you_message: thank_you_message.clone(),
     };
-    let save_action = Action::command(
-        &crate::ids::module_id(),
-        crate::ids::UPDATE_CONFIG,
-        submit_args,
-    );
+    let save_action = crate::ids::module_id().command(crate::ids::UPDATE_CONFIG, submit_args);
 
     Surface::new(
         Page::new()

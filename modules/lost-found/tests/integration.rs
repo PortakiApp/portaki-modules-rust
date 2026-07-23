@@ -171,6 +171,7 @@ fn host_note_shows_on_guest_card_and_email_context() {
                 EmailContextArgs {
                     template_key: Some(EmailTemplateKey::LostFound),
                     locale: None,
+                    ..Default::default()
                 },
             )
             .expect("emailContext");

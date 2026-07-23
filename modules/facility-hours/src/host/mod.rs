@@ -1,7 +1,6 @@
 //! Host dashboard surfaces.
 
 use portaki_sdk::prelude::*;
-use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{Button, Field, Form, Page, Text, TextArea, TextInput};
 use portaki_sdk::sdui::surface::Surface;
 
@@ -21,11 +20,7 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         facilities_json: String::new(),
         general_note: general_note.clone(),
     };
-    let save_action = Action::command(
-        &crate::ids::module_id(),
-        crate::ids::UPDATE_CONFIG,
-        submit_args,
-    );
+    let save_action = crate::ids::module_id().command(crate::ids::UPDATE_CONFIG, submit_args);
 
     let mut form_children: Vec<Component> = Vec::new();
     for index in 0..FACILITY_SLOTS {

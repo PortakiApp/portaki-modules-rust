@@ -12,8 +12,8 @@ use crate::config::{load_config, DoorCodeTarget, MethodFields, ModuleConfig, Pri
 use crate::reveal::{evaluate_reveal, format_available_from, locked_message, RevealDecision};
 
 /// Arguments for `emailContext`.
+#[portaki_sdk::wire]
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct EmailContextArgs {
     /// Portaki template key (`arrival`, `arrival-day`, `new-code`, …).
     #[serde(default)]
@@ -27,8 +27,8 @@ pub struct EmailContextArgs {
 }
 
 /// Email-ready access-guide contribution.
+#[portaki_sdk::wire]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
 pub struct EmailContextResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub arrival_callout: Option<String>,

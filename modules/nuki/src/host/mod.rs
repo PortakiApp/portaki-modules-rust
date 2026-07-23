@@ -1,7 +1,6 @@
 //! Host dashboard surfaces.
 
 use portaki_sdk::prelude::*;
-use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{Button, Field, Form, Page, SecretInput, Text, TextInput};
 use portaki_sdk::sdui::surface::Surface;
 
@@ -11,8 +10,7 @@ use crate::config::load_config;
 pub fn render_host_main(_ctx: HostContext) -> Surface {
     let config = load_config().unwrap_or_default();
 
-    let save_action = Action::command(
-        &crate::ids::module_id(),
+    let save_action = crate::ids::module_id().command(
         crate::ids::UPDATE_CONFIG,
         crate::commands::UpdateConfigArgs {
             smartlock_id: config.smartlock_id.clone(),

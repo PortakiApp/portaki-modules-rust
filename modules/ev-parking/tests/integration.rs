@@ -183,6 +183,7 @@ fn email_context_returns_ev_parking_spot_for_arrival() {
                 EmailContextArgs {
                     template_key: Some(EmailTemplateKey::ArrivalDay),
                     locale: None,
+                    ..Default::default()
                 },
             )
             .expect("emailContext");

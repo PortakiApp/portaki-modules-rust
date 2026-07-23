@@ -8,7 +8,6 @@ use portaki_sdk::sdui::primitives::{
     RichTextEditor, SecretInput, Select, Stack, StepList, Text, TextInput, ToggleRow,
 };
 use portaki_sdk::sdui::surface::Surface;
-use serde_json::Value;
 
 use crate::config::{
     load_config, AccessStep, DoorCodeTarget, MethodFields, ModuleConfig, PrimaryMethod,
@@ -22,18 +21,16 @@ const STEP_SLOTS: usize = 8;
 pub fn render_host_main(ctx: HostContext) -> Surface {
     let config = load_config().unwrap_or_default();
     let texts = load_texts_for_host(&ctx.locale).unwrap_or_default();
-    let draft_method = draft_primary_method(&ctx.input, &config);
-    let building_enabled = draft_flag(
-        &ctx.input,
+    let draft_method = draft_primary_method(&ctx, &config);
+    let building_enabled = ctx.input_bool(
         "building_access_enabled",
         config.building_access.is_some() || texts.building_note.is_some(),
     );
-    let parking_enabled = draft_flag(
-        &ctx.input,
+    let parking_enabled = ctx.input_bool(
         "parking_enabled",
         config.parking.is_some() || !texts.parking_info.trim().is_empty(),
     );
-    let steps_count = draft_steps_count(&ctx.input, &config);
+    let steps_count = draft_steps_count(&ctx, &config);
 
     let submit_args = crate::commands::UpdateConfigArgs {
         primary_method: Some(draft_method),
@@ -42,11 +39,7 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         reveal_policy: Some(config.reveal_policy),
         ..Default::default()
     };
-    let save_action = Action::command(
-        &crate::ids::module_id(),
-        crate::ids::UPDATE_CONFIG,
-        submit_args,
-    );
+    let save_action = crate::ids::module_id().command(crate::ids::UPDATE_CONFIG, submit_args);
 
     // Reveal timing only applies when there is (or can be) a code: primary
     // method with credential, and/or optional building / parking layers.
@@ -112,25 +105,14 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
 
 // ── Draft helpers ────────────────────────────────────────────────────────────
 
-fn draft_primary_method(input: &Value, config: &ModuleConfig) -> PrimaryMethod {
-    input
-        .get("primary_method")
-        .and_then(|v| v.as_str())
+fn draft_primary_method(ctx: &HostContext, config: &ModuleConfig) -> PrimaryMethod {
+    ctx.input_str("primary_method")
         .and_then(parse_primary_method)
         .unwrap_or(config.primary_method)
 }
 
-fn draft_flag(input: &Value, key: &str, fallback: bool) -> bool {
-    match input.get(key) {
-        Some(Value::Bool(b)) => *b,
-        Some(Value::String(s)) if s == "true" => true,
-        Some(Value::String(s)) if s == "false" => false,
-        _ => fallback,
-    }
-}
-
-fn draft_steps_count(input: &Value, config: &ModuleConfig) -> usize {
-    if let Some(n) = input.get("steps_count").and_then(|v| v.as_u64()) {
+fn draft_steps_count(ctx: &HostContext, config: &ModuleConfig) -> usize {
+    if let Some(n) = ctx.input_u64("steps_count") {
         return (n as usize).min(STEP_SLOTS);
     }
     let existing = config.parse_steps().len();

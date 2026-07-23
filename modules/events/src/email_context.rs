@@ -6,19 +6,12 @@ use serde::{Deserialize, Serialize};
 use crate::config::load_config;
 use crate::time_format::{events_for_home_card, sort_events_by_start};
 
-/// Arguments for `emailContext`.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct EmailContextArgs {
-    #[serde(default)]
-    pub template_key: Option<EmailTemplateKey>,
-    #[serde(default)]
-    pub locale: Option<String>,
-}
+/// Gateway `emailContext` args — shared SDK wire type.
+pub use portaki_sdk::EmailContextArgs;
 
 /// Email-ready events contribution.
+#[portaki_sdk::wire]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
 pub struct EmailContextResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub local_tip: Option<String>,
@@ -30,17 +23,11 @@ pub fn email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContex
 }
 
 pub fn build_email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContextResponse> {
-    match args.template_key {
-        None | Some(EmailTemplateKey::ArrivalDay) | Some(EmailTemplateKey::PostArrival) => {}
-        Some(_) => return Ok(EmailContextResponse { local_tip: None }),
+    if !args.allows_template(&[EmailTemplateKey::ArrivalDay, EmailTemplateKey::PostArrival]) {
+        return Ok(EmailContextResponse { local_tip: None });
     }
 
-    let locale = args
-        .locale
-        .as_deref()
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .unwrap_or(ctx.locale.as_str());
+    let locale = args.locale_or(ctx.locale.as_str());
     let property_locale = ctx.property.locale.as_str();
 
     let config = load_config().unwrap_or_default();
@@ -106,6 +93,7 @@ mod tests {
                 EmailContextArgs {
                     template_key: Some(EmailTemplateKey::ArrivalDay),
                     locale: Some("fr".into()),
+                    ..Default::default()
                 },
             )
             .unwrap();

@@ -8,8 +8,8 @@ use uuid::Uuid;
 use crate::category;
 use crate::storage;
 
+#[portaki_sdk::wire(serialize)]
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 struct SubmittedPayload {
     property_id: Uuid,
     category: String,
@@ -20,8 +20,8 @@ struct SubmittedPayload {
 }
 
 /// Arguments for `submit`.
+#[portaki_sdk::wire]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct SubmitArgs {
     pub category: String,
     pub summary: String,
