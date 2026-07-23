@@ -1,0 +1,12 @@
+//! Guest explore / bottom-sheet detail surface.
+
+use portaki_sdk::sdui::primitives::Stack;
+use portaki_sdk::sdui::surface::Surface;
+
+use super::body::build_ev_parking_body;
+use super::load::GuestData;
+
+pub fn build_detail_surface(data: &GuestData) -> Surface {
+    Surface::new(Stack::new().gap(12.0).children(build_ev_parking_body(data)))
+        .with_id(crate::ids::EXPLORE_DETAIL)
+}

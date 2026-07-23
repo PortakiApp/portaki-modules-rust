@@ -1,0 +1,42 @@
+# ev-parking
+
+Official Portaki guest EV parking module — reserved spot, gate code, charger PIN, and timed reveal for guest booklets.
+
+Part of the [`portaki-modules`](https://github.com/PortakiApp/portaki-modules) monorepo.
+
+## Module id
+
+`ev-parking`
+
+OCI image: `ghcr.io/portakiapp/portaki-modules-ev-parking:<semver>`
+
+## Capabilities
+
+| Capability | Required | Purpose |
+|------------|----------|---------|
+| `core.storage` | Yes | KV config (`spot_label`, `charger_pin`, `parking_code`, `map_url`, `instructions`, `reveal_policy`) |
+
+## Surfaces
+
+| Shell | Surface id | Description |
+|-------|------------|-------------|
+| guest | `home.card` | Spot label + masked or revealed codes |
+| guest | `explore.detail` | Full EV parking block |
+| host | `main` | Spot, codes, map link, instructions, reveal policy |
+
+## Queries and commands
+
+- `getConfig` / `updateConfig` — host KV config
+- `emailContext` — `evParkingSpot` for Portaki `arrival` / `arrival-day` guest emails when `spot_label` is set
+
+## Development
+
+```bash
+cargo test -p ev-parking
+cd modules/ev-parking
+portaki build --release
+```
+
+## License
+
+Apache-2.0 — see [LICENSE](../../LICENSE).
