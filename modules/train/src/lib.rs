@@ -5,6 +5,7 @@
 
 mod content;
 mod guest;
+mod ids;
 
 pub use content::{DEFAULT_DESTINATION, DESTINATIONS};
 pub use guest::{render_explore_detail, render_home_card};

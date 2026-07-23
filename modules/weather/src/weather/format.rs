@@ -1,6 +1,7 @@
 //! Display helpers for guest / host surfaces.
 
 use chrono::{Datelike, NaiveDate};
+use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::common::Tone;
 
 use crate::entities::WeatherUnits;
@@ -45,18 +46,15 @@ pub fn tone_for_temp_c(temp_c: f64) -> Tone {
     }
 }
 
-/// Short strip / table label: weekday + day-of-month (`jeu. 17` / `Thu 17`).
-pub fn format_day_strip_label(date: &str, locale: &str) -> String {
+/// Short strip / table label: weekday + day-of-month via host i18n.
+pub fn format_day_strip_label(date: &str) -> String {
     let Some(parsed) = parse_forecast_date(date) else {
         return date.to_string();
     };
-    let day = parsed.day();
-    let weekday = if locale_is_fr(locale) {
-        weekday_short_fr(parsed.weekday().number_from_monday())
-    } else {
-        weekday_short_en(parsed.weekday().number_from_monday())
-    };
-    format!("{weekday} {day}")
+    let day = parsed.day().to_string();
+    let key = weekday_key_for_date(date);
+    let weekday = t!(&key).unwrap_or(key);
+    t!("day.strip", weekday = &weekday, day = &day).unwrap_or_else(|_| format!("{weekday} {day}"))
 }
 
 /// Resolves a locality label — prefers OpenWeather city, then address locality.
@@ -104,47 +102,20 @@ fn city_from_address(address: &str) -> Option<&str> {
     }
 }
 
-fn locale_is_fr(locale: &str) -> bool {
-    locale.to_ascii_lowercase().starts_with("fr")
-}
-
-fn weekday_short_fr(from_monday: u32) -> &'static str {
-    match from_monday {
-        1 => "lun.",
-        2 => "mar.",
-        3 => "mer.",
-        4 => "jeu.",
-        5 => "ven.",
-        6 => "sam.",
-        _ => "dim.",
-    }
-}
-
-fn weekday_short_en(from_monday: u32) -> &'static str {
-    match from_monday {
-        1 => "Mon",
-        2 => "Tue",
-        3 => "Wed",
-        4 => "Thu",
-        5 => "Fri",
-        6 => "Sat",
-        _ => "Sun",
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use portaki_sdk::sdui::common::Tone;
+    use portaki_test_utils::MockContext;
 
     #[test]
-    fn formats_french_strip_label() {
-        assert_eq!(format_day_strip_label("2026-07-16", "fr-FR"), "jeu. 16");
-    }
-
-    #[test]
-    fn formats_english_strip_label() {
-        assert_eq!(format_day_strip_label("2026-07-16", "en-US"), "Thu 16");
+    fn formats_strip_label_via_i18n() {
+        MockContext::guest()
+            .with_translation("day.thursday", "jeu.")
+            .with_translation("day.strip", "{weekday} {day}")
+            .run(|_| {
+                assert_eq!(format_day_strip_label("2026-07-16"), "jeu. 16");
+            });
     }
 
     #[test]

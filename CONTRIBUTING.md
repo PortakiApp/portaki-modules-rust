@@ -16,16 +16,22 @@ cargo install --git https://github.com/PortakiApp/portaki-sdk --branch main --lo
 1. Create `modules/<module-id>/` with `Cargo.toml`, `portaki.module.json`, `src/`, `i18n/`, and `tests/`.
 2. Keep `version` in sync between `Cargo.toml` and `portaki.module.json` (same SemVer string).
 3. Depend on workspace SDK crates (`portaki-sdk`, `portaki-connectors`, …).
-4. Annotate the crate with `#[portaki_module(id = "…")]` in `lib.rs`.
-5. Add per-module `.cargo/config.toml` with `target-dir = "target"` so `portaki build` / `portaki lint` find macro emissions (workspace builds otherwise use the repo-root `target/`).
-6. Regenerate release-please package discovery (required — do not hand-edit package paths):
+4. Follow the Wasm crate layout: `ids.rs` (`define_surface_ids!` / `define_operation_names!` /
+   `define_event_types!`), `guest/`, `host/` (omit if guest-only), `connectors` when needed.
+   Boundary builders (`Action::command` / `open_overlay` / `emit` / `navigate`,
+   `Surface::with_id`, `events::emit`) take typed consts from `ids` — no bare
+   `"home.card"` / `"updateConfig"` at use sites. Declaration sites
+   (`define_*!`, `#[surface(id = …)]`, `#[command(name = …)]`) may use literals once.
+5. Annotate the crate with `#[portaki_module(id = "…")]` in `lib.rs`.
+6. Add per-module `.cargo/config.toml` with `target-dir = "target"` so `portaki build` / `portaki lint` find macro emissions (workspace builds otherwise use the repo-root `target/`).
+7. Regenerate release-please package discovery (required — do not hand-edit package paths):
 
    ```bash
    ./scripts/generate-release-please-config.sh
    ```
 
    Commit the updated `release-please-config.json` and `.release-please-manifest.json` in the same PR. The release-please workflow also regenerates on `main` and commits drift if a module was added without running the script.
-7. Run quality gates from the repo root:
+8. Run quality gates from the repo root:
 
    ```bash
    cargo fmt --all -- --check
@@ -34,7 +40,7 @@ cargo install --git https://github.com/PortakiApp/portaki-sdk --branch main --lo
    cd modules/<module-id> && portaki build --release && portaki lint
    ```
 
-8. Open a PR to **`main`**. Do not push directly to `main`.
+9. Open a PR to **`main`**. Do not push directly to `main`.
 
 ## Capability IDs
 
@@ -63,9 +69,23 @@ Details: [`.github/CI.md`](./.github/CI.md).
 
 ## SDK dependency
 
-The workspace pins `portaki-sdk` (and related crates) via git `branch = "main"` on [`PortakiApp/portaki-sdk`](https://github.com/PortakiApp/portaki-sdk).
+Local sibling checkout (this workspace):
 
-Do **not** path-patch individual SDK crates into this workspace — that breaks `version.workspace` inheritance on SDK members.
+```toml
+# Cargo.toml [workspace.dependencies]
+portaki-sdk = { path = "../portaki-sdk/crates/portaki-sdk" }
+portaki-sdk-macros = { path = "../portaki-sdk/crates/portaki-sdk-macros" }
+portaki-connectors = { path = "../portaki-sdk/crates/portaki-connectors" }
+portaki-test-utils = { path = "../portaki-sdk/crates/portaki-test-utils" }
+```
+
+Requires **portaki-sdk ≥ 2.1.0** (typed boundary ids — `SurfaceId`, `OperationName`,
+`EventType`, `ModuleId`, `define_*!` catalogs). See
+[typed-ids.md](../portaki-sdk/docs/typed-ids.md) and
+[module-layout.md](../portaki-sdk/docs/module-layout.md).
+
+Published / CI remotes may pin a git tag or crates.io release of the same major;
+keep the API contract aligned with 2.1.0+.
 
 ## Pull requests
 

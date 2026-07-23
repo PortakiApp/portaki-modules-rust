@@ -3,7 +3,6 @@
 use portaki_sdk::host::events;
 use portaki_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use uuid::Uuid;
 
 use crate::labels::{self, lang_code};
@@ -129,14 +128,25 @@ fn require_stay_id(ctx: &Context) -> Result<Uuid> {
         .ok_or_else(|| PortakiError::Host("stay_id_required".to_string()))
 }
 
+#[derive(Serialize)]
+struct ProgressPayload {
+    percentage: u8,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CompletedPayload {
+    stay_id: Uuid,
+}
+
 fn emit_progress(stay_id: Uuid) -> Result<()> {
     let percentage = storage::progress_percent(stay_id)?;
     events::emit(
-        "checklist.progress-updated",
-        &json!({ "percentage": percentage }),
+        crate::ids::PROGRESS_UPDATED,
+        &ProgressPayload { percentage },
     )?;
     if percentage == 100 {
-        events::emit("checklist.completed", &json!({ "stayId": stay_id }))?;
+        events::emit(crate::ids::COMPLETED, &CompletedPayload { stay_id })?;
     }
     Ok(())
 }

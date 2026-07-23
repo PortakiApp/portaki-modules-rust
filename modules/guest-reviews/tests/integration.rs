@@ -1,5 +1,6 @@
 //! Integration-style unit tests with `portaki-test-utils`.
 
+use portaki_sdk::capability;
 use serial_test::serial;
 
 use guest_reviews::{
@@ -60,7 +61,7 @@ fn child_components(node: &Component) -> Vec<&Component> {
 #[serial]
 fn home_card_empty_for_airbnb_without_url() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv(
             "config",
             serde_json::to_vec(&json!({
@@ -81,7 +82,7 @@ fn home_card_empty_for_airbnb_without_url() {
 #[serial]
 fn home_card_inline_both_channels() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", sample_config_bytes())
         .run(|ctx| {
             let surface = render_home_card(ctx);
@@ -97,7 +98,7 @@ fn home_card_inline_both_channels() {
 #[serial]
 fn submit_review_validates_rating() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             let err = submit_review(
                 ctx,
@@ -114,7 +115,7 @@ fn submit_review_validates_rating() {
 #[serial]
 fn submit_review_and_update_config() {
     MockContext::host()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             update_config(
                 ctx.clone(),

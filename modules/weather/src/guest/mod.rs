@@ -20,11 +20,11 @@ use sheet::build_sheet_surface;
 /// Guest home booklet card with current conditions.
 #[portaki_sdk::surface(guest, id = "home.card")]
 pub fn render_home_card(ctx: GuestContext) -> Surface {
-    match render_with_data(&ctx, "home.card", build_home_card) {
+    match render_with_data(&ctx, crate::ids::HOME_CARD, build_home_card) {
         Ok(surface) => surface,
         Err(error) => {
-            log_render_failure("home.card", &error);
-            empty_runtime_error_state("home.card")
+            log_render_failure(crate::ids::HOME_CARD, &error);
+            empty_runtime_error_state(crate::ids::HOME_CARD)
         }
     }
 }
@@ -32,18 +32,18 @@ pub fn render_home_card(ctx: GuestContext) -> Surface {
 /// Sheet / explore detail — same weather body as the card (design `block("weather")` in sheet).
 #[portaki_sdk::surface(guest, id = "explore.forecast")]
 pub fn render_explore_forecast(ctx: GuestContext) -> Surface {
-    match render_with_data(&ctx, "explore.forecast", build_sheet_surface) {
+    match render_with_data(&ctx, crate::ids::EXPLORE_FORECAST, build_sheet_surface) {
         Ok(surface) => surface,
         Err(error) => {
-            log_render_failure("explore.forecast", &error);
-            empty_runtime_error_state("explore.forecast")
+            log_render_failure(crate::ids::EXPLORE_FORECAST, &error);
+            empty_runtime_error_state(crate::ids::EXPLORE_FORECAST)
         }
     }
 }
 
 fn render_with_data(
     ctx: &GuestContext,
-    surface_id: &str,
+    surface_id: SurfaceId,
     build: fn(&load::GuestWeatherData) -> Surface,
 ) -> Result<Surface> {
     match load_guest_weather(ctx, surface_id)? {

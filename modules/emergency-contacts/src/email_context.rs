@@ -10,7 +10,7 @@ use crate::config::load_config;
 #[serde(rename_all = "camelCase")]
 pub struct EmailContextArgs {
     #[serde(default)]
-    pub template_key: Option<String>,
+    pub template_key: Option<EmailTemplateKey>,
     #[serde(default)]
     pub locale: Option<String>,
 }
@@ -30,12 +30,13 @@ pub fn email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContex
 }
 
 pub fn build_email_context(_ctx: Context, args: EmailContextArgs) -> Result<EmailContextResponse> {
-    let template = args.template_key.as_deref().unwrap_or("").trim();
-    if !matches!(
-        template,
-        "arrival" | "arrival-day" | "post-arrival" | "lost-found" | ""
-    ) {
-        return Ok(EmailContextResponse { host_phone: None });
+    match args.template_key {
+        None
+        | Some(EmailTemplateKey::Arrival)
+        | Some(EmailTemplateKey::ArrivalDay)
+        | Some(EmailTemplateKey::PostArrival)
+        | Some(EmailTemplateKey::LostFound) => {}
+        Some(_) => return Ok(EmailContextResponse { host_phone: None }),
     }
 
     let config = load_config().unwrap_or_default();
@@ -60,7 +61,7 @@ mod tests {
     #[serial_test::serial]
     fn when_arrival_then_returns_host_phone() {
         let (ctx, host) = MockContext::guest()
-            .with_capabilities(&["core.storage"])
+            .with_capabilities(&[capability::core::STORAGE])
             .with_kv(
                 "config",
                 serde_json::to_vec(&json!({
@@ -74,7 +75,7 @@ mod tests {
             let out = build_email_context(
                 ctx.clone(),
                 EmailContextArgs {
-                    template_key: Some("arrival".into()),
+                    template_key: Some(EmailTemplateKey::Arrival),
                     locale: None,
                 },
             )
@@ -87,7 +88,7 @@ mod tests {
     #[serial_test::serial]
     fn when_wrong_template_then_empty() {
         let (ctx, host) = MockContext::guest()
-            .with_capabilities(&["core.storage"])
+            .with_capabilities(&[capability::core::STORAGE])
             .with_kv(
                 "config",
                 serde_json::to_vec(&json!({
@@ -101,7 +102,7 @@ mod tests {
             let out = build_email_context(
                 ctx,
                 EmailContextArgs {
-                    template_key: Some("stay-link".into()),
+                    template_key: Some(EmailTemplateKey::StayLink),
                     locale: None,
                 },
             )

@@ -559,7 +559,7 @@ pub fn update_config(ctx: Context, args: UpdateConfigArgs) -> Result<()> {
     // Guest new-code mail — platform fans out to UPCOMING / ACTIVE stays.
     if entry_codes_fingerprint(&previous) != entry_codes_fingerprint(&config) {
         events::emit(
-            "access-guide.code-changed",
+            crate::ids::CODE_CHANGED,
             &AccessCodeChangedPayload {
                 property_id: ctx.property_id,
             },

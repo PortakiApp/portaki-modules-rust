@@ -4,28 +4,22 @@
 //! are hardcoded here. A future pass will read this from module config /
 //! a Navitia connector instead.
 
+use portaki_sdk::prelude::*;
+
 /// Icon id used on the home card and module manifest.
 pub const MODULE_ICON: &str = "train";
 
 /// Nearest station label (fallback until host config exists).
 pub const DEFAULT_STATION_LABEL: &str = "Gare d'Antibes";
 
-/// Nearest station distance, already localized per locale.
-pub fn default_station_distance(locale: &str) -> &'static str {
-    if locale.to_ascii_lowercase().starts_with("en") {
-        "1.4 mi"
-    } else {
-        "2,3 km"
-    }
+/// Nearest station distance via host i18n (`station.distance`).
+pub fn default_station_distance() -> String {
+    t!("station.distance").unwrap_or_else(|_| "2,3 km".into())
 }
 
 /// Station caption line, e.g. "Gare d'Antibes · 2,3 km".
-pub fn station_caption(locale: &str) -> String {
-    format!(
-        "{} · {}",
-        DEFAULT_STATION_LABEL,
-        default_station_distance(locale)
-    )
+pub fn station_caption() -> String {
+    format!("{} · {}", DEFAULT_STATION_LABEL, default_station_distance())
 }
 
 /// Selectable destinations, in display order.

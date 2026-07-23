@@ -2,7 +2,6 @@
 
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::primitives::Grid;
-use serde_json::json;
 
 use crate::entities::WeatherUnits;
 use crate::weather::{
@@ -61,5 +60,5 @@ pub fn build_current_details(current: &WeatherCurrent, units: &WeatherUnits) -> 
         ));
     }
 
-    Component::Grid(Grid::new().columns(json!(2)).gap(json!(12)).children(tiles))
+    Component::Grid(Grid::new().columns(2).gap(12.0).children(tiles))
 }

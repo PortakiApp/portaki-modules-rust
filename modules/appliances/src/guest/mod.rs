@@ -18,22 +18,22 @@ use crate::queries::load_payload;
 
 #[portaki_sdk::surface(guest, id = "home.card")]
 pub fn render_home_card(ctx: GuestContext) -> Surface {
-    match render_with_payload(&ctx, "home.card", build_home_card) {
+    match render_with_payload(&ctx, crate::ids::HOME_CARD, build_home_card) {
         Ok(surface) => surface,
         Err(error) => {
-            log_render_failure("home.card", &error);
-            empty_runtime_error_state("home.card")
+            log_render_failure(crate::ids::HOME_CARD, &error);
+            empty_runtime_error_state(crate::ids::HOME_CARD)
         }
     }
 }
 
 #[portaki_sdk::surface(guest, id = "explore.detail")]
 pub fn render_explore_detail(ctx: GuestContext) -> Surface {
-    match render_with_payload(&ctx, "explore.detail", build_detail_page) {
+    match render_with_payload(&ctx, crate::ids::EXPLORE_DETAIL, build_detail_page) {
         Ok(surface) => surface,
         Err(error) => {
-            log_render_failure("explore.detail", &error);
-            empty_runtime_error_state("explore.detail")
+            log_render_failure(crate::ids::EXPLORE_DETAIL, &error);
+            empty_runtime_error_state(crate::ids::EXPLORE_DETAIL)
         }
     }
 }
@@ -49,15 +49,15 @@ pub fn render_explore_item(ctx: GuestContext) -> Surface {
     match load_for_item(&ctx, device_id.as_deref()) {
         Ok(surface) => surface,
         Err(error) => {
-            log_render_failure("explore.item", &error);
-            empty_runtime_error_state("explore.item")
+            log_render_failure(crate::ids::EXPLORE_ITEM, &error);
+            empty_runtime_error_state(crate::ids::EXPLORE_ITEM)
         }
     }
 }
 
 fn render_with_payload(
     ctx: &GuestContext,
-    surface_id: &str,
+    surface_id: SurfaceId,
     build: fn(&AppliancesPayload) -> Surface,
 ) -> Result<Surface> {
     if let Some(surface) = empty::empty_state_if_module_not_ready(surface_id)? {
@@ -71,12 +71,12 @@ fn render_with_payload(
 }
 
 fn load_for_item(ctx: &GuestContext, device_id: Option<&str>) -> Result<Surface> {
-    if let Some(surface) = empty::empty_state_if_module_not_ready("explore.item")? {
+    if let Some(surface) = empty::empty_state_if_module_not_ready(crate::ids::EXPLORE_ITEM)? {
         return Ok(surface);
     }
     let payload = load_payload(ctx)?;
     if payload.is_empty_for_guest() {
-        return Ok(empty::empty_content_state("explore.item"));
+        return Ok(empty::empty_content_state(crate::ids::EXPLORE_ITEM));
     }
     Ok(build_item_detail(&payload, device_id))
 }

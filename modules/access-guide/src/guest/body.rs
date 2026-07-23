@@ -5,7 +5,6 @@ use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{
     Badge, Button, InfoBanner, KeyValue, Link, ListItem, Map, Text,
 };
-use serde_json::json;
 
 use crate::config::{
     BuildingAccess, DoorCodeTarget, MethodFields, ParkingLayer, ResolvedStep, StaffKind,
@@ -14,43 +13,25 @@ use crate::reveal::SECRET_MASK;
 
 use super::load::GuestData;
 
-fn kind_label(kind: Option<&str>, locale: &str) -> String {
-    let is_en = locale.to_ascii_lowercase().starts_with("en");
+fn kind_label(kind: Option<&str>) -> String {
     match kind.map(str::trim).unwrap_or("") {
-        "parking" => "Parking".to_string(),
-        "door" => {
-            if is_en {
-                "Door".into()
-            } else {
-                "Porte".into()
-            }
-        }
-        "elevator" => {
-            if is_en {
-                "Lift".into()
-            } else {
-                "Ascenseur".into()
-            }
-        }
-        _ => {
-            if is_en {
-                "Step".into()
-            } else {
-                "Étape".into()
-            }
-        }
+        "parking" => "i18n:host.step.kind.parking".into(),
+        "door" => "i18n:host.step.kind.door".into(),
+        "elevator" => "i18n:host.step.kind.elevator".into(),
+        _ => "i18n:host.step.kind.other".into(),
     }
 }
 
-fn external_action(url: &str) -> serde_json::Value {
-    serde_json::to_value(Action::External {
-        url: url.to_string(),
-    })
-    .unwrap_or(json!({}))
+fn external_action(url: &str) -> Action {
+    Action::external(url)
 }
 
-fn command_action(module_id: &str, name: &str, args: serde_json::Value) -> serde_json::Value {
-    serde_json::to_value(Action::command(module_id, name, args)).unwrap_or(json!({}))
+fn command_action(
+    module_id: &ModuleId,
+    name: OperationName,
+    args: impl Serialize,
+) -> Action {
+    Action::command(module_id, name, args)
 }
 
 fn google_maps_search_url(lat: f64, lng: f64) -> String {
@@ -88,20 +69,14 @@ fn meeting_coords(data: &GuestData) -> Option<(f64, f64)> {
 fn map_at(lat: f64, lng: f64) -> Component {
     Component::Map(
         Map::new()
-            .viewport(json!({
-                "center": { "lat": lat, "lng": lng },
-                "zoom": 15
-            }))
-            .markers(json!([{
-                "id": "property",
-                "kind": "property",
-                "lat": lat,
-                "lng": lng,
-                "label": "Logement",
-                "tone": "primary"
-            }]))
-            .isStatic(json!(true))
-            .interactionMode(json!("none")),
+            .viewport(MapViewport::new(lat, lng, Some(15.0)))
+            .markers(vec![
+                MapMarker::new("property", lat, lng)
+                    .label("Logement")
+                    .kind(MapMarkerKind::Property),
+            ])
+            .isStatic(true)
+            .interactionMode(MapInteractionMode::None),
     )
 }
 
@@ -116,9 +91,9 @@ fn property_map(data: &GuestData) -> Option<Component> {
 }
 
 fn kv_row(key_i18n: &str, value: &str, mono: bool) -> Component {
-    let mut row = KeyValue::new().key(json!(key_i18n)).value(json!(value));
+    let mut row = KeyValue::new().key(key_i18n).value(value);
     if mono {
-        row = row.mono(json!(true));
+        row = row.mono(true);
     }
     Component::KeyValue(row)
 }
@@ -192,12 +167,17 @@ fn staff_kind_key(kind: StaffKind) -> &'static str {
     }
 }
 
-fn smart_lock_command_args(data: &GuestData) -> serde_json::Value {
-    let mut args = json!({});
-    if let Some(stay_id) = data.stay_id {
-        args["stayId"] = json!(stay_id.to_string());
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SmartLockCommandArgs {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stay_id: Option<String>,
+}
+
+fn smart_lock_command_args(data: &GuestData) -> SmartLockCommandArgs {
+    SmartLockCommandArgs {
+        stay_id: data.stay_id.map(|id| id.to_string()),
     }
-    args
 }
 
 fn push_smart_lock_ctas(children: &mut Vec<Component>, data: &GuestData) {
@@ -217,14 +197,22 @@ fn push_smart_lock_ctas(children: &mut Vec<Component>, data: &GuestData) {
     let args = smart_lock_command_args(data);
     children.push(Component::Button(
         Button::new()
-            .label(json!("i18n:guest.smartLock.unlock"))
-            .action(command_action(provider, "unlock", args.clone())),
+            .label("i18n:guest.smartLock.unlock")
+            .action(command_action(
+                &ModuleId::new(provider),
+                contracts::smart_lock::UNLOCK,
+                args.clone(),
+            )),
     ));
     children.push(Component::Button(
         Button::new()
-            .label(json!("i18n:guest.smartLock.getCredential"))
-            .variant(json!("outline"))
-            .action(command_action(provider, "getGuestCredential", args)),
+            .label("i18n:guest.smartLock.getCredential")
+            .variant(ButtonVariant::Outline)
+            .action(command_action(
+                &ModuleId::new(provider),
+                contracts::smart_lock::GET_GUEST_CREDENTIAL,
+                args,
+            )),
     ));
 }
 
@@ -428,8 +416,8 @@ fn push_reveal_banner(children: &mut Vec<Component>, data: &GuestData) {
     };
     children.push(Component::InfoBanner(
         InfoBanner::new()
-            .title(json!("i18n:guest.reveal.lockedTitle"))
-            .message(json!(message.clone())),
+            .title("i18n:guest.reveal.lockedTitle")
+            .message(message.clone()),
     ));
 }
 
@@ -438,8 +426,8 @@ fn push_arrival_extras(children: &mut Vec<Component>, data: &GuestData, steps: &
     if !video.is_empty() {
         children.push(Component::Link(
             Link::new()
-                .label(json!("i18n:guest.watchVideo"))
-                .href(json!(video.to_string()))
+                .label("i18n:guest.watchVideo")
+                .href(video.to_string())
                 .action(external_action(video)),
         ));
     }
@@ -450,12 +438,12 @@ fn push_arrival_extras(children: &mut Vec<Component>, data: &GuestData, steps: &
             continue;
         }
         let mut item = ListItem::new()
-            .title(json!(title))
-            .child(Badge::new().label(json!(kind_label(step.kind.as_deref(), &data.locale))));
+            .title(title)
+            .child(Badge::new().label(kind_label(step.kind.as_deref())));
         if let Some(detail) = step.detail.as_ref() {
             let text = detail.trim();
             if !text.is_empty() {
-                item = item.child(Text::new().text(json!(text)).variant(json!("caption")));
+                item = item.child(Text::new().text(text).variant(TextVariant::Caption));
             }
         }
         children.push(Component::ListItem(item));
@@ -494,8 +482,8 @@ pub fn build_access_glance(data: &GuestData) -> Vec<Component> {
     if let Some(url) = maps_url(data) {
         children.push(Component::Button(
             Button::new()
-                .label(json!("i18n:guest.openMaps"))
-                .variant(json!("outline"))
+                .label("i18n:guest.openMaps")
+                .variant(ButtonVariant::Outline)
                 .action(external_action(&url)),
         ));
     }
@@ -510,8 +498,8 @@ pub fn build_access_detail(data: &GuestData) -> Vec<Component> {
     if !note.is_empty() {
         children.push(Component::InfoBanner(
             InfoBanner::new()
-                .title(json!("i18n:guest.note.title"))
-                .message(json!(note.to_string())),
+                .title("i18n:guest.note.title")
+                .message(note.to_string()),
         ));
     }
 
@@ -544,8 +532,8 @@ pub fn build_access_detail(data: &GuestData) -> Vec<Component> {
     if let Some(url) = maps_url(data) {
         children.push(Component::Button(
             Button::new()
-                .label(json!("i18n:guest.openMaps"))
-                .variant(json!("outline"))
+                .label("i18n:guest.openMaps")
+                .variant(ButtonVariant::Outline)
                 .action(external_action(&url)),
         ));
     }

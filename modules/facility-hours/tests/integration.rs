@@ -1,5 +1,6 @@
 //! Integration-style unit tests with `portaki-test-utils`.
 
+use portaki_sdk::capability;
 use serial_test::serial;
 
 use facility_hours::{
@@ -56,7 +57,7 @@ fn child_components(node: &Component) -> Vec<&Component> {
 #[serial]
 fn home_card_empty_without_config() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             assert!(contains_component_type(
                 &render_home_card(ctx),
@@ -69,13 +70,14 @@ fn home_card_empty_without_config() {
 #[serial]
 fn home_card_uses_key_value_and_page_overlay() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", sample_config_bytes())
         .run(|ctx| {
             let surface = render_home_card(ctx);
             assert!(contains_component_type(&surface, "KeyValue"));
             let json = serde_json::to_string(&surface).expect("json");
-            assert!(json.contains("page"));
+            assert!(json.contains("explore.detail"));
+            assert!(json.contains("bottomSheet"));
         });
 }
 
@@ -83,7 +85,7 @@ fn home_card_uses_key_value_and_page_overlay() {
 #[serial]
 fn detail_enriched_list() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", sample_config_bytes())
         .run(|ctx| {
             let surface = render_explore_detail(ctx);
@@ -96,7 +98,7 @@ fn detail_enriched_list() {
 #[serial]
 fn update_config_roundtrip() {
     MockContext::host()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             update_config(
                 ctx.clone(),

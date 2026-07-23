@@ -6,8 +6,9 @@ mod email_context;
 mod entities;
 mod guest;
 mod queries;
-mod render_host;
+mod host;
 mod store;
+mod ids;
 
 pub use commands::{save_content, SaveContentArgs};
 pub use content::{RuleItem, RulesPayload};
@@ -15,7 +16,7 @@ pub use email_context::{email_context, EmailContextArgs, EmailContextResponse};
 pub use entities::RulesContent;
 pub use guest::{render_explore_detail, render_home_card};
 pub use queries::{get_content, GetContentArgs, RulesContentView};
-pub use render_host::render_host_main;
+pub use host::render_host_main;
 pub use store::reset_test_store;
 
 portaki_sdk::portaki_module!(

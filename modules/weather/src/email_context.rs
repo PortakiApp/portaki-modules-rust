@@ -12,11 +12,11 @@ use crate::weather::{resolve_city_label, WeatherCurrent};
 pub struct EmailContextArgs {
     /// Portaki template key (`arrival-day`, …).
     #[serde(default)]
-    pub template_key: Option<String>,
+    pub template_key: Option<EmailTemplateKey>,
     /// Optional address hint when OpenWeather city is empty.
     #[serde(default)]
     pub address_hint: Option<String>,
-    /// Optional locale override (BCP-47). Falls back to `ctx.locale`.
+    /// Optional locale override (BCP-47). Kept for wire compat; copy uses host i18n.
     #[serde(default)]
     pub locale: Option<String>,
 }
@@ -37,11 +37,12 @@ pub fn email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContex
 
 /// Resolve current conditions into a single email sentence.
 pub fn build_email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContextResponse> {
-    let template = args.template_key.as_deref().unwrap_or("").trim();
-    if !template.is_empty() && template != "arrival-day" {
-        return Ok(EmailContextResponse {
-            weather_summary: None,
-        });
+    if let Some(key) = args.template_key {
+        if key != EmailTemplateKey::ArrivalDay {
+            return Ok(EmailContextResponse {
+                weather_summary: None,
+            });
+        }
     }
 
     let current = get_current(
@@ -52,12 +53,6 @@ pub fn build_email_context(ctx: Context, args: EmailContextArgs) -> Result<Email
         },
     )?;
 
-    let locale = args
-        .locale
-        .as_deref()
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .unwrap_or(ctx.locale.as_str());
     let address = args
         .address_hint
         .as_deref()
@@ -66,108 +61,61 @@ pub fn build_email_context(ctx: Context, args: EmailContextArgs) -> Result<Email
         .or(ctx.property.address.as_deref());
 
     Ok(EmailContextResponse {
-        weather_summary: Some(format_weather_summary(&current, address, locale)),
+        weather_summary: Some(format_weather_summary(&current, address)?),
     })
 }
 
-fn format_weather_summary(current: &WeatherCurrent, address: Option<&str>, locale: &str) -> String {
+fn format_weather_summary(current: &WeatherCurrent, address: Option<&str>) -> Result<String> {
     let city = resolve_city_label(current.city_name.as_deref(), address);
     let place = match city.as_deref() {
-        Some(name) if !name.is_empty() => {
-            if locale_is_en(locale) {
-                format!("in {name}")
-            } else {
-                format!("à {name}")
-            }
-        }
-        _ => {
-            if locale_is_en(locale) {
-                "on site".into()
-            } else {
-                "sur place".into()
-            }
-        }
+        Some(name) if !name.is_empty() => t!("email.place.inCity", name = name)?,
+        _ => t!("email.place.onSite")?,
     };
     let rounded = current.temp_c.round() as i64;
-    let condition_fr = condition_phrase(&current.description_key, &current.condition, locale);
+    let condition = condition_phrase(&current.description_key, &current.condition)?;
     let emoji = condition_emoji(&current.condition);
 
-    if locale_is_en(locale) {
-        format!("Weather {place} today: {emoji} {rounded}°C, {condition_fr}.")
-    } else {
-        format!("Météo {place} aujourd'hui : {emoji} {rounded}°C, {condition_fr}.")
-    }
+    t!(
+        "email.weather.summary",
+        place = place,
+        emoji = emoji,
+        temp = rounded,
+        condition = condition
+    )
 }
 
-fn condition_phrase(description_key: &str, condition: &str, locale: &str) -> String {
+fn condition_phrase(description_key: &str, condition: &str) -> Result<String> {
     let key = description_key.trim();
-    let en = locale_is_en(locale);
     if key.ends_with("sunny") || key.contains(".sunny") {
-        return if en {
-            "clear skies".into()
-        } else {
-            "ciel dégagé".into()
-        };
+        return t!("email.condition.sunny");
     }
     if key.ends_with("cloudy") || key.contains(".cloudy") {
-        return if en {
-            "cloudy".into()
-        } else {
-            "ciel nuageux".into()
-        };
+        return t!("email.condition.cloudy");
     }
     if key.ends_with("rainy") || key.contains(".rainy") {
-        return if en {
-            "rain possible".into()
-        } else {
-            "pluie possible".into()
-        };
+        return t!("email.condition.rainy");
     }
     if key.ends_with("snowy") || key.contains(".snowy") {
-        return if en {
-            "snow possible".into()
-        } else {
-            "neige possible".into()
-        };
+        return t!("email.condition.snowy");
     }
     if key.ends_with("stormy") || key.contains(".stormy") {
-        return if en {
-            "storms possible".into()
-        } else {
-            "orages possibles".into()
-        };
+        return t!("email.condition.stormy");
     }
     if key.ends_with("foggy") || key.contains(".foggy") {
-        return if en { "fog".into() } else { "brume".into() };
+        return t!("email.condition.foggy");
     }
 
     let c = condition.trim().to_ascii_lowercase();
     if c.contains("clear") || c.contains("sun") {
-        return if en {
-            "clear skies".into()
-        } else {
-            "ciel dégagé".into()
-        };
+        return t!("email.condition.sunny");
     }
     if c.contains("cloud") {
-        return if en {
-            "cloudy".into()
-        } else {
-            "ciel nuageux".into()
-        };
+        return t!("email.condition.cloudy");
     }
     if c.contains("rain") || c.contains("drizzle") {
-        return if en {
-            "rain possible".into()
-        } else {
-            "pluie possible".into()
-        };
+        return t!("email.condition.rainy");
     }
-    if en {
-        "variable conditions".into()
-    } else {
-        "conditions variables".into()
-    }
+    t!("email.condition.variable")
 }
 
 fn condition_emoji(condition: &str) -> &'static str {
@@ -187,18 +135,15 @@ fn condition_emoji(condition: &str) -> &'static str {
     }
 }
 
-fn locale_is_en(locale: &str) -> bool {
-    locale.to_ascii_lowercase().starts_with("en")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::entities::WeatherUnits;
     use chrono::Utc;
+    use portaki_test_utils::MockContext;
 
     #[test]
-    fn formats_french_summary_with_city() {
+    fn formats_summary_via_i18n() {
         let current = WeatherCurrent {
             temp_c: 27.4,
             condition: "Clear".into(),
@@ -213,10 +158,19 @@ mod tests {
             units: WeatherUnits::Celsius,
             fetched_at: Utc::now(),
         };
-        let summary = format_weather_summary(&current, None, "fr");
-        assert!(summary.contains("Antibes"));
-        assert!(summary.contains("27°C"));
-        assert!(summary.contains("ciel dégagé"));
-        assert!(summary.contains("☀️"));
+
+        MockContext::guest()
+            .with_translation("email.place.inCity", "à {name}")
+            .with_translation(
+                "email.weather.summary",
+                "Météo {place} aujourd'hui : {emoji} {temp}°C, {condition}.",
+            )
+            .with_translation("email.condition.sunny", "ciel dégagé")
+            .run(|_| {
+                let summary = format_weather_summary(&current, None).expect("summary");
+                assert!(summary.contains("Antibes"));
+                assert!(summary.contains("27°C"));
+                assert!(summary.contains("aujourd'hui"));
+            });
     }
 }

@@ -7,12 +7,18 @@ use portaki_sdk::sdui::primitives::{
     Button, Card, EmptyState, Eyebrow, InfoBanner, Link, ListItem, RichText, Stack, Text,
 };
 use portaki_sdk::sdui::surface::Surface;
-use serde_json::json;
-
 use crate::content::{
     description_plain_text, description_to_html, extract_howto_steps, Appliance, ApplianceStatus,
     AppliancesPayload,
 };
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct OpenHostChatPayload<'a> {
+    appliance_id: &'a str,
+    appliance_name: &'a str,
+    context: String,
+}
 
 pub fn build_item_detail(payload: &AppliancesPayload, device_id: Option<&str>) -> Surface {
     let device = device_id.and_then(|id| {
@@ -31,20 +37,20 @@ pub fn build_item_detail(payload: &AppliancesPayload, device_id: Option<&str>) -
         return Surface::new(
             Stack::new().child(
                 EmptyState::new()
-                    .title(json!("i18n:explore.item.notFound"))
-                    .description(json!("i18n:explore.item.notFound.description"))
-                    .icon(json!("plug")),
+                    .title("i18n:explore.item.notFound")
+                    .description("i18n:explore.item.notFound.description")
+                    .icon("plug"),
             ),
         )
-        .with_id("explore.item");
+        .with_id(crate::ids::EXPLORE_ITEM);
     };
 
     Surface::new(
         Stack::new()
-            .gap(json!(14))
+            .gap(14.0)
             .children(device_detail_children(device)),
     )
-    .with_id("explore.item")
+    .with_id(crate::ids::EXPLORE_ITEM)
 }
 
 fn device_detail_children(device: &Appliance) -> Vec<Component> {
@@ -53,13 +59,13 @@ fn device_detail_children(device: &Appliance) -> Vec<Component> {
     let steps = extract_howto_steps(&device.description);
     if !steps.is_empty() {
         let mut howto_children: Vec<Component> = vec![Component::Eyebrow(
-            Eyebrow::new().text(json!("i18n:explore.item.howto")),
+            Eyebrow::new().text("i18n:explore.item.howto"),
         )];
         for (index, step) in steps.iter().enumerate() {
             howto_children.push(Component::ListItem(
                 ListItem::new()
-                    .title(json!((index + 1).to_string()))
-                    .subtitle(json!(step.clone())),
+                    .title((index + 1).to_string())
+                    .subtitle(step.clone()),
             ));
         }
         children.push(Component::Card(
@@ -72,8 +78,8 @@ fn device_detail_children(device: &Appliance) -> Vec<Component> {
         if !html.trim().is_empty() {
             children.push(Component::Card(
                 Card::new().surface(SurfaceLevel::Elevated).children(vec![
-                    Component::Eyebrow(Eyebrow::new().text(json!("i18n:explore.item.howto"))),
-                    Component::RichText(RichText::new().content(json!(html))),
+                    Component::Eyebrow(Eyebrow::new().text("i18n:explore.item.howto")),
+                    Component::RichText(RichText::new().content(html)),
                 ]),
             ));
         }
@@ -81,36 +87,35 @@ fn device_detail_children(device: &Appliance) -> Vec<Component> {
 
     if !device.safety_note.trim().is_empty() {
         children.push(Component::InfoBanner(
-            InfoBanner::new().message(json!(device.safety_note.clone())),
+            InfoBanner::new().message(device.safety_note.clone()),
         ));
     }
 
     if !device.manual_url.trim().is_empty() {
         let url = device.manual_url.trim().to_string();
         let action =
-            serde_json::to_value(Action::External { url: url.clone() }).unwrap_or(json!({}));
+            Action::external(url.clone());
         children.push(Component::Link(
             Link::new()
-                .label(json!("i18n:explore.item.manual"))
-                .href(json!(url))
+                .label("i18n:explore.item.manual")
+                .href(url)
                 .action(action),
         ));
     }
 
-    let contact_action = serde_json::to_value(Action::Emit {
-        event: "openHostChat".into(),
-        payload: Some(json!({
-            "applianceId": device.id,
-            "applianceName": device.name,
-            "context": description_plain_text(&device.description),
+    let contact_action = Action::emit(
+        crate::ids::OPEN_HOST_CHAT,
+        Some(json_value(OpenHostChatPayload {
+            appliance_id: &device.id,
+            appliance_name: &device.name,
+            context: description_plain_text(&device.description),
         })),
-    })
-    .unwrap_or(json!({}));
+    );
 
     children.push(Component::Button(
         Button::new()
-            .label(json!("i18n:explore.item.contactHost"))
-            .variant(json!("outline"))
+            .label("i18n:explore.item.contactHost")
+            .variant(ButtonVariant::Outline)
             .action(contact_action),
     ));
 
@@ -118,16 +123,16 @@ fn device_detail_children(device: &Appliance) -> Vec<Component> {
 }
 
 fn header_row(device: &Appliance) -> Component {
-    let mut title_stack = Stack::new().gap(json!(4)).children(vec![Component::Text(
+    let mut title_stack = Stack::new().gap(4.0).children(vec![Component::Text(
         Text::new()
-            .text(json!(device.name.clone()))
-            .variant(json!("title")),
+            .text(device.name.clone())
+            .variant(TextVariant::Display),
     )]);
     if !device.location.trim().is_empty() {
         title_stack = title_stack.child(Component::Text(
             Text::new()
-                .text(json!(device.location.clone()))
-                .variant(json!("caption"))
+                .text(device.location.clone())
+                .variant(TextVariant::Caption)
                 .emphasis(portaki_sdk::sdui::common::Emphasis::Subtle),
         ));
     }
@@ -136,16 +141,16 @@ fn header_row(device: &Appliance) -> Component {
     if !device.emoji.trim().is_empty() {
         header_children.push(Component::Text(
             Text::new()
-                .text(json!(device.emoji.clone()))
-                .variant(json!("display")),
+                .text(device.emoji.clone())
+                .variant(TextVariant::Display),
         ));
     }
     header_children.push(Component::Stack(title_stack));
 
     Component::Stack(
         Stack::new()
-            .direction(json!("horizontal"))
-            .gap(json!(12))
+            .direction(StackDirection::Horizontal)
+            .gap(12.0)
             .children(header_children),
     )
 }

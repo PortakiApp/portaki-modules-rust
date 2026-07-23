@@ -3,7 +3,6 @@
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::primitives::{Divider, Stack, Text};
 use portaki_sdk::sdui::surface::Surface;
-use serde_json::json;
 
 use super::body::build_current_hero;
 use super::details::build_current_details;
@@ -19,11 +18,11 @@ pub fn build_sheet_surface(data: &GuestWeatherData) -> Surface {
         Component::Divider(Divider::new()),
         Component::Text(
             Text::new()
-                .text(json!("i18n:explore.forecast.hint"))
-                .variant(json!("title")),
+                .text("i18n:explore.forecast.hint")
+                .variant(TextVariant::Title),
         ),
-        build_forecast_table(&data.forecast, &data.units, &data.locale),
+        build_forecast_table(&data.forecast, &data.units),
     ];
 
-    Surface::new(Stack::new().gap(json!(12)).children(children)).with_id("explore.forecast")
+    Surface::new(Stack::new().gap(12.0).children(children)).with_id(crate::ids::EXPLORE_FORECAST)
 }

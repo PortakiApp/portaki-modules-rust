@@ -17,8 +17,8 @@ pub fn render_home_card(ctx: GuestContext) -> Surface {
     match render_with_data(&ctx) {
         Ok(surface) => surface,
         Err(error) => {
-            log_render_failure("home.card", &error);
-            empty_runtime_error_state("home.card")
+            log_render_failure(crate::ids::HOME_CARD, &error);
+            empty_runtime_error_state(crate::ids::HOME_CARD)
         }
     }
 }

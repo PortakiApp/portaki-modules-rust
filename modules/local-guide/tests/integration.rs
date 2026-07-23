@@ -1,5 +1,6 @@
 //! Integration-style unit tests with `portaki-test-utils`.
 
+use portaki_sdk::capability;
 use serial_test::serial;
 
 use local_guide::{
@@ -59,7 +60,7 @@ fn child_components(node: &Component) -> Vec<&Component> {
 #[serial]
 fn home_card_empty_without_config() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             assert!(contains_component_type(
                 &render_home_card(ctx),
@@ -72,7 +73,7 @@ fn home_card_empty_without_config() {
 #[serial]
 fn home_card_renders_spots_with_pill() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", sample_config_bytes())
         .run(|ctx| {
             let surface = render_home_card(ctx);
@@ -87,7 +88,7 @@ fn home_card_renders_spots_with_pill() {
 #[serial]
 fn detail_includes_link() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", sample_config_bytes())
         .run(|ctx| {
             let surface = render_explore_detail(ctx);
@@ -100,7 +101,7 @@ fn detail_includes_link() {
 #[serial]
 fn update_config_roundtrip() {
     MockContext::host()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             update_config(
                 ctx.clone(),

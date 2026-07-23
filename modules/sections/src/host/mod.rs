@@ -4,7 +4,6 @@ use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{Button, Field, Form, Page, Text, TextArea, TextInput};
 use portaki_sdk::sdui::surface::Surface;
-use serde_json::json;
 
 use crate::model::lang_code;
 use crate::store;
@@ -44,53 +43,57 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         });
 
     let section_id = sections.first().map(|s| s.id);
-    let submit_args = json!({
-        "id": section_id,
-        "title": title,
-        "body_markdown": body,
-        "lang": lang,
-        "locales": []
-    });
-    let save_action = serde_json::to_value(Action::command("sections", "saveSection", submit_args))
-        .unwrap_or(json!({}));
+    let submit_args = crate::commands::SaveSectionArgs {
+        id: section_id,
+        sort_order: None,
+        locales: Vec::new(),
+        title: title.clone(),
+        body_markdown: body.clone(),
+        lang: lang.clone(),
+        title_fr: String::new(),
+        title_en: String::new(),
+        body_markdown_fr: String::new(),
+        body_markdown_en: String::new(),
+    };
+    let save_action = Action::command(&crate::ids::module_id(), crate::ids::SAVE_SECTION, submit_args);
 
     Surface::new(
         Page::new()
-            .title(json!("i18n:surface.host.main.title"))
+            .title("i18n:surface.host.main.title")
             .child(
                 Text::new()
-                    .text(json!("i18n:surface.host.main.subtitle"))
-                    .variant(json!("body")),
+                    .text("i18n:surface.host.main.subtitle")
+                    .variant(TextVariant::Body),
             )
             .child(
                 Form::new()
                     .child(
                         Field::new()
-                            .name(json!("title"))
-                            .label(json!("i18n:host.title.label"))
-                            .child(TextInput::new().name(json!("title")).value(json!(title))),
+                            .name("title")
+                            .label("i18n:host.title.label")
+                            .child(TextInput::new().name("title").value(title)),
                     )
                     .child(
                         Field::new()
-                            .name(json!("body_markdown"))
-                            .label(json!("i18n:host.body.label"))
+                            .name("body_markdown")
+                            .label("i18n:host.body.label")
                             .child(
                                 TextArea::new()
-                                    .name(json!("body_markdown"))
-                                    .value(json!(body)),
+                                    .name("body_markdown")
+                                    .value(body),
                             ),
                     )
                     .child(
                         Text::new()
-                            .text(json!("i18n:host.main.help"))
-                            .variant(json!("caption")),
+                            .text("i18n:host.main.help")
+                            .variant(TextVariant::Caption),
                     )
                     .child(
                         Button::new()
-                            .label(json!("i18n:host.save"))
+                            .label("i18n:host.save")
                             .action(save_action),
                     ),
             ),
     )
-    .with_id("main")
+    .with_id(crate::ids::HOST_MAIN)
 }

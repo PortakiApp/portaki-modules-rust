@@ -4,7 +4,6 @@ use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{Button, Field, Form, Page, Select, Text, TextInput};
 use portaki_sdk::sdui::surface::Surface;
-use serde_json::json;
 
 use crate::content::{RuleItem, RulesBundle, RulesPayload};
 use crate::store;
@@ -29,11 +28,12 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
         }
     };
 
-    let submit_args = json!({
-        "items": items_to_submit(&payload),
-    });
-    let save_action = serde_json::to_value(Action::command("rules", "saveContent", submit_args))
-        .unwrap_or(json!({}));
+    let submit_args = crate::commands::SaveContentArgs {
+        items: items_to_submit(&payload),
+        content_fr: String::new(),
+        content_en: String::new(),
+    };
+    let save_action = Action::command(&crate::ids::module_id(), crate::ids::SAVE_CONTENT, submit_args);
 
     let mut form_children: Vec<Component> = Vec::new();
     for index in 0..ITEM_SLOTS {
@@ -41,28 +41,28 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     }
     form_children.push(
         Text::new()
-            .text(json!("i18n:host.main.help"))
-            .variant(json!("caption"))
+            .text("i18n:host.main.help")
+            .variant(TextVariant::Caption)
             .into(),
     );
     form_children.push(
         Button::new()
-            .label(json!("i18n:host.save"))
+            .label("i18n:host.save")
             .action(save_action)
             .into(),
     );
 
     Surface::new(
         Page::new()
-            .title(json!("i18n:surface.host.main.title"))
+            .title("i18n:surface.host.main.title")
             .child(
                 Text::new()
-                    .text(json!("i18n:surface.host.main.subtitle"))
-                    .variant(json!("body")),
+                    .text("i18n:surface.host.main.subtitle")
+                    .variant(TextVariant::Body),
             )
             .child(Form::new().children(form_children)),
     )
-    .with_id("main")
+    .with_id(crate::ids::HOST_MAIN)
 }
 
 fn default_for_lang(lang: &str) -> RulesPayload {
@@ -99,16 +99,15 @@ fn default_for_lang(lang: &str) -> RulesPayload {
     }
 }
 
-fn items_to_submit(payload: &RulesPayload) -> Vec<serde_json::Value> {
+fn items_to_submit(payload: &RulesPayload) -> Vec<crate::commands::RuleItemInput> {
     payload
         .items
         .iter()
-        .map(|item| {
-            json!({
-                "icon": item.icon,
-                "title": item.title,
-                "subtitle": item.subtitle,
-            })
+        .map(|item| crate::commands::RuleItemInput {
+            icon: item.icon.clone(),
+            title: item.title.clone(),
+            subtitle: item.subtitle.clone(),
+            ..Default::default()
         })
         .collect()
 }
@@ -122,48 +121,48 @@ fn push_rule_slot(children: &mut Vec<Component>, index: usize, item: Option<&Rul
 
     children.push(
         Text::new()
-            .text(json!(format!("i18n:host.rule.slot{slot}")))
-            .variant(json!("caption"))
+            .text(format!("i18n:host.rule.slot{slot}"))
+            .variant(TextVariant::Caption)
             .into(),
     );
     children.push(
         Field::new()
-            .name(json!(format!("items.{index}.icon")))
-            .label(json!("i18n:host.rule.icon"))
+            .name(format!("items.{index}.icon"))
+            .label("i18n:host.rule.icon")
             .child(
                 Select::new()
-                    .name(json!(format!("items.{index}.icon")))
-                    .options(json!([
-                        {"value": "clock-circle", "label": "i18n:host.rule.icon.quiet"},
-                        {"value": "x", "label": "i18n:host.rule.icon.no"},
-                        {"value": "users", "label": "i18n:host.rule.icon.guests"},
-                        {"value": "check-circle", "label": "i18n:host.rule.icon.ok"},
-                        {"value": "paw-print", "label": "i18n:host.rule.icon.pets"},
-                        {"value": "volume-x", "label": "i18n:host.rule.icon.noise"}
-                    ]))
-                    .value(json!(icon)),
+                    .name(format!("items.{index}.icon"))
+                    .options(vec![
+                                        ChoiceOption::new("clock-circle", "i18n:host.rule.icon.quiet"),
+                                        ChoiceOption::new("x", "i18n:host.rule.icon.no"),
+                                        ChoiceOption::new("users", "i18n:host.rule.icon.guests"),
+                                        ChoiceOption::new("check-circle", "i18n:host.rule.icon.ok"),
+                                        ChoiceOption::new("paw-print", "i18n:host.rule.icon.pets"),
+                                        ChoiceOption::new("volume-x", "i18n:host.rule.icon.noise"),
+                                    ])
+                    .value(icon),
             )
             .into(),
     );
     children.push(
         Field::new()
-            .name(json!(format!("items.{index}.title")))
-            .label(json!("i18n:host.rule.title"))
+            .name(format!("items.{index}.title"))
+            .label("i18n:host.rule.title")
             .child(
                 TextInput::new()
-                    .name(json!(format!("items.{index}.title")))
-                    .value(json!(item.map(|r| r.title.as_str()).unwrap_or(""))),
+                    .name(format!("items.{index}.title"))
+                    .value(item.map(|r| r.title.as_str()).unwrap_or("")),
             )
             .into(),
     );
     children.push(
         Field::new()
-            .name(json!(format!("items.{index}.subtitle")))
-            .label(json!("i18n:host.rule.subtitle"))
+            .name(format!("items.{index}.subtitle"))
+            .label("i18n:host.rule.subtitle")
             .child(
                 TextInput::new()
-                    .name(json!(format!("items.{index}.subtitle")))
-                    .value(json!(item.map(|r| r.subtitle.as_str()).unwrap_or(""))),
+                    .name(format!("items.{index}.subtitle"))
+                    .value(item.map(|r| r.subtitle.as_str()).unwrap_or("")),
             )
             .into(),
     );

@@ -17,6 +17,7 @@ use chrono::{
     DateTime, Datelike, Days, Duration, FixedOffset, NaiveDate, NaiveDateTime, TimeZone, Timelike,
     Utc,
 };
+use portaki_sdk::prelude::*;
 
 use crate::config::RevealPolicy;
 
@@ -192,30 +193,32 @@ fn last_sunday_of_month(year: i32, month: u32) -> NaiveDate {
 }
 
 /// Format `available_from` in the property timezone for guest copy.
-pub fn format_available_from(
-    available_from: DateTime<Utc>,
-    property_timezone: &str,
-    locale: &str,
-) -> String {
+pub fn format_available_from(available_from: DateTime<Utc>, property_timezone: &str) -> String {
     let offset = offset_for_iana(property_timezone, available_from);
     let local = available_from.with_timezone(&offset);
-    let (y, m, d) = (local.year(), local.month(), local.day());
-    let (hh, mm) = (local.hour(), local.minute());
-    if locale.to_ascii_lowercase().starts_with("en") {
-        format!("{d:02}/{m:02}/{y} {hh:02}:{mm:02}")
-    } else {
-        format!("{d:02}/{m:02}/{y} à {hh:02}:{mm:02}")
-    }
+    let day = format!("{:02}", local.day());
+    let month = format!("{:02}", local.month());
+    let year = local.year().to_string();
+    let hour = format!("{:02}", local.hour());
+    let minute = format!("{:02}", local.minute());
+    t!(
+        "reveal.availableFrom.datetime",
+        day = &day,
+        month = &month,
+        year = &year,
+        hour = &hour,
+        minute = &minute
+    )
+    .unwrap_or_else(|_| format!("{day}/{month}/{year} {hour}:{minute}"))
 }
 
 /// Human message when secrets are locked.
-pub fn locked_message(locale: &str, available_from_label: Option<&str>) -> String {
-    let en = locale.to_ascii_lowercase().starts_with("en");
-    match (en, available_from_label) {
-        (true, Some(when)) => format!("Available from {when}"),
-        (false, Some(when)) => format!("Disponible à partir du {when}"),
-        (true, None) => "Codes will be available closer to check-in.".into(),
-        (false, None) => "Les codes seront disponibles à l’approche du check-in.".into(),
+pub fn locked_message(available_from_label: Option<&str>) -> String {
+    match available_from_label {
+        Some(when) => t!("reveal.locked.withWhen", when = when)
+            .unwrap_or_else(|_| format!("Available from {when}")),
+        None => t!("reveal.locked.generic")
+            .unwrap_or_else(|_| "Codes will be available closer to check-in.".into()),
     }
 }
 

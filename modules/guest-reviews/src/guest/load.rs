@@ -13,7 +13,6 @@ pub struct GuestData {
     pub airbnb_url: Option<String>,
     pub thank_you: String,
     pub property_name: String,
-    pub locale: String,
 }
 
 pub enum GuestLoad {
@@ -21,7 +20,7 @@ pub enum GuestLoad {
     Empty(Box<Surface>),
 }
 
-pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad> {
+pub fn load_guest_data(ctx: &GuestContext, surface_id: SurfaceId) -> Result<GuestLoad> {
     if let Some(surface) = empty_state_if_module_not_ready(surface_id)? {
         return Ok(GuestLoad::Empty(Box::new(surface)));
     }
@@ -42,6 +41,5 @@ pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad
             .thank_you_message
             .pick_with_fallback(&ctx.locale, &ctx.property.locale),
         property_name: ctx.property.name.clone(),
-        locale: ctx.locale.clone(),
     }))
 }

@@ -13,12 +13,12 @@ use load::{load_guest_data, GuestLoad};
 
 #[portaki_sdk::surface(guest, id = "home.card")]
 pub fn render_home_card(ctx: GuestContext) -> Surface {
-    match load_guest_data(&ctx, "home.card") {
+    match load_guest_data(&ctx, crate::ids::HOME_CARD) {
         Ok(GuestLoad::Empty(surface)) => *surface,
         Ok(GuestLoad::Ready(data)) => build_home_card(&data),
         Err(error) => {
-            log_render_failure("home.card", &error);
-            empty_runtime_error_state("home.card")
+            log_render_failure(crate::ids::HOME_CARD, &error);
+            empty_runtime_error_state(crate::ids::HOME_CARD)
         }
     }
 }

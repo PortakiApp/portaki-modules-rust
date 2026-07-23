@@ -4,7 +4,6 @@ use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{Button, Field, Form, Page, Text, TextArea, TextInput};
 use portaki_sdk::sdui::surface::Surface;
-use serde_json::json;
 
 use crate::config::{load_config, Localized, SpotRow};
 
@@ -17,13 +16,12 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     let spots = config.parse_spots();
     let disclaimer = config.disclaimer.get(&lang).to_string();
 
-    let submit_args = json!({
-        "spots": spots_to_submit(&spots, &lang),
-        "disclaimer": disclaimer,
-    });
-    let save_action =
-        serde_json::to_value(Action::command("local-guide", "updateConfig", submit_args))
-            .unwrap_or(json!({}));
+    let submit_args = crate::commands::UpdateConfigArgs {
+        spots: spots_to_submit(&spots, &lang),
+        spots_json: String::new(),
+        disclaimer: disclaimer.clone(),
+    };
+    let save_action = Action::command(&crate::ids::module_id(), crate::ids::UPDATE_CONFIG, submit_args);
 
     let mut form_children: Vec<Component> = Vec::new();
     for index in 0..SPOT_SLOTS {
@@ -31,53 +29,55 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     }
     form_children.push(
         Field::new()
-            .name(json!("disclaimer"))
-            .label(json!("i18n:host.disclaimer.label"))
+            .name("disclaimer")
+            .label("i18n:host.disclaimer.label")
             .child(
                 TextArea::new()
-                    .name(json!("disclaimer"))
-                    .value(json!(disclaimer))
-                    .placeholder(json!("i18n:host.disclaimer.placeholder")),
+                    .name("disclaimer")
+                    .value(disclaimer)
+                    .placeholder("i18n:host.disclaimer.placeholder"),
             )
             .into(),
     );
     form_children.push(
         Text::new()
-            .text(json!("i18n:host.main.help"))
-            .variant(json!("caption"))
+            .text("i18n:host.main.help")
+            .variant(TextVariant::Caption)
             .into(),
     );
     form_children.push(
         Button::new()
-            .label(json!("i18n:host.save"))
+            .label("i18n:host.save")
             .action(save_action)
             .into(),
     );
 
     Surface::new(
         Page::new()
-            .title(json!("i18n:surface.host.main.title"))
+            .title("i18n:surface.host.main.title")
             .child(
                 Text::new()
-                    .text(json!("i18n:surface.host.main.subtitle"))
-                    .variant(json!("body")),
+                    .text("i18n:surface.host.main.subtitle")
+                    .variant(TextVariant::Body),
             )
             .child(Form::new().children(form_children)),
     )
-    .with_id("main")
+    .with_id(crate::ids::HOST_MAIN)
 }
 
-fn spots_to_submit(spots: &[SpotRow], lang: &str) -> Vec<serde_json::Value> {
+fn spots_to_submit(spots: &[SpotRow], lang: &str) -> Vec<crate::commands::SpotInput> {
     spots
         .iter()
-        .map(|s| {
-            json!({
-                "name": s.title.get(lang),
-                "category": s.category.clone().unwrap_or_default(),
-                "distance": s.distance.clone().unwrap_or_default(),
-                "tag": s.tag.clone().unwrap_or_default(),
-                "description": s.detail.as_ref().map(|d| d.get(lang)).unwrap_or(""),
-            })
+        .map(|s| crate::commands::SpotInput {
+            name: s.title.get(lang).to_string(),
+            category: s.category.clone().unwrap_or_default(),
+            distance: s.distance.clone().unwrap_or_default(),
+            tag: s.tag.clone().unwrap_or_default(),
+            description: s
+                .detail
+                .as_ref()
+                .map(|d| d.get(lang).to_string())
+                .unwrap_or_default(),
         })
         .collect()
 }
@@ -95,62 +95,62 @@ fn push_spot_slot(children: &mut Vec<Component>, index: usize, spot: Option<&Spo
 
     children.push(
         Text::new()
-            .text(json!(format!("i18n:host.spot.slot{slot}")))
-            .variant(json!("caption"))
+            .text(format!("i18n:host.spot.slot{slot}"))
+            .variant(TextVariant::Caption)
             .into(),
     );
     children.push(
         Field::new()
-            .name(json!(format!("spots.{index}.name")))
-            .label(json!("i18n:host.spot.name"))
+            .name(format!("spots.{index}.name"))
+            .label("i18n:host.spot.name")
             .child(
                 TextInput::new()
-                    .name(json!(format!("spots.{index}.name")))
-                    .value(json!(name)),
+                    .name(format!("spots.{index}.name"))
+                    .value(name),
             )
             .into(),
     );
     children.push(
         Field::new()
-            .name(json!(format!("spots.{index}.category")))
-            .label(json!("i18n:host.spot.category"))
+            .name(format!("spots.{index}.category"))
+            .label("i18n:host.spot.category")
             .child(
                 TextInput::new()
-                    .name(json!(format!("spots.{index}.category")))
-                    .value(json!(category)),
+                    .name(format!("spots.{index}.category"))
+                    .value(category),
             )
             .into(),
     );
     children.push(
         Field::new()
-            .name(json!(format!("spots.{index}.distance")))
-            .label(json!("i18n:host.spot.distance"))
+            .name(format!("spots.{index}.distance"))
+            .label("i18n:host.spot.distance")
             .child(
                 TextInput::new()
-                    .name(json!(format!("spots.{index}.distance")))
-                    .value(json!(distance)),
+                    .name(format!("spots.{index}.distance"))
+                    .value(distance),
             )
             .into(),
     );
     children.push(
         Field::new()
-            .name(json!(format!("spots.{index}.tag")))
-            .label(json!("i18n:host.spot.tag"))
+            .name(format!("spots.{index}.tag"))
+            .label("i18n:host.spot.tag")
             .child(
                 TextInput::new()
-                    .name(json!(format!("spots.{index}.tag")))
-                    .value(json!(tag)),
+                    .name(format!("spots.{index}.tag"))
+                    .value(tag),
             )
             .into(),
     );
     children.push(
         Field::new()
-            .name(json!(format!("spots.{index}.description")))
-            .label(json!("i18n:host.spot.description"))
+            .name(format!("spots.{index}.description"))
+            .label("i18n:host.spot.description")
             .child(
                 TextArea::new()
-                    .name(json!(format!("spots.{index}.description")))
-                    .value(json!(description)),
+                    .name(format!("spots.{index}.description"))
+                    .value(description),
             )
             .into(),
     );

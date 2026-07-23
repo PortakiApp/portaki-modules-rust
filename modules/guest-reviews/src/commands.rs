@@ -87,7 +87,7 @@ pub fn submit_review(ctx: Context, args: SubmitReviewArgs) -> Result<()> {
         .filter(|name| !name.is_empty());
 
     events::emit(
-        "guest-reviews.submitted",
+        crate::ids::SUBMITTED,
         &ReviewSubmittedPayload {
             property_id: ctx.property_id,
             rating: args.rating,

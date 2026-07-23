@@ -16,29 +16,29 @@ use crate::queries::{list_sections, ListSectionsArgs};
 
 #[portaki_sdk::surface(guest, id = "home.card")]
 pub fn render_home_card(ctx: GuestContext) -> Surface {
-    match render_with_sections(&ctx, "home.card", build_home_card) {
+    match render_with_sections(&ctx, crate::ids::HOME_CARD, build_home_card) {
         Ok(surface) => surface,
         Err(error) => {
-            log_render_failure("home.card", &error);
-            empty_runtime_error_state("home.card")
+            log_render_failure(crate::ids::HOME_CARD, &error);
+            empty_runtime_error_state(crate::ids::HOME_CARD)
         }
     }
 }
 
 #[portaki_sdk::surface(guest, id = "explore.sheet")]
 pub fn render_explore_sheet(ctx: GuestContext) -> Surface {
-    match render_with_sections(&ctx, "explore.sheet", build_sheet_surface) {
+    match render_with_sections(&ctx, crate::ids::EXPLORE_SHEET, build_sheet_surface) {
         Ok(surface) => surface,
         Err(error) => {
-            log_render_failure("explore.sheet", &error);
-            empty_runtime_error_state("explore.sheet")
+            log_render_failure(crate::ids::EXPLORE_SHEET, &error);
+            empty_runtime_error_state(crate::ids::EXPLORE_SHEET)
         }
     }
 }
 
 fn render_with_sections(
     ctx: &GuestContext,
-    surface_id: &str,
+    surface_id: SurfaceId,
     build: fn(&[SectionView]) -> Surface,
 ) -> Result<Surface> {
     if let Some(surface) = empty::empty_state_if_module_not_ready(surface_id)? {

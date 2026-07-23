@@ -1,5 +1,6 @@
 //! Appliances payload — single-language device list (TipTap description).
 
+use portaki_sdk::sdui::common::RichTextDoc;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
@@ -314,14 +315,7 @@ fn plain_text_to_tiptap(text: &str) -> String {
     if trimmed.is_empty() {
         return String::new();
     }
-    json!({
-        "type": "doc",
-        "content": [{
-            "type": "paragraph",
-            "content": [{ "type": "text", "text": trimmed }]
-        }]
-    })
-    .to_string()
+    RichTextDoc::new().paragraph(trimmed).to_json_string()
 }
 
 /// Lucide-style names stay empty; emoji / other glyphs are kept.
@@ -340,38 +334,20 @@ fn emoji_from_legacy_icon(icon: &str) -> String {
 }
 
 fn steps_and_tip_to_tiptap(steps: &[String], tip: &str) -> String {
-    let mut content: Vec<Value> = Vec::new();
-    let items: Vec<Value> = steps
+    let items: Vec<&str> = steps
         .iter()
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
-        .map(|s| {
-            json!({
-                "type": "listItem",
-                "content": [{
-                    "type": "paragraph",
-                    "content": [{ "type": "text", "text": s }]
-                }]
-            })
-        })
         .collect();
+    let mut doc = RichTextDoc::new();
     if !items.is_empty() {
-        content.push(json!({
-            "type": "bulletList",
-            "content": items
-        }));
+        doc = doc.bullet_list(items);
     }
     let tip = tip.trim();
     if !tip.is_empty() {
-        content.push(json!({
-            "type": "paragraph",
-            "content": [{ "type": "text", "text": tip }]
-        }));
+        doc = doc.paragraph(tip);
     }
-    if content.is_empty() {
-        content.push(json!({ "type": "paragraph" }));
-    }
-    json!({ "type": "doc", "content": content }).to_string()
+    doc.ensure_non_empty().to_json_string()
 }
 
 fn string_field(value: &Value, key: &str) -> String {

@@ -1,5 +1,6 @@
 //! Integration-style unit tests with `portaki-test-utils`.
 
+use portaki_sdk::capability;
 use serial_test::serial;
 
 use portaki_sdk::sdui::component::Component;
@@ -75,7 +76,7 @@ fn child_components(node: &Component) -> Vec<&Component> {
 #[serial]
 fn home_card_renders_empty_without_config() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             let surface = render_home_card(ctx);
             assert!(contains_component_type(&surface, "EmptyState"));
@@ -86,7 +87,7 @@ fn home_card_renders_empty_without_config() {
 #[serial]
 fn home_card_renders_bins_with_config() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", sample_config_bytes())
         .run(|ctx| {
             let surface = render_home_card(ctx);
@@ -103,7 +104,7 @@ fn home_card_renders_bins_with_config() {
 #[serial]
 fn detail_renders_enriched_bins() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", sample_config_bytes())
         .run(|ctx| {
             let surface = render_explore_detail(ctx);
@@ -116,7 +117,7 @@ fn detail_renders_enriched_bins() {
 #[serial]
 fn update_config_persists_and_get_config_reads() {
     MockContext::host()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             update_config(
                 ctx.clone(),

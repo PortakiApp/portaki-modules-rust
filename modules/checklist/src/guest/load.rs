@@ -24,13 +24,13 @@ pub struct GuestChecklistData {
 }
 
 pub fn load_guest_checklist(ctx: &GuestContext) -> Result<GuestLoad> {
-    if let Some(surface) = empty_state_if_module_not_ready("home.card")? {
+    if let Some(surface) = empty_state_if_module_not_ready(crate::ids::HOME_CARD)? {
         return Ok(GuestLoad::Empty(Box::new(surface)));
     }
 
     let items = storage::list_items()?;
     if items.is_empty() {
-        return Ok(GuestLoad::Empty(Box::new(empty_no_items_card("home.card"))));
+        return Ok(GuestLoad::Empty(Box::new(empty_no_items_card(crate::ids::HOME_CARD))));
     }
 
     let stay_id = ctx.guest.as_ref().map(|guest| guest.session_id);

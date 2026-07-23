@@ -1,5 +1,6 @@
 //! Integration-style unit tests with `portaki-test-utils`.
 
+use portaki_sdk::capability;
 use chrono::Utc;
 use serial_test::serial;
 use uuid::Uuid;
@@ -70,7 +71,7 @@ fn home_card_renders_empty_without_content() {
     reset_test_store();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             let surface = render_home_card(ctx);
             assert!(contains_component_type(&surface, "EmptyState"));
@@ -83,7 +84,7 @@ fn home_card_renders_list_items_with_content() {
     reset_test_store();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             save_content(
                 ctx.clone(),
@@ -106,7 +107,7 @@ fn explore_detail_renders_full_list() {
     reset_test_store();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             save_content(
                 ctx.clone(),
@@ -131,7 +132,7 @@ fn get_content_returns_saved_items() {
     reset_test_store();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             save_content(
                 ctx.clone(),

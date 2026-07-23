@@ -3,7 +3,6 @@
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::primitives::{Card, ListItem, Stack, Text};
 use portaki_sdk::sdui::surface::Surface;
-use serde_json::json;
 
 use crate::content::{RuleItem, RulesPayload};
 
@@ -24,20 +23,16 @@ pub fn build_home_card(payload: &RulesPayload) -> Surface {
 
     Surface::new(
         Card::new()
-            .icon(json!("scale"))
-            .title(json!("i18n:home.card.title"))
-            .action(json!({
-                "type": "openOverlay",
-                "presentation": "fullscreen",
-                "surfaceRender": "explore.detail",
-                "args": {
-                    "icon": "scale",
-                    "title": "i18n:home.card.title"
-                }
-            }))
+            .icon("scale")
+            .title("i18n:home.card.title")
+            .action(Action::open_overlay(
+                OverlayPresentation::Fullscreen,
+                crate::ids::EXPLORE_DETAIL,
+                OverlayArgs::new().icon("scale").title("i18n:home.card.title"),
+            ))
             .children(children),
     )
-    .with_id("home.card")
+    .with_id(crate::ids::HOME_CARD)
 }
 
 pub fn rule_list_item(item: &RuleItem) -> Component {
@@ -47,10 +42,10 @@ pub fn rule_list_item(item: &RuleItem) -> Component {
         item.icon.clone()
     };
     let mut list = ListItem::new()
-        .title(json!(item.title.clone()))
-        .leading(json!(icon_name));
+        .title(item.title.clone())
+        .leading(icon_name);
     if !item.subtitle.trim().is_empty() {
-        list = list.subtitle(json!(item.subtitle.clone()));
+        list = list.subtitle(item.subtitle.clone());
     }
     Component::ListItem(list)
 }
@@ -64,9 +59,9 @@ pub fn rules_stack(items: &[RuleItem]) -> Component {
     if children.is_empty() {
         return Component::Text(
             Text::new()
-                .text(json!("i18n:home.card.empty.description"))
-                .variant(json!("body")),
+                .text("i18n:home.card.empty.description")
+                .variant(TextVariant::Body),
         );
     }
-    Component::Stack(Stack::new().gap(json!(0)).children(children))
+    Component::Stack(Stack::new().gap(0.0).children(children))
 }

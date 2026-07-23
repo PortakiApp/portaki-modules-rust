@@ -4,49 +4,48 @@ use portaki_sdk::host::{log, module};
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::primitives::{EmptyState, Text};
 use portaki_sdk::sdui::surface::Surface;
-use serde_json::json;
 
-pub fn empty_runtime_error_state(surface_id: &str) -> Surface {
+pub fn empty_runtime_error_state(surface_id: SurfaceId) -> Surface {
     Surface::new(
         EmptyState::new()
-            .title(json!("i18n:home.card.error.title"))
-            .description(json!("i18n:home.card.error.description"))
-            .icon(json!("clipboard-list"))
+            .title("i18n:home.card.error.title")
+            .description("i18n:home.card.error.description")
+            .icon("clipboard-list")
             .child(
                 Text::new()
-                    .text(json!("i18n:home.card.unavailable"))
-                    .variant(json!("body")),
+                    .text("i18n:home.card.unavailable")
+                    .variant(TextVariant::Body),
             ),
     )
     .with_id(surface_id)
 }
 
-fn empty_config_state(surface_id: &str) -> Surface {
+fn empty_config_state(surface_id: SurfaceId) -> Surface {
     Surface::new(
         EmptyState::new()
-            .title(json!("i18n:module.status.incomplete.title"))
-            .description(json!("i18n:module.status.incomplete.description"))
-            .icon(json!("sliders"))
+            .title("i18n:module.status.incomplete.title")
+            .description("i18n:module.status.incomplete.description")
+            .icon("sliders")
             .child(
                 Text::new()
-                    .text(json!("i18n:module.status.incomplete.hint"))
-                    .variant(json!("body")),
+                    .text("i18n:module.status.incomplete.hint")
+                    .variant(TextVariant::Body),
             ),
     )
     .with_id(surface_id)
 }
 
-fn empty_inactive_state(surface_id: &str) -> Surface {
+fn empty_inactive_state(surface_id: SurfaceId) -> Surface {
     Surface::new(
         EmptyState::new()
-            .title(json!("i18n:module.status.inactive.title"))
-            .description(json!("i18n:module.status.inactive.description"))
-            .icon(json!("clipboard-list")),
+            .title("i18n:module.status.inactive.title")
+            .description("i18n:module.status.inactive.description")
+            .icon("clipboard-list"),
     )
     .with_id(surface_id)
 }
 
-pub fn log_render_failure(surface_id: &str, error: &PortakiError) {
+pub fn log_render_failure(surface_id: SurfaceId, error: &PortakiError) {
     let mut fields = log::Fields::new();
     fields.insert("surfaceId", &surface_id);
     fields.insert("error", &error.to_string());
@@ -54,7 +53,7 @@ pub fn log_render_failure(surface_id: &str, error: &PortakiError) {
 }
 
 /// Returns an EmptyState when the property-module is not ready to serve guest content.
-pub fn empty_state_if_module_not_ready(surface_id: &str) -> Result<Option<Surface>> {
+pub fn empty_state_if_module_not_ready(surface_id: SurfaceId) -> Result<Option<Surface>> {
     let status = module::status()?;
     if !status.workspace_enabled || !status.active {
         return Ok(Some(empty_inactive_state(surface_id)));

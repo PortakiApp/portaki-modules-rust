@@ -13,7 +13,7 @@ pub enum GuestLoad {
 }
 
 pub fn load_guest_pre_arrival(ctx: &GuestContext) -> Result<GuestLoad> {
-    if let Some(surface) = empty_state_if_module_not_ready("home.card")? {
+    if let Some(surface) = empty_state_if_module_not_ready(crate::ids::HOME_CARD)? {
         return Ok(GuestLoad::Empty(Box::new(surface)));
     }
 

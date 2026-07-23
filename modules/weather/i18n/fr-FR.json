@@ -51,5 +51,16 @@
   "explore.forecast.title": "Prévisions",
   "explore.forecast.hint": "Prévisions sur 5 jours",
   "sheet.assistant.tip": "Une question sur ce point ? Demandez à l'assistant ou contactez votre hôte.",
-  "sheet.contactHost": "Contacter l'hôte"
+  "sheet.contactHost": "Contacter l'hôte",
+  "email.place.inCity": "à {name}",
+  "email.place.onSite": "sur place",
+  "email.weather.summary": "Météo {place} aujourd'hui : {emoji} {temp}°C, {condition}.",
+  "email.condition.sunny": "ciel dégagé",
+  "email.condition.cloudy": "ciel nuageux",
+  "email.condition.rainy": "pluie possible",
+  "email.condition.snowy": "neige possible",
+  "email.condition.stormy": "orages possibles",
+  "email.condition.foggy": "brume",
+  "email.condition.variable": "conditions variables",
+  "day.strip": "{weekday} {day}"
 }

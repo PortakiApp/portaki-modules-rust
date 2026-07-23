@@ -3,10 +3,18 @@
 use portaki_sdk::host::events;
 use portaki_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use uuid::Uuid;
 
 use crate::storage;
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CompletedPayload {
+    arrival_time_estimated: Option<String>,
+    guest_occasion: Option<String>,
+    guest_allergies: Option<String>,
+    message_to_host: Option<String>,
+}
 
 /// Arguments for `submit`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,13 +43,13 @@ pub fn submit(ctx: Context, args: SubmitArgs) -> Result<()> {
     )?;
 
     events::emit(
-        "pre-arrival.completed",
-        &json!({
-            "arrivalTimeEstimated": arrival_time,
-            "guestOccasion": occasion,
-            "guestAllergies": allergies,
-            "messageToHost": message,
-        }),
+        crate::ids::COMPLETED,
+        &CompletedPayload {
+            arrival_time_estimated: arrival_time,
+            guest_occasion: occasion,
+            guest_allergies: allergies,
+            message_to_host: message,
+        },
     )?;
     Ok(())
 }

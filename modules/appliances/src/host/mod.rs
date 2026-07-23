@@ -8,13 +8,12 @@ use portaki_sdk::sdui::primitives::{
     Stack, Text, TextInput, Toggle,
 };
 use portaki_sdk::sdui::surface::Surface;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use crate::content::{description_plain_text, Appliance, ApplianceStatus, MAX_APPLIANCES};
 use crate::store;
 
 const SELECT_NEW: &str = "__new__";
-const EMIT_SURFACE_INPUT: &str = "host.surface.input";
 
 /// Host appliances editor — safety accordion (col-12) + list (col-3) / detail (col-9).
 #[portaki_sdk::surface(host, id = "main")]
@@ -30,12 +29,12 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
             safety,
             Component::Stack(
                 Stack::new()
-                    .direction(json!("horizontal"))
-                    .gap(json!(24))
+                    .direction(StackDirection::Horizontal)
+                    .gap(24.0)
                     .children(vec![list_card, detail_panel]),
             ),
         ]))
-    .with_id("main")
+    .with_id(crate::ids::HOST_MAIN)
 }
 
 fn selected_id_from_input(input: &Value) -> String {
@@ -48,13 +47,19 @@ fn selected_id_from_input(input: &Value) -> String {
         .to_string()
 }
 
-fn emit_select(selected_id: &str) -> Value {
-    serde_json::to_value(Action::Emit {
-        event: EMIT_SURFACE_INPUT.into(),
-        payload: Some(json!({ "selectedId": selected_id })),
-    })
-    .unwrap_or(json!({}))
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SurfaceInputSelectedId<'a> {
+    selected_id: &'a str,
 }
+
+fn emit_select(selected_id: &str) -> Action {
+    Action::emit(
+        contracts::shell::SURFACE_INPUT,
+        Some(json_value(SurfaceInputSelectedId { selected_id })),
+    )
+}
+
 
 fn build_list_card(devices: &[Appliance], selected_id: &str) -> Component {
     let mut stack_children: Vec<Component> = Vec::new();
@@ -62,22 +67,22 @@ fn build_list_card(devices: &[Appliance], selected_id: &str) -> Component {
     if devices.is_empty() {
         stack_children.push(Component::Text(
             Text::new()
-                .text(json!("i18n:host.list.empty"))
-                .variant(json!("caption")),
+                .text("i18n:host.list.empty")
+                .variant(TextVariant::Caption),
         ));
     } else {
         let items: Vec<Component> = devices
             .iter()
             .map(|device| {
                 let mut item = ListItem::new()
-                    .title(json!(device.name.clone()))
-                    .chevron(json!(true))
+                    .title(device.name.clone())
+                    .chevron(true)
                     .action(emit_select(&device.id));
                 if !device.emoji.trim().is_empty() {
-                    item = item.leading(json!(device.emoji.clone()));
+                    item = item.leading(device.emoji.clone());
                 }
                 if !device.location.trim().is_empty() {
-                    item = item.subtitle(json!(device.location.clone()));
+                    item = item.subtitle(device.location.clone());
                 }
                 if selected_id == device.id {
                     item = item.tone(Tone::Primary);
@@ -90,7 +95,7 @@ fn build_list_card(devices: &[Appliance], selected_id: &str) -> Component {
 
     if devices.len() < MAX_APPLIANCES {
         let mut add = Button::new()
-            .label(json!("i18n:host.list.add"))
+            .label("i18n:host.list.add")
             .action(emit_select(SELECT_NEW));
         if selected_id == SELECT_NEW {
             add = add.tone(Tone::Primary);
@@ -100,8 +105,8 @@ fn build_list_card(devices: &[Appliance], selected_id: &str) -> Component {
 
     Component::Card(
         Card::new()
-            .title(json!("i18n:host.list.title"))
-            .child(Stack::new().gap(json!(10)).children(stack_children)),
+            .title("i18n:host.list.title")
+            .child(Stack::new().gap(10.0).children(stack_children)),
     )
 }
 
@@ -109,12 +114,12 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
     if selected_id.is_empty() {
         return Component::Card(
             Card::new()
-                .title(json!("i18n:host.detail.card.title"))
+                .title("i18n:host.detail.card.title")
                 .child(
                     EmptyState::new()
-                        .title(json!("i18n:host.detail.empty.title"))
-                        .description(json!("i18n:host.detail.empty.description"))
-                        .icon(json!("plug")),
+                        .title("i18n:host.detail.empty.title")
+                        .description("i18n:host.detail.empty.description")
+                        .icon("plug"),
                 ),
         );
     }
@@ -129,12 +134,12 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
     if !is_new && device.is_none() {
         return Component::Card(
             Card::new()
-                .title(json!("i18n:host.detail.card.title"))
+                .title("i18n:host.detail.card.title")
                 .child(
                     EmptyState::new()
-                        .title(json!("i18n:host.detail.missing.title"))
-                        .description(json!("i18n:host.detail.missing.description"))
-                        .icon(json!("plug")),
+                        .title("i18n:host.detail.missing.title")
+                        .description("i18n:host.detail.missing.description")
+                        .icon("plug"),
                 ),
         );
     }
@@ -155,89 +160,88 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
         })
         .unwrap_or("active");
 
-    let save_action =
-        serde_json::to_value(Action::command("appliances", "saveAppliance", json!({})))
-            .unwrap_or(json!({}));
+    let save_action = Action::command(&crate::ids::module_id(), crate::ids::SAVE_APPLIANCE, EmptyArgs {});
 
     let mut form_children: Vec<Component> = vec![
-        TextInput::new().name(json!("id")).value(json!(id)).into(),
+        TextInput::new().name("id").value(id).into(),
         Field::new()
-            .name(json!("name"))
-            .label(json!("i18n:host.device.name"))
-            .child(TextInput::new().name(json!("name")).value(json!(name)))
+            .name("name")
+            .label("i18n:host.device.name")
+            .child(TextInput::new().name("name").value(name))
             .into(),
         Field::new()
-            .name(json!("emoji"))
-            .label(json!("i18n:host.device.emoji"))
-            .child(TextInput::new().name(json!("emoji")).value(json!(emoji)))
+            .name("emoji")
+            .label("i18n:host.device.emoji")
+            .child(TextInput::new().name("emoji").value(emoji))
             .into(),
         Field::new()
-            .name(json!("location"))
-            .label(json!("i18n:host.device.location"))
+            .name("location")
+            .label("i18n:host.device.location")
             .child(
                 TextInput::new()
-                    .name(json!("location"))
-                    .value(json!(location)),
+                    .name("location")
+                    .value(location),
             )
             .into(),
         Field::new()
-            .name(json!("description"))
-            .label(json!("i18n:host.device.description"))
+            .name("description")
+            .label("i18n:host.device.description")
             .child(
                 RichTextEditor::new()
-                    .name(json!("description"))
-                    .value(json!(description)),
+                    .name("description")
+                    .value(description),
             )
             .into(),
         Field::new()
-            .name(json!("manualUrl"))
-            .label(json!("i18n:host.device.manualUrl"))
+            .name("manualUrl")
+            .label("i18n:host.device.manualUrl")
             .child(
                 TextInput::new()
-                    .name(json!("manualUrl"))
-                    .value(json!(manual_url))
-                    .placeholder(json!("https://…")),
+                    .name("manualUrl")
+                    .value(manual_url)
+                    .placeholder("https://…"),
             )
             .into(),
         Field::new()
-            .name(json!("featured"))
-            .label(json!("i18n:host.device.featured"))
+            .name("featured")
+            .label("i18n:host.device.featured")
             .child(
                 Toggle::new()
-                    .name(json!("featured"))
-                    .checked(json!(featured)),
+                    .name("featured")
+                    .checked(featured),
             )
             .into(),
         Field::new()
-            .name(json!("status"))
-            .label(json!("i18n:host.device.status"))
+            .name("status")
+            .label("i18n:host.device.status")
             .child(
                 Select::new()
-                    .name(json!("status"))
-                    .options(json!([
-                        {"value": "active", "label": "i18n:host.device.status.active"},
-                        {"value": "hidden", "label": "i18n:host.device.status.hidden"}
-                    ]))
-                    .value(json!(status)),
+                    .name("status")
+                    .options(vec![
+                                        ChoiceOption::new("active", "i18n:host.device.status.active"),
+                                        ChoiceOption::new("hidden", "i18n:host.device.status.hidden"),
+                                    ])
+                    .value(status),
             )
             .into(),
         Button::new()
-            .label(json!("i18n:host.save"))
+            .label("i18n:host.save")
             .action(save_action)
             .tone(Tone::Primary)
             .into(),
     ];
 
     if let Some(existing) = device {
-        let delete_action = serde_json::to_value(Action::command(
-            "appliances",
-            "deleteAppliance",
-            json!({ "id": existing.id }),
-        ))
-        .unwrap_or(json!({}));
+        let delete_action = Action::command(
+            &crate::ids::module_id(),
+            crate::ids::DELETE_APPLIANCE,
+            crate::commands::DeleteApplianceArgs {
+                id: existing.id.clone(),
+            },
+        );
         form_children.push(
             Button::new()
-                .label(json!("i18n:host.device.delete"))
+                .label("i18n:host.device.delete")
                 .action(delete_action)
                 .tone(Tone::Danger)
                 .into(),
@@ -246,19 +250,17 @@ fn build_detail_panel(devices: &[Appliance], selected_id: &str) -> Component {
 
     Component::Card(
         Card::new()
-            .title(json!(if is_new {
+            .title(if is_new {
                 "i18n:host.detail.new.title"
             } else {
                 "i18n:host.detail.edit.title"
-            }))
+            })
             .child(Form::new().children(form_children)),
     )
 }
 
 fn build_safety_accordion(safety_notice: &str) -> Component {
-    let save_action =
-        serde_json::to_value(Action::command("appliances", "saveSafetyNotice", json!({})))
-            .unwrap_or(json!({}));
+    let save_action = Action::command(&crate::ids::module_id(), crate::ids::SAVE_SAFETY_NOTICE, EmptyArgs {});
     let has_value = !description_plain_text(safety_notice).trim().is_empty();
     // Shell Accordion: `:collapsed` → closed by default; otherwise open.
     let accordion_id = if has_value {
@@ -270,22 +272,22 @@ fn build_safety_accordion(safety_notice: &str) -> Component {
     Component::Accordion(
         Accordion::new().id(accordion_id).child(
             Card::new()
-                .title(json!("i18n:host.safety"))
+                .title("i18n:host.safety")
                 .child(Form::new().children(vec![
                     Text::new()
-                        .text(json!("i18n:host.safety.hint"))
-                        .variant(json!("caption"))
+                        .text("i18n:host.safety.hint")
+                        .variant(TextVariant::Caption)
                         .into(),
                     Field::new()
-                        .name(json!("safetyNotice"))
+                        .name("safetyNotice")
                         .child(
                             RichTextEditor::new()
-                                .name(json!("safetyNotice"))
-                                .value(json!(editor_value(safety_notice))),
+                                .name("safetyNotice")
+                                .value(editor_value(safety_notice)),
                         )
                         .into(),
                     Button::new()
-                        .label(json!("i18n:host.safety.save"))
+                        .label("i18n:host.safety.save")
                         .action(save_action)
                         .tone(Tone::Primary)
                         .into(),

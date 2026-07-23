@@ -1,5 +1,6 @@
 //! Integration-style unit tests with `portaki-test-utils`.
 
+use portaki_sdk::capability;
 use serial_test::serial;
 
 use emergency_contacts::{
@@ -58,7 +59,7 @@ fn child_components(node: &Component) -> Vec<&Component> {
 #[serial]
 fn home_card_renders_empty_without_config() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             let surface = render_home_card(ctx);
             assert!(contains_component_type(&surface, "EmptyState"));
@@ -69,7 +70,7 @@ fn home_card_renders_empty_without_config() {
 #[serial]
 fn home_card_renders_contacts() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", sample_config_bytes())
         .run(|ctx| {
             let surface = render_home_card(ctx);
@@ -84,7 +85,7 @@ fn home_card_renders_contacts() {
 #[serial]
 fn detail_includes_emergency_banner() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", sample_config_bytes())
         .run(|ctx| {
             let surface = render_explore_detail(ctx);
@@ -97,7 +98,7 @@ fn detail_includes_emergency_banner() {
 #[serial]
 fn update_config_roundtrip() {
     MockContext::host()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             update_config(
                 ctx.clone(),

@@ -3,16 +3,12 @@
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{InfoBanner, Link, ListItem, Pressable, Text};
-use serde_json::json;
 
 use super::load::GuestData;
 
-fn tel_action(phone: &str) -> serde_json::Value {
+fn tel_action(phone: &str) -> Action {
     let tel = phone.replace(|c: char| c.is_whitespace(), "");
-    serde_json::to_value(Action::External {
-        url: format!("tel:{tel}"),
-    })
-    .unwrap_or(json!({}))
+    Action::external(format!("tel:{tel}"))
 }
 
 pub fn build_contacts_body(data: &GuestData, show_emergency_banner: bool) -> Vec<Component> {
@@ -21,8 +17,8 @@ pub fn build_contacts_body(data: &GuestData, show_emergency_banner: bool) -> Vec
     if show_emergency_banner {
         children.push(Component::InfoBanner(
             InfoBanner::new()
-                .title(json!("i18n:guest.emergency.title"))
-                .message(json!("i18n:guest.emergency.message")),
+                .title("i18n:guest.emergency.title")
+                .message("i18n:guest.emergency.message"),
         ));
     }
 
@@ -31,9 +27,9 @@ pub fn build_contacts_body(data: &GuestData, show_emergency_banner: bool) -> Vec
         children.push(Component::Pressable(
             Pressable::new().action(action.clone()).child(
                 ListItem::new()
-                    .title(json!("i18n:guest.host.label"))
-                    .subtitle(json!(data.host_phone.clone()))
-                    .trailing(json!("i18n:guest.call")),
+                    .title("i18n:guest.host.label")
+                    .subtitle(data.host_phone.clone())
+                    .trailing("i18n:guest.call"),
             ),
         ));
     }
@@ -43,16 +39,16 @@ pub fn build_contacts_body(data: &GuestData, show_emergency_banner: bool) -> Vec
             .label
             .pick_with_fallback(&data.locale, &data.property_locale);
         let mut item = ListItem::new()
-            .title(json!(label))
-            .subtitle(json!(contact.phone.clone()))
-            .trailing(json!("i18n:guest.call"));
+            .title(label)
+            .subtitle(contact.phone.clone())
+            .trailing("i18n:guest.call");
         if let Some(cat) = contact.category.as_deref().filter(|c| !c.trim().is_empty()) {
-            item = item.leading(json!(cat));
+            item = item.leading(cat);
         }
         if let Some(note) = contact.note.as_ref() {
             let note_text = note.pick_with_fallback(&data.locale, &data.property_locale);
             if !note_text.trim().is_empty() {
-                item = item.child(Text::new().text(json!(note_text)).variant(json!("caption")));
+                item = item.child(Text::new().text(note_text).variant(TextVariant::Caption));
             }
         }
         children.push(Component::Pressable(
@@ -65,8 +61,8 @@ pub fn build_contacts_body(data: &GuestData, show_emergency_banner: bool) -> Vec
     if show_emergency_banner {
         children.push(Component::Link(
             Link::new()
-                .label(json!("i18n:guest.dial112"))
-                .href(json!("tel:112"))
+                .label("i18n:guest.dial112")
+                .href("tel:112")
                 .action(tel_action("112")),
         ));
     }

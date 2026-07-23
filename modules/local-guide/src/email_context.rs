@@ -10,7 +10,7 @@ use crate::config::load_config;
 #[serde(rename_all = "camelCase")]
 pub struct EmailContextArgs {
     #[serde(default)]
-    pub template_key: Option<String>,
+    pub template_key: Option<EmailTemplateKey>,
     #[serde(default)]
     pub locale: Option<String>,
 }
@@ -30,9 +30,9 @@ pub fn email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContex
 }
 
 pub fn build_email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContextResponse> {
-    let template = args.template_key.as_deref().unwrap_or("").trim();
-    if !matches!(template, "arrival-day" | "post-arrival" | "") {
-        return Ok(EmailContextResponse { local_tip: None });
+    match args.template_key {
+        None | Some(EmailTemplateKey::ArrivalDay) | Some(EmailTemplateKey::PostArrival) => {}
+        Some(_) => return Ok(EmailContextResponse { local_tip: None }),
     }
 
     let locale = args
@@ -84,7 +84,7 @@ mod tests {
     #[serial_test::serial]
     fn when_arrival_day_then_returns_first_spot() {
         let (ctx, host) = MockContext::guest()
-            .with_capabilities(&["core.storage"])
+            .with_capabilities(&[capability::core::STORAGE])
             .with_kv(
                 "config",
                 serde_json::to_vec(&json!({
@@ -103,7 +103,7 @@ mod tests {
             let out = build_email_context(
                 ctx,
                 EmailContextArgs {
-                    template_key: Some("arrival-day".into()),
+                    template_key: Some(EmailTemplateKey::ArrivalDay),
                     locale: Some("fr".into()),
                 },
             )

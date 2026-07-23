@@ -1,5 +1,6 @@
 //! Integration-style unit tests with `portaki-test-utils`.
 
+use portaki_sdk::capability;
 use chrono::{TimeZone, Utc};
 use serial_test::serial;
 
@@ -124,7 +125,7 @@ fn child_components(node: &Component) -> Vec<&Component> {
 #[serial]
 fn home_card_empty_without_config() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             assert!(contains_component_type(
                 &render_home_card(ctx),
@@ -139,7 +140,7 @@ fn home_card_masks_secrets_without_stay() {
     // Legacy config defaults to day_before_16h; no checkin → fail-safe lock.
     // load_config migrates embeds into texts/fr.
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", sample_config_bytes())
         .run(|ctx| {
             let surface = render_home_card(ctx);
@@ -172,7 +173,7 @@ fn home_card_masks_secrets_without_stay() {
 #[serial]
 fn home_card_emits_keybox_location_i18n_when_configured() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", always_reveal_config_bytes())
         .with_kv("texts/fr", always_reveal_texts_fr_bytes())
         .run(|ctx| {
@@ -189,7 +190,7 @@ fn home_card_emits_keybox_location_i18n_when_configured() {
 #[serial]
 fn home_card_reveals_secrets_when_policy_always() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", always_reveal_config_bytes())
         .with_kv("texts/fr", always_reveal_texts_fr_bytes())
         .run(|ctx| {
@@ -205,7 +206,7 @@ fn home_card_reveals_secrets_when_policy_always() {
 #[serial]
 fn detail_has_steps_and_video() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", always_reveal_config_bytes())
         .with_kv("texts/fr", always_reveal_texts_fr_bytes())
         .run(|ctx| {
@@ -222,7 +223,7 @@ fn detail_has_steps_and_video() {
 #[serial]
 fn smart_lock_provider_emits_unlock_commands_when_revealed() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", smart_lock_config_bytes(Some("nuki")))
         .with_kv("texts/fr", smart_lock_texts_fr_bytes())
         .run(|ctx| {
@@ -242,7 +243,7 @@ fn smart_lock_provider_emits_unlock_commands_when_revealed() {
 #[serial]
 fn smart_lock_without_provider_shows_manual_fallback_only() {
     MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", smart_lock_config_bytes(None))
         .with_kv("texts/fr", smart_lock_texts_fr_bytes())
         .run(|ctx| {
@@ -270,7 +271,7 @@ fn smart_lock_provider_hides_cta_when_not_revealed() {
     .expect("json");
 
     let (mut ctx, host) = MockContext::guest()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", cfg)
         .build();
     ctx.timezone = "Europe/Paris".into();
@@ -313,7 +314,7 @@ fn update_config_args_choice_list_reveal_policy_wires() {
 #[serial]
 fn update_config_legacy_args_migrate_to_new_shape() {
     MockContext::host()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             update_config(
                 ctx.clone(),
@@ -339,7 +340,7 @@ fn update_config_legacy_args_migrate_to_new_shape() {
 #[serial]
 fn load_legacy_kv_migrates_keybox_primary_and_seeds_texts_fr() {
     MockContext::host()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .with_kv("config", sample_config_bytes())
         .run(|ctx| {
             let response = get_config(ctx.clone()).expect("cfg");
@@ -375,7 +376,7 @@ fn load_legacy_kv_migrates_keybox_primary_and_seeds_texts_fr() {
 #[serial]
 fn update_config_saves_texts_for_active_locale() {
     let (mut ctx, host) = MockContext::host()
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .build();
     ctx.locale = "en-US".into();
 

@@ -2,7 +2,6 @@
 
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::primitives::{ColorDotItem, InfoBanner, ListItem, Text};
-use serde_json::json;
 
 use super::load::GuestData;
 
@@ -25,13 +24,13 @@ pub fn build_bins_body(data: &GuestData, enriched: bool) -> Vec<Component> {
         if let Some(color) = bin.color.as_deref().filter(|c| !c.trim().is_empty()) {
             children.push(Component::ColorDotItem(
                 ColorDotItem::new()
-                    .label(json!(format!("{title} — {subtitle}")))
-                    .color(json!(color)),
+                    .label(format!("{title} — {subtitle}"))
+                    .color(color),
             ));
         } else {
-            let mut item = ListItem::new().title(json!(title));
+            let mut item = ListItem::new().title(title);
             if !subtitle.is_empty() {
-                item = item.subtitle(json!(subtitle));
+                item = item.subtitle(subtitle);
             }
             if enriched {
                 for line in &bin.items {
@@ -39,7 +38,7 @@ pub fn build_bins_body(data: &GuestData, enriched: bool) -> Vec<Component> {
                     if text.trim().is_empty() {
                         continue;
                     }
-                    item = item.child(Text::new().text(json!(text)).variant(json!("caption")));
+                    item = item.child(Text::new().text(text).variant(TextVariant::Caption));
                 }
             }
             children.push(Component::ListItem(item));
@@ -49,8 +48,8 @@ pub fn build_bins_body(data: &GuestData, enriched: bool) -> Vec<Component> {
     if !data.collection_schedule.is_empty() {
         children.push(Component::InfoBanner(
             InfoBanner::new()
-                .title(json!("i18n:guest.collection.title"))
-                .message(json!(data.collection_schedule.clone())),
+                .title("i18n:guest.collection.title")
+                .message(data.collection_schedule.clone()),
         ));
     }
 

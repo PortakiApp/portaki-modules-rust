@@ -1,5 +1,6 @@
 //! Integration-style unit tests with `portaki-test-utils`.
 
+use portaki_sdk::capability;
 use serial_test::serial;
 use uuid::Uuid;
 
@@ -106,7 +107,7 @@ fn home_card_empty_without_content() {
     reset_test_store();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             let surface = render_home_card(ctx);
             assert!(contains_component_type(&surface, "EmptyState"));
@@ -119,7 +120,7 @@ fn home_card_and_sheet_with_sections() {
     reset_test_store();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             seed_two_sections(ctx.clone());
             let card = render_home_card(ctx.clone());
@@ -138,7 +139,7 @@ fn list_reorder_delete() {
     reset_test_store();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             let (a, b) = seed_two_sections(ctx.clone());
             let listed = list_sections(

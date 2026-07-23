@@ -13,7 +13,7 @@ const MAX_TIPS: usize = 3;
 #[serde(rename_all = "camelCase")]
 pub struct EmailContextArgs {
     #[serde(default)]
-    pub template_key: Option<String>,
+    pub template_key: Option<EmailTemplateKey>,
     #[serde(default)]
     pub locale: Option<String>,
 }
@@ -33,11 +33,13 @@ pub fn email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContex
 }
 
 pub fn build_email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContextResponse> {
-    let template = args.template_key.as_deref().unwrap_or("").trim();
-    if !matches!(template, "lost-found" | "post-arrival" | "") {
-        return Ok(EmailContextResponse {
-            checkout_tips: None,
-        });
+    match args.template_key {
+        None | Some(EmailTemplateKey::LostFound) | Some(EmailTemplateKey::PostArrival) => {}
+        Some(_) => {
+            return Ok(EmailContextResponse {
+                checkout_tips: None,
+            });
+        }
     }
 
     let locale = args
@@ -101,12 +103,12 @@ mod tests {
         );
 
         let (ctx, _host) = MockContext::guest()
-            .with_capabilities(&["core.storage"])
+            .with_capabilities(&[capability::core::STORAGE])
             .build();
         let out = build_email_context(
             ctx,
             EmailContextArgs {
-                template_key: Some("lost-found".into()),
+                template_key: Some(EmailTemplateKey::LostFound),
                 locale: Some("fr".into()),
             },
         )

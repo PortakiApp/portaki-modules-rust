@@ -2,7 +2,6 @@
 
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::primitives::{InfoBanner, KeyValue, ListItem, Text};
-use serde_json::json;
 
 use super::load::GuestData;
 
@@ -12,8 +11,8 @@ pub fn build_hours_body(data: &GuestData, enriched: bool) -> Vec<Component> {
     if !data.general_note.is_empty() {
         children.push(Component::InfoBanner(
             InfoBanner::new()
-                .title(json!("i18n:guest.note.title"))
-                .message(json!(data.general_note.clone())),
+                .title("i18n:guest.note.title")
+                .message(data.general_note.clone()),
         ));
     }
 
@@ -44,27 +43,27 @@ pub fn build_hours_body(data: &GuestData, enriched: bool) -> Vec<Component> {
             .unwrap_or_default();
 
         if enriched {
-            let mut item = ListItem::new().title(json!(title));
+            let mut item = ListItem::new().title(title);
             if !hours.is_empty() {
-                item = item.subtitle(json!(hours.clone()));
+                item = item.subtitle(hours.clone());
             }
             for line in &facility.lines {
                 let text = line.pick_with_fallback(&data.locale, &data.property_locale);
                 if text.trim().is_empty() {
                     continue;
                 }
-                item = item.child(Text::new().text(json!(text)).variant(json!("caption")));
+                item = item.child(Text::new().text(text).variant(TextVariant::Caption));
             }
             if let Some(note) = facility.note.as_ref() {
                 let note_text = note.pick_with_fallback(&data.locale, &data.property_locale);
                 if !note_text.trim().is_empty() {
-                    item = item.child(Text::new().text(json!(note_text)).variant(json!("caption")));
+                    item = item.child(Text::new().text(note_text).variant(TextVariant::Caption));
                 }
             }
             children.push(Component::ListItem(item));
         } else {
             children.push(Component::KeyValue(
-                KeyValue::new().key(json!(title)).value(json!(hours)),
+                KeyValue::new().key(title).value(hours),
             ));
         }
     }

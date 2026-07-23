@@ -5,13 +5,14 @@ mod config;
 mod guest;
 mod localized;
 mod queries;
-mod render_host;
+mod host;
+mod ids;
 
 pub use commands::{submit_review, update_config, SubmitReviewArgs, UpdateConfigArgs};
 pub use config::{load_config, ModuleConfig, ReviewChannel};
 pub use guest::render_home_card;
 pub use queries::get_config;
-pub use render_host::render_host_main;
+pub use host::render_host_main;
 
 portaki_sdk::portaki_module!(
     id = "guest-reviews",

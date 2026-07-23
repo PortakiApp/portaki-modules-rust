@@ -4,14 +4,15 @@ mod commands;
 mod entities;
 mod guest;
 mod queries;
-mod render_host;
+mod host;
 mod storage;
+mod ids;
 
 pub use commands::{submit, SubmitArgs};
 pub use entities::PreArrivalResponse;
 pub use guest::render_home_card;
 pub use queries::{get_status, PreArrivalStatus};
-pub use render_host::render_host_main;
+pub use host::render_host_main;
 pub use storage::reset_test_store;
 
 portaki_sdk::portaki_module!(

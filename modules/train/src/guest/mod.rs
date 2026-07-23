@@ -19,8 +19,8 @@ pub fn render_home_card(ctx: GuestContext) -> Surface {
     match render_home(&ctx) {
         Ok(surface) => surface,
         Err(error) => {
-            log_render_failure("home.card", &error);
-            empty_runtime_error_state("home.card")
+            log_render_failure(crate::ids::HOME_CARD, &error);
+            empty_runtime_error_state(crate::ids::HOME_CARD)
         }
     }
 }
@@ -34,21 +34,21 @@ pub fn render_explore_detail(ctx: GuestContext) -> Surface {
     match render_detail(&ctx, selected) {
         Ok(surface) => surface,
         Err(error) => {
-            log_render_failure("explore.detail", &error);
-            empty_runtime_error_state("explore.detail")
+            log_render_failure(crate::ids::EXPLORE_DETAIL, &error);
+            empty_runtime_error_state(crate::ids::EXPLORE_DETAIL)
         }
     }
 }
 
 fn render_home(ctx: &GuestContext) -> Result<Surface> {
-    if let Some(surface) = empty_state_if_module_not_ready("home.card")? {
+    if let Some(surface) = empty_state_if_module_not_ready(crate::ids::HOME_CARD)? {
         return Ok(surface);
     }
     Ok(build_home_card(ctx))
 }
 
 fn render_detail(ctx: &GuestContext, selected: &str) -> Result<Surface> {
-    if let Some(surface) = empty_state_if_module_not_ready("explore.detail")? {
+    if let Some(surface) = empty_state_if_module_not_ready(crate::ids::EXPLORE_DETAIL)? {
         return Ok(surface);
     }
     Ok(build_detail_page(ctx, selected))

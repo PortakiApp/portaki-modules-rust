@@ -12,7 +12,7 @@ const MAX_RULES: usize = 3;
 #[serde(rename_all = "camelCase")]
 pub struct EmailContextArgs {
     #[serde(default)]
-    pub template_key: Option<String>,
+    pub template_key: Option<EmailTemplateKey>,
     #[serde(default)]
     pub locale: Option<String>,
 }
@@ -32,11 +32,16 @@ pub fn email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContex
 }
 
 pub fn build_email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContextResponse> {
-    let template = args.template_key.as_deref().unwrap_or("").trim();
-    if !matches!(template, "stay-link" | "arrival" | "post-arrival" | "") {
-        return Ok(EmailContextResponse {
-            house_rules_teaser: None,
-        });
+    match args.template_key {
+        None
+        | Some(EmailTemplateKey::StayLink)
+        | Some(EmailTemplateKey::Arrival)
+        | Some(EmailTemplateKey::PostArrival) => {}
+        Some(_) => {
+            return Ok(EmailContextResponse {
+                house_rules_teaser: None,
+            });
+        }
     }
 
     let locale = args
@@ -110,14 +115,14 @@ mod tests {
         };
 
         let (ctx, host) = MockContext::guest()
-            .with_capabilities(&["core.storage"])
+            .with_capabilities(&[capability::core::STORAGE])
             .build();
         with_host(host, ctx.clone(), || {
             save_content_row(payload.to_json_string().unwrap(), String::new()).unwrap();
             let out = build_email_context(
                 ctx.clone(),
                 EmailContextArgs {
-                    template_key: Some("arrival".into()),
+                    template_key: Some(EmailTemplateKey::Arrival),
                     locale: Some("fr".into()),
                 },
             )
@@ -133,12 +138,12 @@ mod tests {
     fn when_wrong_template_then_empty() {
         reset_test_store();
         let (ctx, _host) = MockContext::guest()
-            .with_capabilities(&["core.storage"])
+            .with_capabilities(&[capability::core::STORAGE])
             .build();
         let out = build_email_context(
             ctx,
             EmailContextArgs {
-                template_key: Some("arrival-day".into()),
+                template_key: Some(EmailTemplateKey::ArrivalDay),
                 locale: None,
             },
         )

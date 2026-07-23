@@ -3,7 +3,6 @@
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{InfoBanner, Link, ListItem, Pill, Pressable, Text};
-use serde_json::json;
 
 use super::load::GuestData;
 
@@ -13,8 +12,8 @@ pub fn build_spots_body(data: &GuestData, enriched: bool) -> Vec<Component> {
     if !data.disclaimer.is_empty() {
         children.push(Component::InfoBanner(
             InfoBanner::new()
-                .title(json!("i18n:guest.disclaimer.title"))
-                .message(json!(data.disclaimer.clone())),
+                .title("i18n:guest.disclaimer.title")
+                .message(data.disclaimer.clone()),
         ));
     }
 
@@ -31,44 +30,42 @@ pub fn build_spots_body(data: &GuestData, enriched: bool) -> Vec<Component> {
         }
         let subtitle = subtitle_parts.join(" · ");
 
-        let mut item = ListItem::new().title(json!(title));
+        let mut item = ListItem::new().title(title);
         if !subtitle.is_empty() {
-            item = item.subtitle(json!(subtitle));
+            item = item.subtitle(subtitle);
         }
         if let Some(tag) = spot.tag.as_deref().filter(|t| !t.trim().is_empty()) {
-            item = item.child(Pill::new().label(json!(tag)));
+            item = item.child(Pill::new().label(tag));
         }
         if enriched {
             if let Some(note) = spot.note.as_ref() {
                 let text = note.pick_with_fallback(&data.locale, &data.property_locale);
                 if !text.trim().is_empty() {
-                    item = item.child(Text::new().text(json!(text)).variant(json!("caption")));
+                    item = item.child(Text::new().text(text).variant(TextVariant::Caption));
                 }
             }
             if let Some(detail) = spot.detail.as_ref() {
                 let text = detail.pick_with_fallback(&data.locale, &data.property_locale);
                 if !text.trim().is_empty() {
-                    item = item.child(Text::new().text(json!(text)).variant(json!("body")));
+                    item = item.child(Text::new().text(text).variant(TextVariant::Body));
                 }
             }
             if let Some(url) = spot.url.as_deref().map(str::trim).filter(|u| !u.is_empty()) {
-                let action = serde_json::to_value(Action::External {
+                let action = Action::External {
                     url: url.to_string(),
-                })
-                .unwrap_or(json!({}));
+                };
                 item = item.child(
                     Link::new()
-                        .label(json!("i18n:guest.openLink"))
-                        .href(json!(url))
+                        .label("i18n:guest.openLink")
+                        .href(url)
                         .action(action),
                 );
             }
             children.push(Component::ListItem(item));
         } else if let Some(url) = spot.url.as_deref().map(str::trim).filter(|u| !u.is_empty()) {
-            let action = serde_json::to_value(Action::External {
+            let action = Action::External {
                 url: url.to_string(),
-            })
-            .unwrap_or(json!({}));
+            };
             children.push(Component::Pressable(
                 Pressable::new().action(action).child(item),
             ));

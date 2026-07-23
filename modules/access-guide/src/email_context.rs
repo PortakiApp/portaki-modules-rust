@@ -17,11 +17,11 @@ use crate::reveal::{evaluate_reveal, format_available_from, locked_message, Reve
 pub struct EmailContextArgs {
     /// Portaki template key (`arrival`, `arrival-day`, `new-code`, …).
     #[serde(default)]
-    pub template_key: Option<String>,
+    pub template_key: Option<EmailTemplateKey>,
     /// Formatted check-in clock time for callout copy (`16:00`).
     #[serde(default)]
     pub checkin_time_formatted: Option<String>,
-    /// Optional locale override (BCP-47). Falls back to `ctx.locale`.
+    /// Optional locale override (BCP-47). Kept for wire compat; copy uses host i18n.
     #[serde(default)]
     pub locale: Option<String>,
 }
@@ -62,23 +62,19 @@ pub fn email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContex
 /// Build reveal-aware email snippets from config + stay context.
 pub fn build_email_context(ctx: &Context, args: &EmailContextArgs) -> Result<EmailContextResponse> {
     let config = load_config().unwrap_or_else(|_| ModuleConfig::default());
-    let locale = args
-        .locale
-        .as_deref()
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .unwrap_or(ctx.locale.as_str());
     let property_timezone = property_timezone(ctx);
     let checkin_at = ctx.stay.as_ref().and_then(|s| s.checkin_at);
     let now = time::now().unwrap_or_else(|_| Utc::now());
     let decision = evaluate_reveal(config.reveal_policy, now, checkin_at, &property_timezone);
 
-    let template = args.template_key.as_deref().unwrap_or("").trim();
     // arrival / new-code: method callout + code when revealed.
     // arrival-day: code only (weather is a separate module).
-    // stay-link: stay page token only — no access-guide contribution.
-    let wants_callout = matches!(template, "arrival" | "new-code" | "");
-    let wants_code = wants_callout || template == "arrival-day";
+    // stay-link / other: no access-guide contribution.
+    let (wants_callout, wants_code) = match args.template_key {
+        None | Some(EmailTemplateKey::Arrival) | Some(EmailTemplateKey::NewCode) => (true, true),
+        Some(EmailTemplateKey::ArrivalDay) => (false, true),
+        Some(_) => (false, false),
+    };
 
     if !wants_callout && !wants_code {
         return Ok(EmailContextResponse::empty(
@@ -87,7 +83,7 @@ pub fn build_email_context(ctx: &Context, args: &EmailContextArgs) -> Result<Ema
         ));
     }
 
-    let time_label = checkin_time_label(args.checkin_time_formatted.as_deref(), locale);
+    let time_label = checkin_time_label(args.checkin_time_formatted.as_deref())?;
     let plaintext_code = if decision.revealed {
         extract_entry_code(&config)
     } else {
@@ -95,7 +91,7 @@ pub fn build_email_context(ctx: &Context, args: &EmailContextArgs) -> Result<Ema
     };
     let has_configured_code = extract_entry_code(&config).is_some();
     let label = if wants_code && (decision.revealed || has_configured_code) {
-        Some(access_code_label(&config, locale))
+        Some(access_code_label(&config)?)
     } else {
         None
     };
@@ -103,12 +99,11 @@ pub fn build_email_context(ctx: &Context, args: &EmailContextArgs) -> Result<Ema
     let callout = if wants_callout {
         Some(arrival_callout(
             &config,
-            locale,
             &time_label,
             plaintext_code.is_some(),
             &decision,
             &property_timezone,
-        ))
+        )?)
     } else {
         None
     };
@@ -134,16 +129,12 @@ fn property_timezone(ctx: &Context) -> String {
     "Europe/Paris".to_string()
 }
 
-fn checkin_time_label(formatted: Option<&str>, locale: &str) -> String {
+fn checkin_time_label(formatted: Option<&str>) -> Result<String> {
     let trimmed = formatted.map(str::trim).unwrap_or("");
     if !trimmed.is_empty() {
-        return trimmed.to_string();
+        return Ok(trimmed.to_string());
     }
-    if locale_is_en(locale) {
-        "check-in time".into()
-    } else {
-        "l'heure d'arrivée".into()
-    }
+    t!("email.checkinTime.fallback")
 }
 
 fn extract_entry_code(config: &ModuleConfig) -> Option<String> {
@@ -167,184 +158,89 @@ fn extract_entry_code(config: &ModuleConfig) -> Option<String> {
     }
 }
 
-fn access_code_label(config: &ModuleConfig, locale: &str) -> String {
-    let en = locale_is_en(locale);
+fn access_code_label(config: &ModuleConfig) -> Result<String> {
     match &config.method {
-        MethodFields::Keybox { .. } => {
-            if en {
-                "Keybox code".into()
-            } else {
-                "Code boîte à clés".into()
-            }
-        }
-        MethodFields::DoorCode { target, .. } => door_code_label(*target, en),
-        MethodFields::SmartLock { .. } => {
-            if en {
-                "Access code".into()
-            } else {
-                "Code d'accès".into()
-            }
-        }
-        _ => {
-            if en {
-                "Access code".into()
-            } else {
-                "Code d'accès".into()
-            }
-        }
+        MethodFields::Keybox { .. } => t!("email.label.keybox"),
+        MethodFields::DoorCode { target, .. } => door_code_label(*target),
+        _ => t!("email.label.access"),
     }
 }
 
-fn door_code_label(target: DoorCodeTarget, en: bool) -> String {
-    match (en, target) {
-        (true, DoorCodeTarget::Gate) => "Gate code".into(),
-        (false, DoorCodeTarget::Gate) => "Code portail".into(),
-        (true, DoorCodeTarget::Building) => "Building code".into(),
-        (false, DoorCodeTarget::Building) => "Code immeuble".into(),
-        (true, DoorCodeTarget::Apartment) => "Apartment code".into(),
-        (false, DoorCodeTarget::Apartment) => "Code appartement".into(),
+fn door_code_label(target: DoorCodeTarget) -> Result<String> {
+    match target {
+        DoorCodeTarget::Gate => t!("email.label.gate"),
+        DoorCodeTarget::Building => t!("email.label.building"),
+        DoorCodeTarget::Apartment => t!("email.label.apartment"),
     }
 }
 
 fn arrival_callout(
     config: &ModuleConfig,
-    locale: &str,
     time: &str,
     has_revealed_code: bool,
     decision: &RevealDecision,
     property_timezone: &str,
-) -> String {
-    let en = locale_is_en(locale);
+) -> Result<String> {
     let method = config.method.primary_method();
 
     // Timed lock: keep method framing, never promise "the code below".
     if !decision.revealed && extract_entry_code(config).is_some() {
         let when = decision
             .available_from
-            .map(|at| format_available_from(at, property_timezone, locale));
-        let locked = locked_message(locale, when.as_deref());
+            .map(|at| format_available_from(at, property_timezone));
+        let locked = locked_message(when.as_deref());
         return match method {
             PrimaryMethod::Keybox | PrimaryMethod::DoorCode | PrimaryMethod::SmartLock => {
-                if en {
-                    format!(
-                        "Self check-in from {time}. {locked} Full access details are on your stay page."
-                    )
-                } else {
-                    format!(
-                        "Arrivée autonome dès {time}. {locked} Les détails d'accès sont sur votre page de séjour."
-                    )
-                }
+                t!("email.callout.locked.selfCheckin", time = time, locked = locked)
             }
-            _ => method_callout(config, en, time, false),
+            _ => method_callout(config, time, false),
         };
     }
 
-    method_callout(config, en, time, has_revealed_code)
+    method_callout(config, time, has_revealed_code)
 }
 
-fn method_callout(config: &ModuleConfig, en: bool, time: &str, has_code: bool) -> String {
+fn method_callout(config: &ModuleConfig, time: &str, has_code: bool) -> Result<String> {
     match &config.method {
         MethodFields::Keybox { .. } => {
             if has_code {
-                if en {
-                    format!(
-                        "Self check-in: the code below opens the keybox from {time}. No need to wait for the host."
-                    )
-                } else {
-                    format!(
-                        "Arrivée autonome : le code ci-dessous ouvre la boîte à clés dès {time}. Pas besoin d'attendre l'hôte."
-                    )
-                }
-            } else if en {
-                format!("Self check-in from {time}. Access instructions are on your stay page.")
+                t!("email.callout.keybox.withCode", time = time)
             } else {
-                format!(
-                    "Arrivée autonome dès {time}. Les instructions d'accès sont sur votre page de séjour."
-                )
+                t!("email.callout.keybox.withoutCode", time = time)
             }
         }
         MethodFields::DoorCode { .. } => {
             if has_code {
-                if en {
-                    format!(
-                        "Self check-in: use the code below from {time}. No need to wait for the host."
-                    )
-                } else {
-                    format!(
-                        "Arrivée autonome : utilisez le code ci-dessous dès {time}. Pas besoin d'attendre l'hôte."
-                    )
-                }
-            } else if en {
-                format!("Self check-in from {time}. Access details are on your stay page.")
+                t!("email.callout.doorCode.withCode", time = time)
             } else {
-                format!(
-                    "Arrivée autonome dès {time}. Retrouvez les détails d'accès sur votre page de séjour."
-                )
+                t!("email.callout.doorCode.withoutCode", time = time)
             }
         }
         MethodFields::SmartLock { .. } => {
             if has_code {
-                if en {
-                    format!("Self check-in: the code below unlocks the door from {time}.")
-                } else {
-                    format!(
-                        "Arrivée autonome : le code ci-dessous déverrouille la serrure dès {time}."
-                    )
-                }
-            } else if en {
-                format!("Self check-in via smart lock from {time}. Open your stay page to unlock.")
+                t!("email.callout.smartLock.withCode", time = time)
             } else {
-                format!(
-                    "Arrivée autonome via serrure connectée dès {time}. Ouvrez votre page de séjour pour déverrouiller."
-                )
+                t!("email.callout.smartLock.withoutCode", time = time)
             }
         }
         MethodFields::InPerson { meeting_place, .. } => {
             let place = meeting_place.trim();
             if place.is_empty() {
-                if en {
-                    format!("In-person handover on arrival (from {time}).")
-                } else {
-                    format!("Accueil en personne à votre arrivée (dès {time}).")
-                }
-            } else if en {
-                format!("Meet at « {place} » from {time} to collect the keys.")
+                t!("email.callout.inPerson.noPlace", time = time)
             } else {
-                format!("Rendez-vous à « {place} » dès {time} pour récupérer les clés.")
+                t!("email.callout.inPerson.withPlace", place = place, time = time)
             }
         }
-        MethodFields::BuildingStaff { .. } => {
-            if en {
-                format!("Check in at the building desk from {time} to get the keys.")
-            } else {
-                format!("Présentez-vous à l'accueil du bâtiment dès {time} pour obtenir les clés.")
-            }
-        }
-        MethodFields::HostGreets { .. } => {
-            if en {
-                format!("Your host greets you on arrival (from {time}).")
-            } else {
-                format!("Votre hôte vous accueille à l'arrivée (dès {time}).")
-            }
-        }
+        MethodFields::BuildingStaff { .. } => t!("email.callout.buildingStaff", time = time),
+        MethodFields::HostGreets { .. } => t!("email.callout.hostGreets", time = time),
         MethodFields::Other {} => {
             if has_code {
-                if en {
-                    format!("Here is your access code, valid from {time}.")
-                } else {
-                    format!("Voici votre code d'accès, valable dès {time}.")
-                }
-            } else if en {
-                "Access details are on your stay page.".into()
+                t!("email.callout.other.withCode", time = time)
             } else {
-                "Retrouvez les infos d'accès sur votre page de séjour.".into()
+                t!("email.callout.other.withoutCode")
             }
         }
     }
-}
-
-fn locale_is_en(locale: &str) -> bool {
-    locale.to_ascii_lowercase().starts_with("en")
 }
 
 #[cfg(test)]
@@ -373,11 +269,29 @@ mod tests {
         }
     }
 
+    fn fr_email_host() -> MockContext {
+        MockContext::guest()
+            .with_capabilities(&[capability::core::STORAGE])
+            .with_translation("email.label.keybox", "Code boîte à clés")
+            .with_translation(
+                "email.callout.keybox.withCode",
+                "Arrivée autonome : le code ci-dessous ouvre la boîte à clés dès {time}. Pas besoin d'attendre l'hôte.",
+            )
+            .with_translation(
+                "email.callout.locked.selfCheckin",
+                "Arrivée autonome dès {time}. {locked} Les détails d'accès sont sur votre page de séjour.",
+            )
+            .with_translation("reveal.locked.withWhen", "Disponible à partir du {when}")
+            .with_translation(
+                "reveal.availableFrom.datetime",
+                "{day}/{month}/{year} à {hour}:{minute}",
+            )
+    }
+
     #[test]
     #[serial_test::serial]
     fn revealed_keybox_returns_code_and_callout() {
-        let (ctx, host) = MockContext::guest()
-            .with_capabilities(&["core.storage"])
+        let (ctx, host) = fr_email_host()
             .with_kv(
                 "config",
                 serde_json::to_vec(&keybox_config(RevealPolicy::Always)).expect("json"),
@@ -388,7 +302,7 @@ mod tests {
             let response = build_email_context(
                 &ctx,
                 &EmailContextArgs {
-                    template_key: Some("arrival".into()),
+                    template_key: Some(EmailTemplateKey::Arrival),
                     checkin_time_formatted: Some("16:00".into()),
                     locale: Some("fr".into()),
                 },
@@ -416,8 +330,7 @@ mod tests {
     #[test]
     #[serial_test::serial]
     fn locked_policy_omits_plaintext_code() {
-        let (mut ctx, host) = MockContext::guest()
-            .with_capabilities(&["core.storage"])
+        let (mut ctx, host) = fr_email_host()
             .with_kv(
                 "config",
                 serde_json::to_vec(&keybox_config(RevealPolicy::AtCheckin)).expect("json"),
@@ -439,7 +352,7 @@ mod tests {
             let response = build_email_context(
                 &ctx,
                 &EmailContextArgs {
-                    template_key: Some("arrival".into()),
+                    template_key: Some(EmailTemplateKey::Arrival),
                     checkin_time_formatted: Some("16:00".into()),
                     locale: Some("fr".into()),
                 },
@@ -463,8 +376,7 @@ mod tests {
     #[test]
     #[serial_test::serial]
     fn arrival_day_returns_code_without_callout() {
-        let (ctx, host) = MockContext::guest()
-            .with_capabilities(&["core.storage"])
+        let (ctx, host) = fr_email_host()
             .with_kv(
                 "config",
                 serde_json::to_vec(&keybox_config(RevealPolicy::Always)).expect("json"),
@@ -475,7 +387,7 @@ mod tests {
             let response = build_email_context(
                 &ctx,
                 &EmailContextArgs {
-                    template_key: Some("arrival-day".into()),
+                    template_key: Some(EmailTemplateKey::ArrivalDay),
                     checkin_time_formatted: Some("16:00".into()),
                     locale: Some("fr".into()),
                 },
@@ -489,8 +401,7 @@ mod tests {
     #[test]
     #[serial_test::serial]
     fn stay_link_returns_empty_access_fields() {
-        let (ctx, host) = MockContext::guest()
-            .with_capabilities(&["core.storage"])
+        let (ctx, host) = fr_email_host()
             .with_kv(
                 "config",
                 serde_json::to_vec(&keybox_config(RevealPolicy::Always)).expect("json"),
@@ -501,7 +412,7 @@ mod tests {
             let response = build_email_context(
                 &ctx,
                 &EmailContextArgs {
-                    template_key: Some("stay-link".into()),
+                    template_key: Some(EmailTemplateKey::StayLink),
                     checkin_time_formatted: Some("16:00".into()),
                     locale: Some("fr".into()),
                 },

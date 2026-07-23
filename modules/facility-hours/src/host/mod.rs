@@ -4,7 +4,6 @@ use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{Button, Field, Form, Page, Text, TextArea, TextInput};
 use portaki_sdk::sdui::surface::Surface;
-use serde_json::json;
 
 use crate::config::{load_config, FacilityRow, Localized};
 
@@ -17,16 +16,12 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     let facilities = config.parse_facilities();
     let general_note = config.general_note.get(&lang).to_string();
 
-    let submit_args = json!({
-        "facilities": facilities_to_submit(&facilities, &lang),
-        "general_note": general_note,
-    });
-    let save_action = serde_json::to_value(Action::command(
-        "facility-hours",
-        "updateConfig",
-        submit_args,
-    ))
-    .unwrap_or(json!({}));
+    let submit_args = crate::commands::UpdateConfigArgs {
+        facilities: facilities_to_submit(&facilities, &lang),
+        facilities_json: String::new(),
+        general_note: general_note.clone(),
+    };
+    let save_action = Action::command(&crate::ids::module_id(), crate::ids::UPDATE_CONFIG, submit_args);
 
     let mut form_children: Vec<Component> = Vec::new();
     for index in 0..FACILITY_SLOTS {
@@ -34,50 +29,50 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     }
     form_children.push(
         Field::new()
-            .name(json!("general_note"))
-            .label(json!("i18n:host.note.label"))
+            .name("general_note")
+            .label("i18n:host.note.label")
             .child(
                 TextArea::new()
-                    .name(json!("general_note"))
-                    .value(json!(general_note))
-                    .placeholder(json!("i18n:host.note.placeholder")),
+                    .name("general_note")
+                    .value(general_note)
+                    .placeholder("i18n:host.note.placeholder"),
             )
             .into(),
     );
     form_children.push(
         Text::new()
-            .text(json!("i18n:host.main.help"))
-            .variant(json!("caption"))
+            .text("i18n:host.main.help")
+            .variant(TextVariant::Caption)
             .into(),
     );
     form_children.push(
         Button::new()
-            .label(json!("i18n:host.save"))
+            .label("i18n:host.save")
             .action(save_action)
             .into(),
     );
 
     Surface::new(
         Page::new()
-            .title(json!("i18n:surface.host.main.title"))
+            .title("i18n:surface.host.main.title")
             .child(
                 Text::new()
-                    .text(json!("i18n:surface.host.main.subtitle"))
-                    .variant(json!("body")),
+                    .text("i18n:surface.host.main.subtitle")
+                    .variant(TextVariant::Body),
             )
             .child(Form::new().children(form_children)),
     )
-    .with_id("main")
+    .with_id(crate::ids::HOST_MAIN)
 }
 
-fn facilities_to_submit(facilities: &[FacilityRow], lang: &str) -> Vec<serde_json::Value> {
+fn facilities_to_submit(facilities: &[FacilityRow], lang: &str) -> Vec<crate::commands::FacilityInput> {
     facilities
         .iter()
-        .map(|f| {
-            json!({
-                "name": f.title.get(lang),
-                "hours": f.hours.clone().unwrap_or_default(),
-            })
+        .map(|f| crate::commands::FacilityInput {
+            name: f.title.get(lang).to_string(),
+            name_fr: String::new(),
+            name_en: String::new(),
+            hours: f.hours.clone().unwrap_or_default(),
         })
         .collect()
 }
@@ -94,30 +89,30 @@ fn push_facility_slot(
 
     children.push(
         Text::new()
-            .text(json!(format!("i18n:host.facility.slot{slot}")))
-            .variant(json!("caption"))
+            .text(format!("i18n:host.facility.slot{slot}"))
+            .variant(TextVariant::Caption)
             .into(),
     );
     children.push(
         Field::new()
-            .name(json!(format!("facilities.{index}.name")))
-            .label(json!("i18n:host.facility.name"))
+            .name(format!("facilities.{index}.name"))
+            .label("i18n:host.facility.name")
             .child(
                 TextInput::new()
-                    .name(json!(format!("facilities.{index}.name")))
-                    .value(json!(name)),
+                    .name(format!("facilities.{index}.name"))
+                    .value(name),
             )
             .into(),
     );
     children.push(
         Field::new()
-            .name(json!(format!("facilities.{index}.hours")))
-            .label(json!("i18n:host.facility.hours"))
+            .name(format!("facilities.{index}.hours"))
+            .label("i18n:host.facility.hours")
             .child(
                 TextInput::new()
-                    .name(json!(format!("facilities.{index}.hours")))
-                    .value(json!(hours))
-                    .placeholder(json!("i18n:host.facility.hours.placeholder")),
+                    .name(format!("facilities.{index}.hours"))
+                    .value(hours)
+                    .placeholder("i18n:host.facility.hours.placeholder"),
             )
             .into(),
     );

@@ -19,7 +19,7 @@ pub enum GuestLoad {
     Empty(Box<Surface>),
 }
 
-pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad> {
+pub fn load_guest_data(ctx: &GuestContext, surface_id: SurfaceId) -> Result<GuestLoad> {
     if let Some(surface) = empty_state_if_module_not_ready(surface_id)? {
         return Ok(GuestLoad::Empty(Box::new(surface)));
     }

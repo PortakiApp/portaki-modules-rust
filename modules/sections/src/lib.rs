@@ -5,8 +5,9 @@ mod entities;
 mod guest;
 mod model;
 mod queries;
-mod render_host;
+mod host;
 mod store;
+mod ids;
 
 pub use commands::{
     delete_section, reorder, save_section, DeleteSectionArgs, ReorderArgs, SaveSectionArgs,
@@ -15,7 +16,7 @@ pub use entities::{SectionItem, SectionItemLocale};
 pub use guest::{render_explore_sheet, render_home_card};
 pub use model::{SectionLocaleInput, SectionView};
 pub use queries::{list_sections, ListSectionsArgs};
-pub use render_host::render_host_main;
+pub use host::render_host_main;
 pub use store::reset_test_store;
 
 portaki_sdk::portaki_module!(

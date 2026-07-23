@@ -1,5 +1,6 @@
 //! Integration-style unit tests with `portaki-test-utils`.
 
+use portaki_sdk::capability;
 use serial_test::serial;
 
 use portaki_sdk::sdui::component::Component;
@@ -116,7 +117,7 @@ fn home_card_empty_without_content() {
     reset_test_store();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             let surface = render_home_card(ctx);
             assert!(contains_component_type(&surface, "EmptyState"));
@@ -129,7 +130,7 @@ fn home_card_featured_only_and_detail_list() {
     reset_test_store();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             seed_two_devices(ctx.clone());
             let card = render_home_card(ctx.clone());
@@ -158,7 +159,7 @@ fn explore_item_uses_device_id_and_howto_steps() {
     reset_test_store();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             seed_two_devices(ctx.clone());
 
@@ -193,7 +194,7 @@ fn explore_item_missing_device_id_is_not_found() {
     reset_test_store();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             seed_two_devices(ctx.clone());
             let item = render_explore_item(ctx);
@@ -209,7 +210,7 @@ fn get_content_returns_devices() {
     reset_test_store();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             seed_two_devices(ctx.clone());
             let view = get_content(
@@ -231,7 +232,7 @@ fn migrates_legacy_payload_on_read() {
     reset_test_store();
     MockContext::guest()
         .with_property(Property::default())
-        .with_capabilities(&["core.storage"])
+        .with_capabilities(&[capability::core::STORAGE])
         .run(|ctx| {
             let legacy = json!({
                 "safety_notice": "Coupez l'eau en cas de fuite.",

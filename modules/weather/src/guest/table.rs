@@ -3,7 +3,6 @@
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::common::{Emphasis, Tone};
 use portaki_sdk::sdui::primitives::{Grid, Icon, Text};
-use serde_json::json;
 
 use crate::entities::WeatherUnits;
 use crate::weather::{
@@ -14,11 +13,7 @@ use crate::weather::{
 use super::components::{metric_label, optional_pct, table_header_cell, table_value_cell};
 
 /// Forecast table: day · icon · min · max · rain · humidity · wind (scrolls when wide).
-pub fn build_forecast_table(
-    forecast: &WeatherForecast,
-    units: &WeatherUnits,
-    locale: &str,
-) -> Component {
+pub fn build_forecast_table(forecast: &WeatherForecast, units: &WeatherUnits) -> Component {
     let unit = units.sdui_unit();
     let mut cells: Vec<Component> = vec![
         table_header_cell("i18n:weather.col.day"),
@@ -42,25 +37,25 @@ pub fn build_forecast_table(
 
         cells.push(Component::Text(
             Text::new()
-                .text(json!(format_day_strip_label(&day.date, locale)))
-                .variant(json!("caption"))
+                .text(format_day_strip_label(&day.date))
+                .variant(TextVariant::Caption)
                 .emphasis(Emphasis::Strong),
         ));
         cells.push(Component::Icon(
             Icon::new()
-                .name(json!(icon_name_for_condition(&day.condition)))
-                .size(json!(28)),
+                .name(icon_name_for_condition(&day.condition))
+                .size(28.0),
         ));
         cells.push(Component::Text(
             Text::new()
-                .text(json!(min))
-                .variant(json!("caption"))
+                .text(min)
+                .variant(TextVariant::Caption)
                 .tone(Tone::Success),
         ));
         cells.push(Component::Text(
             Text::new()
-                .text(json!(max))
-                .variant(json!("caption"))
+                .text(max)
+                .variant(TextVariant::Caption)
                 .tone(Tone::Warning),
         ));
         cells.push(table_value_cell(&precip));
@@ -68,5 +63,5 @@ pub fn build_forecast_table(
         cells.push(table_value_cell(&wind));
     }
 
-    Component::Grid(Grid::new().columns(json!(7)).gap(json!(10)).children(cells))
+    Component::Grid(Grid::new().columns(7).gap(10.0).children(cells))
 }

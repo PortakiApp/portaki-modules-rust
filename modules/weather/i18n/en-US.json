@@ -51,5 +51,16 @@
   "explore.forecast.title": "Forecast",
   "explore.forecast.hint": "5-day outlook",
   "sheet.assistant.tip": "A question about this? Ask the assistant or contact your host.",
-  "sheet.contactHost": "Contact host"
+  "sheet.contactHost": "Contact host",
+  "email.place.inCity": "in {name}",
+  "email.place.onSite": "on site",
+  "email.weather.summary": "Weather {place} today: {emoji} {temp}°C, {condition}.",
+  "email.condition.sunny": "clear skies",
+  "email.condition.cloudy": "cloudy",
+  "email.condition.rainy": "rain possible",
+  "email.condition.snowy": "snow possible",
+  "email.condition.stormy": "storms possible",
+  "email.condition.foggy": "fog",
+  "email.condition.variable": "variable conditions",
+  "day.strip": "{weekday} {day}"
 }

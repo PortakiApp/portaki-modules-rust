@@ -1,9 +1,10 @@
 //! Guest home booklet card — progress + inline toggles.
 
+use portaki_sdk::prelude::*;
+
 use portaki_sdk::sdui::action::Action;
 use portaki_sdk::sdui::primitives::{Card, ChecklistItem as ChecklistItemView, Pressable, Text};
 use portaki_sdk::sdui::surface::Surface;
-use serde_json::json;
 
 use super::load::GuestChecklistData;
 use crate::labels;
@@ -12,8 +13,8 @@ pub fn build_home_card(data: &GuestChecklistData) -> Surface {
     let progress = format!("{} / {} — {}%", data.done, data.total, data.percent);
 
     let mut children = vec![Text::new()
-        .text(json!(progress))
-        .variant(json!("caption"))
+        .text(progress)
+        .variant(TextVariant::Caption)
         .into()];
 
     for item in &data.items {
@@ -24,24 +25,23 @@ pub fn build_home_card(data: &GuestChecklistData) -> Surface {
             &data.property_locale,
         );
         let command_name = if checked {
-            "uncompleteItem"
+            crate::ids::UNCOMPLETE_ITEM
         } else {
-            "completeItem"
+            crate::ids::COMPLETE_ITEM
         };
-        let action = serde_json::to_value(Action::command(
-            "checklist",
+        let action = Action::command(
+            &crate::ids::module_id(),
             command_name,
-            json!({ "itemId": item.id }),
-        ))
-        .unwrap_or(json!({}));
+            crate::commands::ItemIdArgs { item_id: item.id },
+        );
 
         children.push(
             Pressable::new()
                 .action(action)
                 .child(
                     ChecklistItemView::new()
-                        .label(json!(label))
-                        .checked(json!(checked)),
+                        .label(label)
+                        .checked(checked),
                 )
                 .into(),
         );
@@ -49,9 +49,9 @@ pub fn build_home_card(data: &GuestChecklistData) -> Surface {
 
     Surface::new(
         Card::new()
-            .icon(json!("list-checks"))
-            .title(json!("i18n:home.card.title"))
+            .icon("list-checks")
+            .title("i18n:home.card.title")
             .children(children),
     )
-    .with_id("home.card")
+    .with_id(crate::ids::HOME_CARD)
 }

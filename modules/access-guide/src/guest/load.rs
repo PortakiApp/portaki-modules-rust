@@ -28,7 +28,7 @@ pub enum GuestLoad {
     Empty(Box<Surface>),
 }
 
-pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad> {
+pub fn load_guest_data(ctx: &GuestContext, surface_id: SurfaceId) -> Result<GuestLoad> {
     if let Some(surface) = empty_state_if_module_not_ready(surface_id)? {
         return Ok(GuestLoad::Empty(Box::new(surface)));
     }
@@ -60,7 +60,7 @@ pub fn load_guest_data(ctx: &GuestContext, surface_id: &str) -> Result<GuestLoad
         lat: ctx.property.lat,
         lng: ctx.property.lng,
         secrets_revealed: decision.revealed,
-        reveal_locked_message: locked_banner(&decision, &property_timezone, &ctx.locale),
+        reveal_locked_message: locked_banner(&decision, &property_timezone),
         stay_id,
     })))
 }
@@ -77,16 +77,12 @@ fn property_timezone(ctx: &GuestContext) -> String {
     "Europe/Paris".to_string()
 }
 
-fn locked_banner(
-    decision: &RevealDecision,
-    property_timezone: &str,
-    locale: &str,
-) -> Option<String> {
+fn locked_banner(decision: &RevealDecision, property_timezone: &str) -> Option<String> {
     if decision.revealed {
         return None;
     }
     let when = decision
         .available_from
-        .map(|at| format_available_from(at, property_timezone, locale));
-    Some(locked_message(locale, when.as_deref()))
+        .map(|at| format_available_from(at, property_timezone));
+    Some(locked_message(when.as_deref()))
 }
