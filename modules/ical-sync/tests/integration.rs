@@ -1,8 +1,8 @@
 //! Integration-style unit tests with `portaki-test-utils`.
 
 use ical_sync::{
-    apply_feeds, get_config, list_sources, parse_stay_rows, update_config, ApplyFeedsArgs, FeedBody,
-    UpdateConfigArgs,
+    apply_feeds, get_config, list_sources, parse_stay_rows, update_config, ApplyFeedsArgs,
+    FeedBody, UpdateConfigArgs,
 };
 use portaki_sdk::capability;
 use portaki_test_utils::MockContext;

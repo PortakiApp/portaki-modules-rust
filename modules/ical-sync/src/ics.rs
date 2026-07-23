@@ -70,7 +70,9 @@ pub fn parse_stay_rows(ics_body: &str, guest_lang: &str, limit: usize) -> Vec<St
 
 fn event_to_row(event: VEvent, guest_lang: &str) -> Option<StayImportRow> {
     let check_in = event.dtstart?;
-    let check_out = event.dtend.unwrap_or_else(|| check_in + chrono::Duration::days(1));
+    let check_out = event
+        .dtend
+        .unwrap_or_else(|| check_in + chrono::Duration::days(1));
     if check_out <= check_in {
         return None;
     }
@@ -196,9 +198,7 @@ fn parse_ics_datetime(raw_key: &str, value: &str) -> Option<DateTime<Utc>> {
 
     if value_is_date {
         let date = NaiveDate::parse_from_str(value, "%Y%m%d").ok()?;
-        return Some(
-            Utc.from_utc_datetime(&date.and_time(NaiveTime::from_hms_opt(0, 0, 0)?)),
-        );
+        return Some(Utc.from_utc_datetime(&date.and_time(NaiveTime::from_hms_opt(0, 0, 0)?)));
     }
 
     if let Ok(dt) = DateTime::parse_from_rfc3339(value) {
@@ -207,8 +207,9 @@ fn parse_ics_datetime(raw_key: &str, value: &str) -> Option<DateTime<Utc>> {
 
     // Form 1: 20260720T140000Z
     if value.ends_with('Z') {
-        let naive = chrono::NaiveDateTime::parse_from_str(value.trim_end_matches('Z'), "%Y%m%dT%H%M%S")
-            .ok()?;
+        let naive =
+            chrono::NaiveDateTime::parse_from_str(value.trim_end_matches('Z'), "%Y%m%dT%H%M%S")
+                .ok()?;
         return Some(Utc.from_utc_datetime(&naive));
     }
 

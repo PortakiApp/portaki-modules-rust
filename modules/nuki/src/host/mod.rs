@@ -1,7 +1,9 @@
 //! Host dashboard surfaces.
 
 use portaki_sdk::prelude::*;
-use portaki_sdk::sdui::primitives::{Button, Card, Field, Form, Page, SecretInput, Text, TextInput};
+use portaki_sdk::sdui::primitives::{
+    Button, Card, Field, Form, Page, SecretInput, Text, TextInput,
+};
 use portaki_sdk::sdui::surface::Surface;
 
 use crate::config::load_config;

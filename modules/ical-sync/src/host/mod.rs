@@ -2,9 +2,7 @@
 
 use portaki_sdk::prelude::*;
 use portaki_sdk::sdui::common::Tone;
-use portaki_sdk::sdui::primitives::{
-    Button, Card, Field, Form, InfoBanner, Page, Text, TextInput,
-};
+use portaki_sdk::sdui::primitives::{Button, Card, Field, Form, InfoBanner, Page, Text, TextInput};
 use portaki_sdk::sdui::surface::Surface;
 
 use crate::config::load_config;
