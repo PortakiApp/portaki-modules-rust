@@ -1,6 +1,7 @@
 //! Portaki checklist module — checkout tasks with stay-scoped completions.
 
 mod commands;
+mod email_context;
 mod entities;
 mod guest;
 mod labels;
@@ -11,6 +12,7 @@ mod storage;
 pub use commands::{
     complete_item, replace_items, uncomplete_item, ChecklistItemInput, ItemIdArgs, ReplaceItemsArgs,
 };
+pub use email_context::{email_context, EmailContextArgs, EmailContextResponse};
 pub use entities::{ChecklistCompletion, ChecklistItem};
 pub use guest::render_home_card;
 pub use queries::{list_completions, list_items, ChecklistItemDto};

@@ -101,7 +101,7 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
 name = "checklist"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "extism-pdk",
@@ -140,7 +140,7 @@ checksum = "91622ff5e7162018101f2fea40d6ebf4a78bbe5a49736a2020649edf9693679e"
 
 [[package]]
 name = "emergency-contacts"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "extism-pdk",
  "portaki-sdk",
@@ -396,7 +396,7 @@ checksum = "22053b6a34f84abc97f9129e61334f40174659a1b9bd18c970b83db6a9a6348b"
 
 [[package]]
 name = "local-guide"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "extism-pdk",
  "portaki-sdk",
@@ -664,7 +664,7 @@ dependencies = [
 
 [[package]]
 name = "rules"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "chrono",
  "extism-pdk",

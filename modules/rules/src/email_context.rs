@@ -1,0 +1,148 @@
+//! Guest-email teaser for Portaki `stay-link`, `arrival`, `post-arrival`.
+
+use portaki_sdk::prelude::*;
+use serde::{Deserialize, Serialize};
+
+use crate::queries::{get_content, GetContentArgs};
+
+const MAX_RULES: usize = 3;
+
+/// Arguments for `emailContext`.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct EmailContextArgs {
+    #[serde(default)]
+    pub template_key: Option<String>,
+    #[serde(default)]
+    pub locale: Option<String>,
+}
+
+/// Email-ready house-rules contribution.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct EmailContextResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub house_rules_teaser: Option<String>,
+}
+
+/// Short house-rules lines for Portaki guest templates.
+#[portaki_sdk::query(name = "emailContext")]
+pub fn email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContextResponse> {
+    build_email_context(ctx, args)
+}
+
+pub fn build_email_context(ctx: Context, args: EmailContextArgs) -> Result<EmailContextResponse> {
+    let template = args.template_key.as_deref().unwrap_or("").trim();
+    if !matches!(template, "stay-link" | "arrival" | "post-arrival" | "") {
+        return Ok(EmailContextResponse {
+            house_rules_teaser: None,
+        });
+    }
+
+    let locale = args
+        .locale
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or(ctx.locale.as_str());
+
+    let view = get_content(
+        ctx.clone(),
+        GetContentArgs {
+            locale: Some(locale.to_string()),
+        },
+    )?;
+
+    let lines: Vec<String> = view
+        .items
+        .iter()
+        .filter_map(|item| {
+            let title = item.title.trim();
+            if title.is_empty() {
+                return None;
+            }
+            let subtitle = item.subtitle.trim();
+            if subtitle.is_empty() {
+                Some(title.to_string())
+            } else {
+                Some(format!("{title} — {subtitle}"))
+            }
+        })
+        .take(MAX_RULES)
+        .collect();
+
+    if lines.is_empty() {
+        return Ok(EmailContextResponse {
+            house_rules_teaser: None,
+        });
+    }
+
+    Ok(EmailContextResponse {
+        house_rules_teaser: Some(lines.join("\n")),
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::content::{RuleItem, RulesPayload};
+    use crate::store::{reset_test_store, save_content_row};
+    use portaki_test_utils::MockContext;
+
+    #[test]
+    fn when_arrival_then_teaser_top_rules() {
+        use portaki_sdk::host::with_host;
+
+        reset_test_store();
+        let payload = RulesPayload {
+            items: vec![
+                RuleItem {
+                    icon: "clock".into(),
+                    title: "Silence après 22h".into(),
+                    subtitle: "Respectez le voisinage".into(),
+                },
+                RuleItem {
+                    icon: "paw".into(),
+                    title: "Animaux non admis".into(),
+                    subtitle: String::new(),
+                },
+            ],
+        };
+
+        let (ctx, host) = MockContext::guest()
+            .with_capabilities(&["core.storage"])
+            .build();
+        with_host(host, ctx.clone(), || {
+            save_content_row(payload.to_json_string().unwrap(), String::new()).unwrap();
+            let out = build_email_context(
+                ctx.clone(),
+                EmailContextArgs {
+                    template_key: Some("arrival".into()),
+                    locale: Some("fr".into()),
+                },
+            )
+            .unwrap();
+
+            let teaser = out.house_rules_teaser.expect("teaser");
+            assert!(teaser.contains("Silence après 22h"));
+            assert!(teaser.contains("Animaux non admis"));
+        });
+    }
+
+    #[test]
+    fn when_wrong_template_then_empty() {
+        reset_test_store();
+        let (ctx, _host) = MockContext::guest()
+            .with_capabilities(&["core.storage"])
+            .build();
+        let out = build_email_context(
+            ctx,
+            EmailContextArgs {
+                template_key: Some("arrival-day".into()),
+                locale: None,
+            },
+        )
+        .unwrap();
+        assert!(out.house_rules_teaser.is_none());
+    }
+}
