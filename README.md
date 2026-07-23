@@ -56,6 +56,7 @@ On every push to **`main`**, CI builds and publishes:
 | [`events`](./modules/events) | `ghcr.io/portakiapp/portaki-modules-events:<semver>` | Host-curated local events and map |
 | [`facility-hours`](./modules/facility-hours) | `ghcr.io/portakiapp/portaki-modules-facility-hours:<semver>` | Pool, spa, and shared amenity schedules |
 | [`guest-reviews`](./modules/guest-reviews) | `ghcr.io/portakiapp/portaki-modules-guest-reviews:<semver>` | Post-stay thank-you and review CTAs |
+| [`issue-report`](./modules/issue-report) | `ghcr.io/portakiapp/portaki-modules-issue-report:<semver>` | In-stay problem reports for the host |
 | [`local-guide`](./modules/local-guide) | `ghcr.io/portakiapp/portaki-modules-local-guide:<semver>` | Nearby spots and host picks |
 | [`nuki`](./modules/nuki) | `ghcr.io/portakiapp/portaki-modules-nuki:<semver>` | Nuki smart-lock provider for access-guide |
 | [`pre-arrival-form`](./modules/pre-arrival-form) | `ghcr.io/portakiapp/portaki-modules-pre-arrival-form:<semver>` | ETA, occasion, allergies, message to host |
@@ -79,6 +80,7 @@ portaki-modules/
 │   ├── events/
 │   ├── facility-hours/
 │   ├── guest-reviews/
+│   ├── issue-report/
 │   ├── local-guide/
 │   ├── nuki/
 │   ├── pre-arrival-form/

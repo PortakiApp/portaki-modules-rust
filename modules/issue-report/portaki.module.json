@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/PortakiApp/portaki-sdk/main/schema/module.v1.json",
+  "id": "issue-report",
+  "name": {
+    "fr": "Signaler un problème",
+    "en": "Report an issue"
+  },
+  "description": {
+    "fr": "Les voyageurs signalent un souci pendant le séjour — sans WhatsApp.",
+    "en": "Guests report a problem during the stay — no WhatsApp needed."
+  },
+  "version": "0.1.0",
+  "author": {
+    "name": "Syntax Labs",
+    "url": "https://syntax-labs.fr",
+    "type": "official"
+  },
+  "icon": "triangle-alert",
+  "type": "official",
+  "hostSurfaces": [
+    {
+      "type": "property-workspace-tab",
+      "pathSegment": "issue-report",
+      "label": {
+        "fr": "Signalements",
+        "en": "Issue reports"
+      },
+      "icon": "triangle-alert"
+    }
+  ]
+}

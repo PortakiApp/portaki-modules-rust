@@ -1,0 +1,28 @@
+[package]
+name = "issue-report"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Portaki issue report — guest stay-scoped problem reports for the host"
+repository.workspace = true
+homepage.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "issue_report"
+
+[dependencies]
+portaki-sdk = { workspace = true }
+portaki-sdk-macros = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+extism-pdk = { workspace = true }
+
+[dev-dependencies]
+portaki-test-utils = { workspace = true }
+serial_test = { workspace = true }
