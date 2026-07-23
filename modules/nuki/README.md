@@ -14,6 +14,7 @@ Part of the [`portaki-modules`](https://github.com/PortakiApp/portaki-modules) m
 2. Open **Accès & parking** (access-guide) → primary method **Smart lock**.
 3. Set **Provider** to **nuki** (`smart_lock_provider_module_id = "nuki"`).
 4. Configure keypad code here (Modules → Nuki).
+5. Optional: save a Nuki Web API token under workspace **Integrations** (provider `nuki`) for remote unlock.
 
 When codes are revealed, access-guide sends guest commands `unlock` and `getGuestCredential` to this module with optional `{ "stayId": "…" }`.
 
@@ -23,8 +24,7 @@ When codes are revealed, access-guide sends guest commands `unlock` and `getGues
 |------------|------|
 | `access.smart_lock` | **Provided** — peer discovery for access-guide |
 | `core.storage` | **Required** — KV config |
-
-No BYOK / integration capabilities in v0.1 (orchestrator credential providers are not wired for Nuki yet).
+| `external.nuki.byok` | **Optional** — Nuki Web API token for `POST …/action/unlock` |
 
 ## KV config
 
@@ -36,14 +36,14 @@ No BYOK / integration capabilities in v0.1 (orchestrator credential providers ar
 }
 ```
 
-## Guest commands (v0.1)
+## Guest commands
 
 | Command | Behavior |
 |---------|----------|
 | `getGuestCredential` | `{ "type": "keypad", "code": "…", "smartlockId": "…" }` — errors if `keypad_code` empty |
-| `unlock` | `{ "ok": true, "mode": "credential_fallback", "code": "…" }` when keypad configured — **no Nuki Cloud HTTP** |
+| `unlock` | Prefer remote unlock when BYOK + `smartlock_id` are set (`mode: "remote"`). On failure or missing token, fall back to keypad (`mode: "credential_fallback"`). |
 
-Platform connector egress today only supports GET-style calls (e.g. OpenWeather). A `custom_connector` for Nuki is declared for a future POST + Bearer unlock path; enabling it requires a platform follow-up.
+Remote unlock uses the module connector `nuki` / `remote_unlock` (Bearer, path `/smartlock/{smartlockId}/action/unlock`). Requires module-runtime egress that supports POST + Bearer (shipped in portaki-platform runtime).
 
 ## Surfaces
 

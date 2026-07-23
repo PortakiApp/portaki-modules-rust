@@ -28,6 +28,14 @@ pub const SMART_LOCK: &str = "access.smart_lock";
 #[portaki_sdk::capability(required, id = "core.storage")]
 pub const STORAGE: &str = "core.storage";
 
+#[portaki_sdk::capability(
+    optional,
+    id = "external.nuki.byok",
+    purpose_key = "capability.nuki.byok.purpose",
+    fallback_key = "capability.nuki.byok.fallback"
+)]
+pub const NUKI_BYOK: &str = "external.nuki.byok";
+
 #[cfg(test)]
 mod capability_tests {
     use portaki_sdk::contracts::smart_lock;

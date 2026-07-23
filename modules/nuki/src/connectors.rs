@@ -1,9 +1,10 @@
-//! Nuki Cloud connector metadata for future remote unlock (not used at runtime in v0.1).
+//! Nuki Cloud connector — remote unlock via host egress (Bearer + POST).
 
 #[portaki_sdk::custom_connector(
     id = "nuki",
     display_name_key = "connector.nuki.name",
-    base_url = "https://api.nuki.io"
+    base_url = "https://api.nuki.io",
+    credential_provider_id = "nuki"
 )]
 #[allow(dead_code)]
 pub struct ModuleNuki;

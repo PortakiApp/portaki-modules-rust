@@ -1,5 +1,6 @@
 //! Module commands — host config and `access.smart_lock` guest protocol.
 
+use portaki_sdk::host;
 use portaki_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -34,7 +35,14 @@ pub struct GuestCredentialResponse {
 pub struct UnlockResponse {
     pub ok: bool,
     pub mode: &'static str,
+    #[serde(skip_serializing_if = "String::is_empty")]
     pub code: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UnlockConnectorArgs {
+    smartlock_id: String,
 }
 
 #[portaki_sdk::command(name = "updateConfig")]
@@ -58,14 +66,57 @@ pub fn get_guest_credential(_ctx: Context, _args: StayArgs) -> Result<GuestCrede
 }
 
 #[portaki_sdk::command(name = "unlock")]
-pub fn unlock(_ctx: Context, _args: StayArgs) -> Result<UnlockResponse> {
+pub fn unlock(ctx: Context, _args: StayArgs) -> Result<UnlockResponse> {
     let config = load_config()?;
-    let code = require_keypad_code(&config)?;
+    let keypad = config.keypad_code_trimmed().to_string();
+    let smartlock_id = config.smartlock_id.trim().to_string();
+
+    if has_nuki_byok(&ctx) && !smartlock_id.is_empty() {
+        match try_remote_unlock(&smartlock_id) {
+            Ok(()) => {
+                return Ok(UnlockResponse {
+                    ok: true,
+                    mode: "remote",
+                    code: String::new(),
+                });
+            }
+            Err(error) => {
+                let mut fields = host::log::Fields::new();
+                fields.insert("error", &error.to_string());
+                fields.insert("smartlockId", &smartlock_id);
+                let _ = host::log::warn("nuki_remote_unlock_failed", &fields);
+            }
+        }
+    }
+
+    if keypad.is_empty() {
+        return Err(PortakiError::Host(
+            "unlock unavailable: configure keypad_code or Nuki BYOK + smartlock_id".into(),
+        ));
+    }
+
     Ok(UnlockResponse {
         ok: true,
         mode: "credential_fallback",
-        code,
+        code: keypad,
     })
+}
+
+fn has_nuki_byok(ctx: &Context) -> bool {
+    ctx.capabilities
+        .iter()
+        .any(|grant| grant.id == crate::NUKI_BYOK || grant.id == "external.nuki.byok")
+}
+
+fn try_remote_unlock(smartlock_id: &str) -> Result<()> {
+    let _: serde_json::Value = host::connectors::call(
+        "nuki",
+        "remote_unlock",
+        &UnlockConnectorArgs {
+            smartlock_id: smartlock_id.to_string(),
+        },
+    )?;
+    Ok(())
 }
 
 fn require_keypad_code(config: &ModuleConfig) -> Result<String> {

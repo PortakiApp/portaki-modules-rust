@@ -85,6 +85,29 @@ fn unlock_returns_credential_fallback() {
 
 #[test]
 #[serial]
+fn unlock_prefers_remote_when_byok_granted() {
+    use portaki_sdk::context::CapabilityGrant;
+    use portaki_sdk::host::with_host;
+
+    let (mut ctx, host) = MockContext::guest()
+        .with_capabilities(&[capability::core::STORAGE])
+        .with_kv("config", sample_config_bytes())
+        .with_connector_response("nuki", "remote_unlock", "{}")
+        .build();
+    ctx.capabilities.push(CapabilityGrant {
+        id: "external.nuki.byok".into(),
+    });
+
+    with_host(host, ctx.clone(), || {
+        let result = unlock(ctx, StayArgs { stay_id: None }).expect("unlock");
+        assert!(result.ok);
+        assert_eq!(result.mode, "remote");
+        assert!(result.code.is_empty());
+    });
+}
+
+#[test]
+#[serial]
 fn update_config_roundtrip() {
     MockContext::host()
         .with_capabilities(&[capability::core::STORAGE])
