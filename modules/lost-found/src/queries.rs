@@ -18,6 +18,7 @@ pub struct LostFoundReportRow {
     pub contact_hint: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<String>,
+    pub status: String,
     pub created_at: DateTime<Utc>,
 }
 
@@ -30,14 +31,23 @@ impl From<crate::entities::LostFoundReport> for LostFoundReportRow {
             item_description: row.item_description,
             contact_hint: row.contact_hint,
             details: row.details,
+            status: row.status,
             created_at: row.created_at,
         }
     }
 }
 
+/// Optional host override — guest sessions ignore and use the guest stay id.
+#[portaki_sdk::wire]
+#[derive(Default)]
+pub struct ListForStayArgs {
+    #[serde(default)]
+    pub stay_id: Option<Uuid>,
+}
+
 #[portaki_sdk::query(name = "listForStay")]
-pub fn list_for_stay(ctx: Context) -> Result<Vec<LostFoundReportRow>> {
-    let stay_id = require_stay_id(&ctx)?;
+pub fn list_for_stay(ctx: Context, args: ListForStayArgs) -> Result<Vec<LostFoundReportRow>> {
+    let stay_id = resolve_list_stay_id(&ctx, args.stay_id)?;
     Ok(storage::list_by_stay(stay_id)?
         .into_iter()
         .map(LostFoundReportRow::from)
@@ -52,9 +62,9 @@ pub fn list_recent(_ctx: Context) -> Result<Vec<LostFoundReportRow>> {
         .collect())
 }
 
-fn require_stay_id(ctx: &Context) -> Result<Uuid> {
-    ctx.guest
-        .as_ref()
-        .map(|guest| guest.session_id)
-        .ok_or_else(|| PortakiError::Host("stay_id_required".to_string()))
+fn resolve_list_stay_id(ctx: &Context, stay_id: Option<Uuid>) -> Result<Uuid> {
+    if let Some(guest) = ctx.guest.as_ref() {
+        return Ok(guest.session_id);
+    }
+    stay_id.ok_or_else(|| PortakiError::Host("stay_id_required".to_string()))
 }

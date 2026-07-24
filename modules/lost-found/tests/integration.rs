@@ -1,10 +1,13 @@
 //! Integration-style unit tests with `portaki-test-utils`.
 
 use serial_test::serial;
+use uuid::Uuid;
 
 use lost_found::{
     build_email_context, list_for_stay, list_recent, render_home_card, render_host_main,
-    reset_test_store, submit, update_config, EmailContextArgs, SubmitArgs, UpdateConfigArgs,
+    reset_test_store, submit, submit_found, update_config, update_status, EmailContextArgs,
+    ListForStayArgs, SubmitArgs, SubmitFoundArgs, UpdateConfigArgs, UpdateStatusArgs,
+    STATUS_DEFAULT,
 };
 use portaki_sdk::prelude::EmailTemplateKey;
 use portaki_sdk::sdui::component::Component;
@@ -23,6 +26,7 @@ fn contains_component_type(surface: &Surface, type_name: &str) -> bool {
             Component::ListItem(_) if type_name == "ListItem" => true,
             Component::List(_) if type_name == "List" => true,
             Component::InfoBanner(_) if type_name == "InfoBanner" => true,
+            Component::Select(_) if type_name == "Select" => true,
             _ => false,
         };
         if matches {
@@ -87,10 +91,11 @@ fn submit_allows_multiple_reports_and_shows_list() {
             )
             .expect("submit");
 
-            let rows = list_for_stay(ctx.clone()).expect("list");
+            let rows = list_for_stay(ctx.clone(), ListForStayArgs::default()).expect("list");
             assert_eq!(rows.len(), 1);
             assert_eq!(rows[0].kind, "lost");
             assert_eq!(rows[0].item_description, "Blue scarf");
+            assert_eq!(rows[0].status, STATUS_DEFAULT);
 
             submit(
                 ctx.clone(),
@@ -103,7 +108,7 @@ fn submit_allows_multiple_reports_and_shows_list() {
             )
             .expect("submit second");
 
-            let rows = list_for_stay(ctx.clone()).expect("list after second");
+            let rows = list_for_stay(ctx.clone(), ListForStayArgs::default()).expect("list after second");
             assert_eq!(rows.len(), 2);
 
             let surface = render_home_card(ctx);
@@ -142,8 +147,171 @@ fn host_main_lists_recent_after_guest_submit() {
             let surface = render_host_main(ctx);
             assert!(contains_component_type(&surface, "Page"));
             assert!(contains_component_type(&surface, "Form"));
+            assert!(contains_component_type(&surface, "InfoBanner"));
             assert!(contains_component_type(&surface, "List"));
-            assert!(contains_component_type(&surface, "ListItem"));
+            assert!(contains_component_type(&surface, "Select"));
+            let json = serde_json::to_string(&surface).expect("surface json");
+            assert!(json.contains("updateStatus") || json.contains("host.main.updateStatus"));
+        });
+}
+
+#[test]
+#[serial]
+fn host_update_status_changes_report() {
+    reset_test_store();
+    let stay_id = Uuid::new_v4();
+
+    MockContext::host()
+        .with_property(Property::default())
+        .run(|ctx| {
+            submit_found(
+                ctx.clone(),
+                SubmitFoundArgs {
+                    stay_ids: vec![],
+                    stay_id: Some(stay_id),
+                    description: "Chargeur USB-C".into(),
+                    status: Some("to_collect".into()),
+                },
+            )
+            .expect("submitFound");
+
+            let rows = list_for_stay(
+                ctx.clone(),
+                ListForStayArgs {
+                    stay_id: Some(stay_id),
+                },
+            )
+            .expect("list");
+            assert_eq!(rows.len(), 1);
+            let report_id = rows[0].id;
+
+            update_status(
+                ctx.clone(),
+                UpdateStatusArgs {
+                    report_id,
+                    status: "sent".into(),
+                },
+            )
+            .expect("updateStatus");
+
+            let rows = list_for_stay(
+                ctx,
+                ListForStayArgs {
+                    stay_id: Some(stay_id),
+                },
+            )
+            .expect("list after update");
+            assert_eq!(rows[0].status, "sent");
+        });
+}
+
+#[test]
+#[serial]
+fn email_context_includes_descriptions_when_declaration_exists() {
+    reset_test_store();
+
+    MockContext::guest()
+        .with_property(Property::default())
+        .run(|ctx| {
+            submit(
+                ctx.clone(),
+                SubmitArgs {
+                    kind: "lost".into(),
+                    item_description: "Écharpe bleue".into(),
+                    contact_hint: None,
+                    details: None,
+                },
+            )
+            .expect("submit");
+
+            let out = build_email_context(
+                ctx,
+                EmailContextArgs {
+                    template_key: Some(EmailTemplateKey::LostFound),
+                    locale: None,
+                    ..Default::default()
+                },
+            )
+            .expect("emailContext");
+            assert!(out.has_declaration);
+            assert_eq!(out.lost_item_description.as_deref(), Some("Écharpe bleue"));
+        });
+}
+
+#[test]
+#[serial]
+fn host_submit_found_creates_report_per_stay() {
+    reset_test_store();
+    let stay_a = Uuid::new_v4();
+    let stay_b = Uuid::new_v4();
+
+    MockContext::host()
+        .with_property(Property::default())
+        .run(|ctx| {
+            submit_found(
+                ctx.clone(),
+                SubmitFoundArgs {
+                    stay_ids: vec![stay_a, stay_b],
+                    stay_id: None,
+                    description: "Chargeur MacBook oublié dans le tiroir".into(),
+                    status: None,
+                },
+            )
+            .expect("submitFound");
+
+            let for_a = list_for_stay(
+                ctx.clone(),
+                ListForStayArgs {
+                    stay_id: Some(stay_a),
+                },
+            )
+            .expect("list a");
+            assert_eq!(for_a.len(), 1);
+            assert_eq!(for_a[0].kind, "found");
+            assert_eq!(for_a[0].status, STATUS_DEFAULT);
+
+            let for_b = list_for_stay(
+                ctx,
+                ListForStayArgs {
+                    stay_id: Some(stay_b),
+                },
+            )
+            .expect("list b");
+            assert_eq!(for_b.len(), 1);
+            assert_eq!(for_b[0].status, "to_collect");
+        });
+}
+
+#[test]
+#[serial]
+fn host_submit_found_respects_status() {
+    reset_test_store();
+    let stay_id = Uuid::new_v4();
+
+    MockContext::host()
+        .with_property(Property::default())
+        .run(|ctx| {
+            submit_found(
+                ctx.clone(),
+                SubmitFoundArgs {
+                    stay_ids: vec![],
+                    stay_id: Some(stay_id),
+                    description: r#"{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Doudou"}]}]}"#.into(),
+                    status: Some("sent".into()),
+                },
+            )
+            .expect("submitFound");
+
+            let rows = list_for_stay(
+                ctx,
+                ListForStayArgs {
+                    stay_id: Some(stay_id),
+                },
+            )
+            .expect("list");
+            assert_eq!(rows.len(), 1);
+            assert_eq!(rows[0].status, "sent");
+            assert!(rows[0].item_description.contains("Doudou"));
         });
 }
 

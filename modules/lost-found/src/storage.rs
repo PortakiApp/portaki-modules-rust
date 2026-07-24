@@ -6,6 +6,7 @@ use portaki_sdk::prelude::*;
 use uuid::Uuid;
 
 use crate::entities::LostFoundReport;
+use crate::status;
 
 use std::cell::RefCell;
 
@@ -70,6 +71,7 @@ pub fn create(
     item_description: String,
     contact_hint: Option<String>,
     details: Option<String>,
+    status: String,
 ) -> Result<LostFoundReport> {
     let now = time::now()?;
     let row = LostFoundReport {
@@ -79,7 +81,38 @@ pub fn create(
         item_description,
         contact_hint,
         details,
+        status: if status.trim().is_empty() {
+            status::DEFAULT.to_string()
+        } else {
+            status
+        },
         created_at: now,
+    };
+    persist_row(row.clone())?;
+    Ok(row)
+}
+
+/// Loads a report by id.
+pub fn find_by_id(id: Uuid) -> Result<Option<LostFoundReport>> {
+    if in_memory_enabled() {
+        return Ok(TEST_ROWS.with(|store| {
+            store
+                .borrow()
+                .iter()
+                .find(|row| row.id == id)
+                .cloned()
+        }));
+    }
+    repo::find_by_id::<LostFoundReport, LostFoundReport>(id)
+}
+
+/// Updates the workflow status of an existing report (host).
+pub fn update_status(id: Uuid, status: String) -> Result<LostFoundReport> {
+    let mut row = find_by_id(id)?.ok_or_else(|| PortakiError::Host("report_not_found".into()))?;
+    row.status = if status.trim().is_empty() {
+        status::DEFAULT.to_string()
+    } else {
+        status
     };
     persist_row(row.clone())?;
     Ok(row)
@@ -87,9 +120,17 @@ pub fn create(
 
 fn persist_row(row: LostFoundReport) -> Result<()> {
     if in_memory_enabled() {
-        TEST_ROWS.with(|store| store.borrow_mut().push(row));
+        TEST_ROWS.with(|store| {
+            let mut rows = store.borrow_mut();
+            if let Some(index) = rows.iter().position(|existing| existing.id == row.id) {
+                rows[index] = row;
+            } else {
+                rows.push(row);
+            }
+        });
         return Ok(());
     }
+    // Gateway `repo_create` upserts on primary key (`id`).
     let _ = repo::create::<LostFoundReport, LostFoundReport, LostFoundReport>(row)?;
     Ok(())
 }

@@ -6,10 +6,10 @@
     "en": "Lost & found"
   },
   "description": {
-    "fr": "Les voyageurs signalent un objet perdu ou trouvé — l’hôte est prévenu.",
-    "en": "Guests report a lost or found item — the host is notified."
+    "fr": "Déclarez un objet trouvé depuis un séjour — le voyageur est prévenu. Les voyageurs peuvent aussi signaler un objet depuis le livret.",
+    "en": "Declare a found item from a stay — the guest is notified. Guests can also report items from the booklet."
   },
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "Portaki",
     "url": "https://portaki.app",

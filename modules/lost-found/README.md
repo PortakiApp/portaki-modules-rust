@@ -1,6 +1,6 @@
 # lost-found
 
-Official Portaki lost & found — guests report lost or found items during or after the stay.
+Official Portaki lost & found — host-declared found items (guest email) and guest self-reports (host email).
 
 Part of the [`portaki-modules`](https://github.com/PortakiApp/portaki-modules) monorepo.
 
@@ -16,20 +16,35 @@ OCI image: `ghcr.io/portakiapp/portaki-modules-lost-found:<semver>`
 |------------|----------|---------|
 | `core.storage` | Yes | `LostFoundReport` entity (many per stay) + KV config (`host_note`) |
 
+## Data model
+
+`LostFoundReport` (schema v2):
+
+| Field | Notes |
+|-------|--------|
+| `kind` | `lost` \| `found` |
+| `item_description` | Plain text (guest) or TipTap JSON (host-found) |
+| `status` | `to_collect` (default, « À récupérer ») \| `sent` (« Envoyé ») \| `returned` (« Récupéré ») |
+| `contact_hint` / `details` | Guest optional fields |
+
 ## Surfaces
 
 | Shell | Surface id | Description |
 |-------|------------|-------------|
 | guest | `home.card` | Kind + description form; optional host tip banner; stay report list after submit |
-| host | `main` | Optional guest tip, save config, recent reports (up to 20) |
+| host | `main` | Banner, TipTap host note, recent reports (create UI is React in the dashboard) |
+
+Host stay chrome (button + modal) lives in the dashboard — no SDK `stay-action` surface type.
 
 ## Queries and commands
 
-- `listForStay` — reports for the current guest stay
+- `listForStay` — guest stay reports; host may pass `stayId`
 - `listRecent` — newest reports for the property (host)
-- `submit` — create report; emits `lost-found.submitted`
-- `updateConfig` — persists optional `host_note` in KV
-- `emailContext` — `checkoutTips` for Portaki `lost-found` guest email when `host_note` is set
+- `submit` — guest create report; emits `lost-found.submitted` → host email
+- `submitFound` — host create found report(s) for one or more `stayIds` (shared description/status); emits `lost-found.host-found` per stay → guest `lost-found` email
+- `updateStatus` — host change report status (`to_collect` \| `sent` \| `returned`) after create
+- `updateConfig` — persists optional `host_note` in KV (TipTap JSON ok)
+- `emailContext` — for Portaki `lost-found` guest email: `checkoutTips` (host note), `lostItemDescription` + `hasDeclaration` from stay reports
 
 ## Development
 

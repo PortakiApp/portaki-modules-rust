@@ -8,6 +8,7 @@ use portaki_sdk::sdui::primitives::{
 use portaki_sdk::sdui::surface::Surface;
 
 use crate::config::load_config;
+use crate::description;
 use crate::entities::LostFoundReport;
 use crate::kind;
 
@@ -16,7 +17,10 @@ pub fn build_home_card(reports: &[LostFoundReport]) -> Surface {
     let mut children: Vec<Component> = Vec::new();
 
     if let Some(note) = config.host_note_text() {
-        children.push(InfoBanner::new().message(note.to_string()).into());
+        let plain = description::to_plain_text(note);
+        if !plain.is_empty() {
+            children.push(InfoBanner::new().message(plain).into());
+        }
     }
 
     if reports.is_empty() {
@@ -57,8 +61,14 @@ pub fn build_home_card(reports: &[LostFoundReport]) -> Surface {
 
 fn report_list_item(report: &LostFoundReport) -> ListItem {
     let subtitle = kind::kind_label_key(report.kind.as_str());
+    let title = description::to_plain_text(&report.item_description);
+    let title = if title.is_empty() {
+        report.item_description.clone()
+    } else {
+        title
+    };
     ListItem::new()
-        .title(report.item_description.clone())
+        .title(title)
         .subtitle(format!("i18n:{subtitle}"))
 }
 
