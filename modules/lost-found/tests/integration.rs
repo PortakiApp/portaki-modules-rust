@@ -108,7 +108,8 @@ fn submit_allows_multiple_reports_and_shows_list() {
             )
             .expect("submit second");
 
-            let rows = list_for_stay(ctx.clone(), ListForStayArgs::default()).expect("list after second");
+            let rows =
+                list_for_stay(ctx.clone(), ListForStayArgs::default()).expect("list after second");
             assert_eq!(rows.len(), 2);
 
             let surface = render_home_card(ctx);

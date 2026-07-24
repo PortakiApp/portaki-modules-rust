@@ -95,13 +95,7 @@ pub fn create(
 /// Loads a report by id.
 pub fn find_by_id(id: Uuid) -> Result<Option<LostFoundReport>> {
     if in_memory_enabled() {
-        return Ok(TEST_ROWS.with(|store| {
-            store
-                .borrow()
-                .iter()
-                .find(|row| row.id == id)
-                .cloned()
-        }));
+        return Ok(TEST_ROWS.with(|store| store.borrow().iter().find(|row| row.id == id).cloned()));
     }
     repo::find_by_id::<LostFoundReport, LostFoundReport>(id)
 }

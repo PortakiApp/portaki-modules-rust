@@ -27,9 +27,7 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
     );
 
     let mut children: Vec<Component> = vec![
-        InfoBanner::new()
-            .message("i18n:host.main.banner")
-            .into(),
+        InfoBanner::new().message("i18n:host.main.banner").into(),
         Text::new()
             .text("i18n:host.main.help")
             .variant(TextVariant::Caption)
@@ -77,11 +75,7 @@ pub fn render_host_main(ctx: HostContext) -> Surface {
                 );
                 Component::Form(
                     Form::new()
-                        .child(
-                            Text::new()
-                                .text(title)
-                                .variant(TextVariant::Body),
-                        )
+                        .child(Text::new().text(title).variant(TextVariant::Body))
                         .child(
                             Field::new()
                                 .name("status")
