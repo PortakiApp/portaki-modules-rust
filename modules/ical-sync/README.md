@@ -45,13 +45,12 @@ Manual trigger: `POST /api/v1/properties/{id}/modules/ical-sync/sync`.
     { "id": "cal-1", "url": "https://…/calendar.ics", "label": "Airbnb" },
     { "id": "cal-2", "url": "https://…/other.ics" }
   ],
-  "ical_url_primary": "https://…/calendar.ics",
   "last_sync_at": "2026-07-23T08:12:00Z",
   "sync_summary": "3 stay(s) · 1 feed(s) ok · 0 feed(s) failed"
 }
 ```
 
-`calendars` is the source of truth (dynamic list). `ical_url_primary` is mirrored from the first connected URL for platform `property.icalUrl` sync. Legacy `ical_url_secondary` / `feeds_json` migrate on load.
+`calendars` is the only source of truth. Sync fetches every connected URL. Legacy `ical_url_primary` / `ical_url_secondary` / `feeds_json` are accepted on load (and on `updateConfig`) and converted into `calendars` — they are never persisted or exposed going forward.
 
 Soft UI cap: 20 calendar rows (`CALENDAR_SLOTS`).
 

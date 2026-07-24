@@ -27,11 +27,9 @@ impl CalendarFeed {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ModuleConfig {
+    /// Sole source of truth for connected calendar feeds.
     #[serde(default)]
     pub calendars: Vec<CalendarFeed>,
-    /// Mirrored first calendar URL for platform guest-field sync (`property.icalUrl`).
-    #[serde(default, skip_serializing_if = "String::is_empty")]
-    pub ical_url_primary: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_sync_at: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -49,16 +47,6 @@ impl ModuleConfig {
     pub fn has_any_feed(&self) -> bool {
         !self.connected_calendars().is_empty()
     }
-
-    /// Keep `ical_url_primary` aligned with the first connected calendar URL.
-    pub fn sync_primary_mirror(&mut self) {
-        self.ical_url_primary = self
-            .connected_calendars()
-            .first()
-            .and_then(|c| c.trimmed_url())
-            .unwrap_or("")
-            .to_string();
-    }
 }
 
 fn trim_url(raw: &str) -> Option<&str> {
@@ -71,6 +59,7 @@ fn trim_url(raw: &str) -> Option<&str> {
 }
 
 /// Wire format that accepts the calendars list plus legacy primary/secondary / feeds_json.
+/// Legacy keys are load-only — never written back.
 #[derive(Debug, Clone, Deserialize, Default)]
 #[serde(default)]
 struct RawConfig {
@@ -115,14 +104,11 @@ fn migrate_raw(raw: RawConfig) -> ModuleConfig {
         calendars = calendars_from_feeds_json(&raw.feeds_json);
     }
 
-    let mut config = ModuleConfig {
+    ModuleConfig {
         calendars,
-        ical_url_primary: String::new(),
         last_sync_at: nonempty_opt(raw.last_sync_at),
         sync_summary: nonempty_opt(raw.sync_summary),
-    };
-    config.sync_primary_mirror();
-    config
+    }
 }
 
 fn calendars_from_legacy_urls(primary: &str, secondary: &str) -> Vec<CalendarFeed> {
@@ -203,8 +189,7 @@ pub fn load_config() -> Result<ModuleConfig> {
 
 pub fn save_config(config: &ModuleConfig) -> Result<()> {
     let mut config = config.clone();
-    config.sync_primary_mirror();
-    // Drop empty rows before persist.
+    // Drop empty rows before persist. Never write legacy primary/secondary keys.
     config.calendars.retain(|c| c.trimmed_url().is_some());
     let bytes = serde_json::to_vec(&config).map_err(|error| {
         portaki_sdk::PortakiError::Storage(format!("config serialize: {error}"))
@@ -226,7 +211,9 @@ mod tests {
         assert_eq!(cfg.calendars.len(), 2);
         assert_eq!(cfg.calendars[0].url, "https://a.ics");
         assert_eq!(cfg.calendars[1].url, "https://b.ics");
-        assert_eq!(cfg.ical_url_primary, "https://a.ics");
+        let json = serde_json::to_value(&cfg).expect("serialize");
+        assert!(json.get("ical_url_primary").is_none());
+        assert!(json.get("ical_url_secondary").is_none());
     }
 
     #[test]
@@ -238,7 +225,9 @@ mod tests {
             ..RawConfig::default()
         });
         assert_eq!(cfg.calendars.len(), 3);
-        assert_eq!(cfg.ical_url_primary, "https://x.ics");
+        assert_eq!(cfg.calendars[0].url, "https://x.ics");
+        let json = serde_json::to_value(&cfg).expect("serialize");
+        assert!(json.get("feeds_json").is_none());
     }
 
     #[test]

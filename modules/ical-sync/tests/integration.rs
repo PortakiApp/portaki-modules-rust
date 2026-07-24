@@ -54,7 +54,9 @@ fn update_config_and_list_sources_many_calendars() {
 
             let config = get_config(ctx).expect("config");
             assert_eq!(config.calendars.len(), 3);
-            assert!(config.ical_url_primary.contains("airbnb.com"));
+            assert!(config.calendars[0].url.contains("airbnb.com"));
+            let json = serde_json::to_value(&config).expect("serialize");
+            assert!(json.get("ical_url_primary").is_none());
         });
 }
 
@@ -74,8 +76,14 @@ fn legacy_primary_secondary_still_accepted() {
             )
             .expect("update");
 
-            let sources = list_sources(ctx).expect("sources");
+            let sources = list_sources(ctx.clone()).expect("sources");
             assert_eq!(sources.sources.len(), 2);
+
+            let config = get_config(ctx).expect("config");
+            assert_eq!(config.calendars.len(), 2);
+            let json = serde_json::to_value(&config).expect("serialize");
+            assert!(json.get("ical_url_primary").is_none());
+            assert!(json.get("ical_url_secondary").is_none());
         });
 }
 

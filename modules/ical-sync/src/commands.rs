@@ -20,7 +20,7 @@ pub struct UpdateConfigArgs {
     /// Dynamic list from host StepList (`calendars.{i}.url` / `.label` / `.id`).
     #[serde(default)]
     pub calendars: Vec<CalendarInput>,
-    /// Legacy flat fields (pre multi-calendar).
+    /// Legacy flat fields (pre multi-calendar) — accepted on write, converted to `calendars`.
     #[serde(default)]
     pub ical_url_primary: String,
     #[serde(default)]
@@ -33,7 +33,6 @@ pub fn update_config(_ctx: Context, args: UpdateConfigArgs) -> Result<()> {
     let calendars = calendars_from_args(&args);
     save_config(&ModuleConfig {
         calendars,
-        ical_url_primary: String::new(),
         last_sync_at: existing.last_sync_at,
         sync_summary: existing.sync_summary,
     })
@@ -76,7 +75,7 @@ fn calendars_from_args(args: &UpdateConfigArgs) -> Vec<CalendarFeed> {
             .collect();
     }
 
-    // Legacy primary / secondary fallback.
+    // Legacy primary / secondary fallback (not persisted as those keys).
     let mut out = Vec::new();
     let primary = args.ical_url_primary.trim();
     if !primary.is_empty() {
