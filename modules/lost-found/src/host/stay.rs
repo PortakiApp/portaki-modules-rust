@@ -69,11 +69,7 @@ pub fn render_host_stay(ctx: HostContext) -> Surface {
                         Component::Form(
                             Form::new()
                                 .child(Text::new().text(title).variant(TextVariant::Body))
-                                .child(
-                                    Text::new()
-                                        .text(kind_label)
-                                        .variant(TextVariant::Caption),
-                                )
+                                .child(Text::new().text(kind_label).variant(TextVariant::Caption))
                                 .child(
                                     Field::new()
                                         .name("status")

@@ -97,7 +97,10 @@ pub fn submit_review(ctx: Context, args: SubmitReviewArgs) -> Result<()> {
                 "You received a new review",
             ),
             eyebrow: Some(LocalizedEmailText::both("Avis")),
-            title: Some(LocalizedEmailText::new("Nouvel avis voyageur", "New guest review")),
+            title: Some(LocalizedEmailText::new(
+                "Nouvel avis voyageur",
+                "New guest review",
+            )),
             body: LocalizedEmailText::both(body),
             cta: Some(ModuleEmailCta {
                 label: LocalizedEmailText::new("Voir le logement", "View property"),

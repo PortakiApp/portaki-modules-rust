@@ -4,8 +4,8 @@
 
 mod create;
 mod main;
-mod stay;
 mod status_ui;
+mod stay;
 
 pub use main::render_host_main;
 pub use stay::render_host_stay;

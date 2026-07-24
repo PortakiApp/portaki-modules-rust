@@ -19,9 +19,7 @@ pub fn notify_host_submitted(
     contact_hint: Option<&str>,
     details: Option<&str>,
 ) -> Result<()> {
-    let mut body = format!(
-        "Un voyageur a signalé un objet ({kind}) :\n\n{item_description}"
-    );
+    let mut body = format!("Un voyageur a signalé un objet ({kind}) :\n\n{item_description}");
     if let Some(hint) = contact_hint {
         body.push_str("\n\nContact / lieu : ");
         body.push_str(hint);
@@ -40,10 +38,7 @@ pub fn notify_host_submitted(
                 "A guest reported a lost or found item",
             ),
             eyebrow: Some(LocalizedEmailText::both("Objets perdus / trouvés")),
-            title: Some(LocalizedEmailText::new(
-                "Nouveau signalement",
-                "New report",
-            )),
+            title: Some(LocalizedEmailText::new("Nouveau signalement", "New report")),
             body: LocalizedEmailText::both(body),
             cta: Some(ModuleEmailCta {
                 label: LocalizedEmailText::new("Voir le logement", "View property"),
@@ -58,7 +53,11 @@ pub fn notify_host_submitted(
 }
 
 /// Host-declared found item → notify guest.
-pub fn notify_guest_host_found(stay_id: Uuid, report_id: Uuid, plain_description: &str) -> Result<()> {
+pub fn notify_guest_host_found(
+    stay_id: Uuid,
+    report_id: Uuid,
+    plain_description: &str,
+) -> Result<()> {
     let body = format!(
         "En préparant le logement, l'hôte a retrouvé un objet qui pourrait vous appartenir.\n\n« {plain_description} »\n\nRépondez à cet email ou ouvrez votre livret pour organiser la récupération."
     );

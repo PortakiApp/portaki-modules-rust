@@ -185,8 +185,5 @@ fn emit_toggle_stay(stay_id: Uuid, selected: &[Uuid]) -> Action {
     let payload = StayIdsInput {
         stay_ids: next.iter().map(Uuid::to_string).collect(),
     };
-    Action::emit(
-        contracts::shell::SURFACE_INPUT,
-        Some(json_value(payload)),
-    )
+    Action::emit(contracts::shell::SURFACE_INPUT, Some(json_value(payload)))
 }
