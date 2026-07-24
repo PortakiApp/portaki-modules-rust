@@ -11,7 +11,7 @@ mod storage;
 pub use commands::{submit, SubmitArgs};
 pub use entities::PreArrivalResponse;
 pub use guest::render_home_card;
-pub use host::render_host_main;
+pub use host::{render_host_main, render_host_stay};
 pub use queries::{get_status, PreArrivalStatus};
 pub use storage::reset_test_store;
 

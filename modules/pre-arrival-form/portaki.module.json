@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/PortakiApp/portaki-sdk/main/schema/module.v1.json",
+  "id": "pre-arrival-form",
+  "name": {
+    "fr": "Formulaire de pré-arrivée",
+    "en": "Pre-arrival form"
+  },
+  "description": {
+    "fr": "Recueille horaire, occasion, allergies avant l'arrivée.",
+    "en": "Collects ETA, occasion, and allergies before arrival."
+  },
+  "version": "0.1.0",
+  "author": {
+    "name": "Portaki",
+    "url": "https://portaki.app",
+    "type": "official"
+  },
+  "icon": "clipboard",
+  "type": "official",
+  "hostSurfaces": [
+    {
+      "type": "property-workspace-tab",
+      "pathSegment": "pre-arrival-form",
+      "label": {
+        "fr": "Formulaire de pré-arrivée",
+        "en": "Pre-arrival form"
+      },
+      "icon": "clipboard"
+    },
+    {
+      "type": "stay-detail",
+      "pathSegment": "stay",
+      "label": {
+        "fr": "Formulaire de pré-arrivée",
+        "en": "Pre-arrival form"
+      },
+      "icon": "clipboard"
+    }
+  ]
+}

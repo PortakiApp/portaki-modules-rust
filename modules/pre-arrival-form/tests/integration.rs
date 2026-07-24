@@ -4,9 +4,12 @@ use serial_test::serial;
 
 use portaki_sdk::sdui::component::Component;
 use portaki_sdk::sdui::surface::Surface;
+use uuid::Uuid;
+
 use portaki_test_utils::{MockContext, Property};
 use pre_arrival_form::{
-    get_status, render_home_card, render_host_main, reset_test_store, submit, SubmitArgs,
+    get_status, render_home_card, render_host_main, render_host_stay, reset_test_store, submit,
+    SubmitArgs,
 };
 
 fn contains_component_type(surface: &Surface, type_name: &str) -> bool {
@@ -20,6 +23,9 @@ fn contains_component_type(surface: &Surface, type_name: &str) -> bool {
             Component::Button(_) if type_name == "Button" => true,
             Component::TimePicker(_) if type_name == "TimePicker" => true,
             Component::TextArea(_) if type_name == "TextArea" => true,
+            Component::Pill(_) if type_name == "Pill" => true,
+            Component::ListItem(_) if type_name == "ListItem" => true,
+            Component::Stack(_) if type_name == "Stack" => true,
             _ => false,
         };
         if matches {
@@ -44,6 +50,7 @@ fn child_components(node: &Component) -> Vec<&Component> {
         Component::Form(inner) => inner.children.iter().collect(),
         Component::Page(inner) => inner.children.iter().collect(),
         Component::Field(inner) => inner.children.iter().collect(),
+        Component::ListItem(inner) => inner.children.iter().collect(),
         _ => Vec::new(),
     }
 }
@@ -110,5 +117,85 @@ fn host_main_renders_page() {
             let surface = render_host_main(ctx);
             assert!(contains_component_type(&surface, "Page"));
             assert!(contains_component_type(&surface, "Text"));
+        });
+}
+
+#[test]
+#[serial]
+fn host_stay_surface_pending_without_response() {
+    reset_test_store();
+    let stay_id = Uuid::new_v4();
+
+    MockContext::host()
+        .with_property(Property::default())
+        .run(|mut ctx| {
+            ctx.input = serde_json::json!({
+                "stayId": stay_id.to_string(),
+                "guestName": "Liam O'Brien",
+                "stayDates": "21 – 26 août",
+            });
+            let surface = render_host_stay(ctx);
+            assert!(contains_component_type(&surface, "Page"));
+            assert!(contains_component_type(&surface, "Card"));
+            assert!(contains_component_type(&surface, "Pill"));
+            let json = serde_json::to_string(&surface).expect("surface json");
+            assert!(json.contains("surface.host.stay.title"));
+            assert!(json.contains("host.stay.status.pending"));
+            assert!(json.contains("host.stay.pending"));
+            assert!(!json.contains("form.arrival.label"));
+        });
+}
+
+#[test]
+#[serial]
+fn host_stay_surface_shows_completed_response() {
+    reset_test_store();
+    let stay_id = Uuid::parse_str("22222222-2222-2222-2222-222222222222").expect("uuid");
+
+    MockContext::guest()
+        .with_property(Property::default())
+        .run(|mut ctx| {
+            if let Some(guest) = ctx.guest.as_mut() {
+                guest.session_id = stay_id;
+            }
+            submit(
+                ctx,
+                SubmitArgs {
+                    arrival_time_estimated: Some("17:30".into()),
+                    guest_occasion: Some("Lune de miel".into()),
+                    guest_allergies: Some("Fruits à coque".into()),
+                    message_to_host: Some("Champagne au frais".into()),
+                },
+            )
+            .expect("submit");
+        });
+
+    MockContext::host()
+        .with_property(Property::default())
+        .run(|mut ctx| {
+            ctx.input = serde_json::json!({ "stayId": stay_id.to_string() });
+            let surface = render_host_stay(ctx);
+            assert!(contains_component_type(&surface, "Card"));
+            assert!(contains_component_type(&surface, "Pill"));
+            assert!(contains_component_type(&surface, "ListItem"));
+            let json = serde_json::to_string(&surface).expect("surface json");
+            assert!(json.contains("host.stay.status.done"));
+            assert!(json.contains("17:30"));
+            assert!(json.contains("Lune de miel"));
+            assert!(json.contains("Fruits à coque"));
+            assert!(json.contains("Champagne au frais"));
+        });
+}
+
+#[test]
+#[serial]
+fn host_stay_surface_missing_stay_id() {
+    reset_test_store();
+    MockContext::host()
+        .with_property(Property::default())
+        .run(|ctx| {
+            let surface = render_host_stay(ctx);
+            let json = serde_json::to_string(&surface).expect("surface json");
+            assert!(json.contains("host.stay.missingStay"));
         });
 }

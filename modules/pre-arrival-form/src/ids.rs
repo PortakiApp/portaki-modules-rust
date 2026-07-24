@@ -5,6 +5,7 @@ use portaki_sdk::prelude::*;
 define_surface_ids! {
     HOME_CARD = "home.card",
     HOST_MAIN = "main",
+    HOST_STAY = "stay",
 }
 
 define_operation_names! {
