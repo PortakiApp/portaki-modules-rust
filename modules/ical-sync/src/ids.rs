@@ -4,6 +4,8 @@ use portaki_sdk::prelude::*;
 
 define_surface_ids! {
     HOST_MAIN = "main",
+    // property-stats-card pathSegment / Wasm surface id
+    HOST_STATS = "calendar-sync",
 }
 
 define_operation_names! {

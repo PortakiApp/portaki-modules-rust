@@ -27,6 +27,15 @@
         "en": "Calendars"
       },
       "icon": "calendar"
+    },
+    {
+      "type": "property-stats-card",
+      "pathSegment": "calendar-sync",
+      "label": {
+        "fr": "Sync calendriers",
+        "en": "Calendar sync"
+      },
+      "icon": "calendar"
     }
   ],
   "hostScheduledSync": {

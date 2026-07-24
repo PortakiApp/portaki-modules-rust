@@ -2,7 +2,7 @@
 
 use ical_sync::{
     apply_feeds, get_config, list_sources, parse_stay_rows, update_config, ApplyFeedsArgs,
-    FeedBody, UpdateConfigArgs,
+    CalendarInput, FeedBody, UpdateConfigArgs,
 };
 use portaki_sdk::capability;
 use portaki_test_utils::MockContext;
@@ -10,26 +10,72 @@ use serial_test::serial;
 
 #[test]
 #[serial]
-fn update_config_and_list_sources() {
+fn update_config_and_list_sources_many_calendars() {
     MockContext::host()
         .with_capabilities(&[capability::core::STORAGE, capability::core::ICAL_IMPORT])
         .run(|ctx| {
             update_config(
                 ctx.clone(),
                 UpdateConfigArgs {
-                    ical_url_primary: "https://www.airbnb.com/calendar/ical/1.ics".into(),
-                    ical_url_secondary: "  ".into(),
+                    calendars: vec![
+                        CalendarInput {
+                            id: "airbnb".into(),
+                            url: "https://www.airbnb.com/calendar/ical/1.ics".into(),
+                            label: "Airbnb".into(),
+                        },
+                        CalendarInput {
+                            id: "".into(),
+                            url: "  ".into(),
+                            label: "".into(),
+                        },
+                        CalendarInput {
+                            id: "booking".into(),
+                            url: "https://admin.booking.com/hotel/hoteladmin/ical.html?t=abc"
+                                .into(),
+                            label: "Booking".into(),
+                        },
+                        CalendarInput {
+                            id: "vrbo".into(),
+                            url: "https://www.vrbo.com/calendar/ical/9.ics".into(),
+                            label: "".into(),
+                        },
+                    ],
+                    ..Default::default()
                 },
             )
             .expect("update");
 
             let sources = list_sources(ctx.clone()).expect("sources");
-            assert_eq!(sources.sources.len(), 1);
-            assert_eq!(sources.sources[0].id, "primary");
+            assert_eq!(sources.sources.len(), 3);
+            assert_eq!(sources.sources[0].id, "airbnb");
             assert_eq!(sources.sources[0].provider.as_deref(), Some("airbnb"));
+            assert_eq!(sources.sources[1].provider.as_deref(), Some("booking"));
+            assert_eq!(sources.sources[2].provider.as_deref(), Some("vrbo"));
 
             let config = get_config(ctx).expect("config");
+            assert_eq!(config.calendars.len(), 3);
             assert!(config.ical_url_primary.contains("airbnb.com"));
+        });
+}
+
+#[test]
+#[serial]
+fn legacy_primary_secondary_still_accepted() {
+    MockContext::host()
+        .with_capabilities(&[capability::core::STORAGE, capability::core::ICAL_IMPORT])
+        .run(|ctx| {
+            update_config(
+                ctx.clone(),
+                UpdateConfigArgs {
+                    ical_url_primary: "https://example.com/a.ics".into(),
+                    ical_url_secondary: "https://example.com/b.ics".into(),
+                    ..Default::default()
+                },
+            )
+            .expect("update");
+
+            let sources = list_sources(ctx).expect("sources");
+            assert_eq!(sources.sources.len(), 2);
         });
 }
 
@@ -42,8 +88,12 @@ fn apply_feeds_parses_ics_and_updates_summary() {
             update_config(
                 ctx.clone(),
                 UpdateConfigArgs {
-                    ical_url_primary: "https://example.com/a.ics".into(),
-                    ical_url_secondary: String::new(),
+                    calendars: vec![CalendarInput {
+                        id: "primary".into(),
+                        url: "https://example.com/a.ics".into(),
+                        label: "".into(),
+                    }],
+                    ..Default::default()
                 },
             )
             .expect("update");

@@ -62,21 +62,18 @@ pub fn get_config(_ctx: Context) -> Result<ModuleConfig> {
 #[portaki_sdk::query(name = "listSources")]
 pub fn list_sources(_ctx: Context) -> Result<ListSourcesResponse> {
     let config = load_config().unwrap_or_default();
-    let mut sources = Vec::new();
-    if let Some(url) = config.primary_url() {
-        sources.push(FeedSource {
-            id: "primary".into(),
-            url: url.to_string(),
-            provider: guess_provider(url),
-        });
-    }
-    if let Some(url) = config.secondary_url() {
-        sources.push(FeedSource {
-            id: "secondary".into(),
-            url: url.to_string(),
-            provider: guess_provider(url),
-        });
-    }
+    let sources = config
+        .connected_calendars()
+        .into_iter()
+        .filter_map(|feed| {
+            let url = feed.trimmed_url()?;
+            Some(FeedSource {
+                id: feed.id.clone(),
+                url: url.to_string(),
+                provider: guess_provider(url),
+            })
+        })
+        .collect();
     Ok(ListSourcesResponse { sources })
 }
 
