@@ -1,6 +1,11 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.1]
+
+### Fixed
+
+- Bump semver so property pins can re-install a digest that includes `render_host_stay`
+  (same-tag republish of `0.2.0` left installs on the old digest).
 
 ### Changed
 
