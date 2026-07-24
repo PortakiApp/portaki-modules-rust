@@ -5,9 +5,9 @@ use uuid::Uuid;
 
 use lost_found::{
     build_email_context, list_for_stay, list_recent, render_home_card, render_host_main,
-    reset_test_store, submit, submit_found, update_config, update_status, EmailContextArgs,
-    ListForStayArgs, SubmitArgs, SubmitFoundArgs, UpdateConfigArgs, UpdateStatusArgs,
-    STATUS_DEFAULT,
+    render_host_stay, reset_test_store, submit, submit_found, update_config, update_status,
+    EmailContextArgs, ListForStayArgs, SubmitArgs, SubmitFoundArgs, UpdateConfigArgs,
+    UpdateStatusArgs, STATUS_DEFAULT,
 };
 use portaki_sdk::prelude::EmailTemplateKey;
 use portaki_sdk::sdui::component::Component;
@@ -285,7 +285,7 @@ fn host_submit_found_creates_report_per_stay() {
 
 #[test]
 #[serial]
-fn host_submit_found_respects_status() {
+fn host_submit_found_always_defaults_status_to_collect() {
     reset_test_store();
     let stay_id = Uuid::new_v4();
 
@@ -311,8 +311,42 @@ fn host_submit_found_respects_status() {
             )
             .expect("list");
             assert_eq!(rows.len(), 1);
-            assert_eq!(rows[0].status, "sent");
+            assert_eq!(rows[0].status, STATUS_DEFAULT);
             assert!(rows[0].item_description.contains("Doudou"));
+        });
+}
+
+#[test]
+#[serial]
+fn host_stay_surface_renders_create_form() {
+    reset_test_store();
+    let stay_id = Uuid::new_v4();
+
+    MockContext::host()
+        .with_property(Property::default())
+        .run(|mut ctx| {
+            ctx.input = serde_json::json!({ "stayId": stay_id.to_string() });
+            let surface = render_host_stay(ctx);
+            assert!(contains_component_type(&surface, "Page"));
+            assert!(contains_component_type(&surface, "Form"));
+            let json = serde_json::to_string(&surface).expect("surface json");
+            assert!(json.contains("submitFound") || json.contains("host.create.submit"));
+            // Create form has no status picker; empty stay list has no status Select either.
+            assert!(!json.contains("host.main.status.label"));
+        });
+}
+
+#[test]
+#[serial]
+fn host_main_includes_create_form_without_status_picker() {
+    reset_test_store();
+    MockContext::host()
+        .with_property(Property::default())
+        .run(|ctx| {
+            let surface = render_host_main(ctx);
+            let json = serde_json::to_string(&surface).expect("surface json");
+            assert!(json.contains("host.create.title") || json.contains("submitFound"));
+            assert!(json.contains("RichTextEditor") || json.contains("description"));
         });
 }
 

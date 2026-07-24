@@ -1,36 +1,15 @@
 //! Module commands — guest submit, host submitFound / updateStatus, host config.
 
-use portaki_sdk::host::events;
 use portaki_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::config::{save_config, ModuleConfig};
 use crate::description;
+use crate::email_send;
 use crate::kind;
 use crate::status;
 use crate::storage;
-
-#[portaki_sdk::wire(serialize)]
-struct SubmittedPayload {
-    property_id: Uuid,
-    kind: String,
-    item_description: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    contact_hint: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    details: Option<String>,
-    stay_id: Uuid,
-}
-
-#[portaki_sdk::wire(serialize)]
-struct HostFoundPayload {
-    property_id: Uuid,
-    stay_id: Uuid,
-    item_description: String,
-    status: String,
-    report_id: Uuid,
-}
 
 /// Arguments for guest `submit`.
 #[portaki_sdk::wire]
@@ -60,16 +39,13 @@ pub fn submit(ctx: Context, args: SubmitArgs) -> Result<()> {
         status::DEFAULT.to_string(),
     )?;
 
-    events::emit(
-        crate::ids::SUBMITTED,
-        &SubmittedPayload {
-            property_id: ctx.property_id,
-            kind,
-            item_description,
-            contact_hint,
-            details,
-            stay_id,
-        },
+    email_send::notify_host_submitted(
+        ctx.property_id,
+        stay_id,
+        &kind,
+        &item_description,
+        contact_hint.as_deref(),
+        details.as_deref(),
     )?;
     Ok(())
 }
@@ -98,7 +74,9 @@ pub fn submit_found(ctx: Context, args: SubmitFoundArgs) -> Result<()> {
 
     let stay_ids = resolve_stay_ids(&args)?;
     let description = require_description(&args.description)?;
-    let status = status::parse_status_or_default(args.status.as_deref())?;
+    // Create always starts as « À récupérer » — status edits use `updateStatus`.
+    let _ = args.status;
+    let status = status::DEFAULT.to_string();
     let plain = description::to_plain_text(&description);
     if plain.is_empty() {
         return Err(PortakiError::Host("description_required".to_string()));
@@ -114,19 +92,16 @@ pub fn submit_found(ctx: Context, args: SubmitFoundArgs) -> Result<()> {
             status.clone(),
         )?;
 
-        events::emit(
-            crate::ids::HOST_FOUND,
-            &HostFoundPayload {
-                property_id: ctx.property_id,
-                stay_id,
-                item_description: plain.clone(),
-                status: status.clone(),
-                report_id: report.id,
-            },
-        )?;
+        email_send::notify_guest_host_found(stay_id, report.id, &plain)?;
     }
 
     Ok(())
+}
+
+/// Scheduled J+2 tick — module owns gate + guest email content.
+#[portaki_sdk::command(name = "sendCheckoutFollowUp")]
+pub fn send_checkout_follow_up(ctx: Context, _args: EmptyArgs) -> Result<()> {
+    email_send::send_checkout_follow_up(&ctx)
 }
 
 /// Arguments for host `updateStatus` — change workflow status after create.

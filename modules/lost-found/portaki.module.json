@@ -26,6 +26,15 @@
         "en": "Lost & found"
       },
       "icon": "search"
+    },
+    {
+      "type": "stay-detail",
+      "pathSegment": "stay",
+      "label": {
+        "fr": "Objets déclarés",
+        "en": "Declared items"
+      },
+      "icon": "search"
     }
   ]
 }

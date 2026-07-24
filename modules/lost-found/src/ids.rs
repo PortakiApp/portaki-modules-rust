@@ -5,6 +5,7 @@ use portaki_sdk::prelude::*;
 define_surface_ids! {
     HOME_CARD = "home.card",
     HOST_MAIN = "main",
+    HOST_STAY = "stay",
 }
 
 define_operation_names! {
@@ -15,14 +16,10 @@ define_operation_names! {
     UPDATE_STATUS = "updateStatus",
     UPDATE_CONFIG = "updateConfig",
     EMAIL_CONTEXT = "emailContext",
+    SEND_CHECKOUT_FOLLOW_UP = "sendCheckoutFollowUp",
 }
 
-// SUBMITTED = guest self-report → host email
-// HOST_FOUND = host-declared found → guest email
-define_event_types! {
-    SUBMITTED = "lost-found.submitted",
-    HOST_FOUND = "lost-found.host-found",
-}
+// Domain events removed — transactional mail uses host::email::send.
 
 /// Catalog module id (`lost-found`).
 pub fn module_id() -> ModuleId {

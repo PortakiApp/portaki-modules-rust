@@ -1,21 +1,13 @@
 //! Module commands — submit issue report.
 
-use portaki_sdk::host::events;
+use portaki_sdk::host::email::{
+    self, EmailAudience, LocalizedEmailText, ModuleEmailCta, ModuleEmailSdui, SendEmailArgs,
+};
 use portaki_sdk::prelude::*;
 use uuid::Uuid;
 
 use crate::category;
 use crate::storage;
-
-#[portaki_sdk::wire(serialize)]
-struct SubmittedPayload {
-    property_id: Uuid,
-    category: String,
-    summary: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    details: Option<String>,
-    stay_id: Uuid,
-}
 
 /// Arguments for `submit`.
 #[portaki_sdk::wire]
@@ -35,16 +27,36 @@ pub fn submit(ctx: Context, args: SubmitArgs) -> Result<()> {
 
     let _ = storage::create(stay_id, category.clone(), summary.clone(), details.clone())?;
 
-    events::emit(
-        crate::ids::SUBMITTED,
-        &SubmittedPayload {
-            property_id: ctx.property_id,
-            category,
-            summary,
-            details,
-            stay_id,
+    let mut body = format!("Catégorie : {category}\n\n{summary}");
+    if let Some(extra) = &details {
+        body.push_str("\n\n");
+        body.push_str(extra);
+    }
+
+    email::send(&SendEmailArgs {
+        email_id: format!("submitted-{stay_id}"),
+        audience: EmailAudience::Host,
+        content: ModuleEmailSdui {
+            subject: LocalizedEmailText::new(
+                "Un voyageur a signalé un problème",
+                "A guest reported an issue",
+            ),
+            eyebrow: Some(LocalizedEmailText::both("Signalement")),
+            title: Some(LocalizedEmailText::new(
+                "Nouveau problème signalé",
+                "New issue report",
+            )),
+            body: LocalizedEmailText::both(body),
+            cta: Some(ModuleEmailCta {
+                label: LocalizedEmailText::new("Voir le logement", "View property"),
+                url: None,
+                portaki_action: None,
+            }),
         },
-    )?;
+        stay_id: Some(stay_id),
+        property_id: Some(ctx.property_id),
+        action_url: None,
+    })?;
     Ok(())
 }
 

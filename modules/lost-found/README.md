@@ -32,19 +32,21 @@ OCI image: `ghcr.io/portakiapp/portaki-modules-lost-found:<semver>`
 | Shell | Surface id | Description |
 |-------|------------|-------------|
 | guest | `home.card` | Kind + description form; optional host tip banner; stay report list after submit |
-| host | `main` | Banner, TipTap host note, recent reports (create UI is React in the dashboard) |
+| host | `main` | Banner, TipTap host note, create-found form (multi-stay via `input.stays` / `stayIds`), recent reports + status |
+| host | `stay` | Stay-scoped create + list/status (`input.stayId`) — embedded by host shells via manifest `stay-detail` |
 
-Host stay chrome (button + modal) lives in the dashboard — no SDK `stay-action` surface type.
+Host apps only embed `HostSurfacePanel` (or equivalent). No module-named React create modal.
 
 ## Queries and commands
 
 - `listForStay` — guest stay reports; host may pass `stayId`
 - `listRecent` — newest reports for the property (host)
-- `submit` — guest create report; emits `lost-found.submitted` → host email
-- `submitFound` — host create found report(s) for one or more `stayIds` (shared description/status); emits `lost-found.host-found` per stay → guest `lost-found` email
+- `submit` — guest create report; `host::email::send` → host notify (module SDUI)
+- `submitFound` — host create found report(s); `host::email::send` → guest (module SDUI)
+- `sendCheckoutFollowUp` — J+2 tick; guest mail only when a stay declaration exists
 - `updateStatus` — host change report status (`to_collect` \| `sent` \| `returned`) after create
 - `updateConfig` — persists optional `host_note` in KV (TipTap JSON ok)
-- `emailContext` — for Portaki `lost-found` guest email: `checkoutTips` (host note), `lostItemDescription` + `hasDeclaration` from stay reports
+- `emailContext` — optional Portaki snippets: `checkoutTips`, `lostItemDescription` + `hasDeclaration`
 
 ## Development
 

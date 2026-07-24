@@ -13,10 +13,6 @@ define_operation_names! {
     SUBMIT = "submit",
 }
 
-define_event_types! {
-    SUBMITTED = "issue-report.submitted",
-}
-
 /// Catalog module id (`issue-report`).
 pub fn module_id() -> ModuleId {
     ModuleId::from_static("issue-report")

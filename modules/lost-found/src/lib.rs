@@ -4,6 +4,7 @@ mod commands;
 mod config;
 mod description;
 mod email_context;
+mod email_send;
 mod entities;
 mod guest;
 mod host;
@@ -14,8 +15,8 @@ mod status;
 mod storage;
 
 pub use commands::{
-    submit, submit_found, update_config, update_status, SubmitArgs, SubmitFoundArgs,
-    UpdateConfigArgs, UpdateStatusArgs,
+    send_checkout_follow_up, submit, submit_found, update_config, update_status, SubmitArgs,
+    SubmitFoundArgs, UpdateConfigArgs, UpdateStatusArgs,
 };
 pub use config::{load_config, ModuleConfig};
 pub use email_context::{
@@ -23,7 +24,7 @@ pub use email_context::{
 };
 pub use entities::LostFoundReport;
 pub use guest::render_home_card;
-pub use host::render_host_main;
+pub use host::{render_host_main, render_host_stay};
 pub use queries::{list_for_stay, list_recent, ListForStayArgs, LostFoundReportRow};
 pub use status::{DEFAULT as STATUS_DEFAULT, WIRE_VALUES as STATUS_WIRE_VALUES};
 pub use storage::reset_test_store;

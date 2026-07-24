@@ -1,7 +1,9 @@
 //! Module commands — configuration and Portaki review submit.
 
 use portaki_sdk::host;
-use portaki_sdk::host::events;
+use portaki_sdk::host::email::{
+    self, EmailAudience, LocalizedEmailText, ModuleEmailCta, ModuleEmailSdui, SendEmailArgs,
+};
 use portaki_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -44,15 +46,6 @@ pub struct SubmitReviewArgs {
     pub comment: String,
 }
 
-#[portaki_sdk::wire(serialize)]
-struct ReviewSubmittedPayload {
-    property_id: Uuid,
-    rating: u8,
-    comment: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    guest_name: Option<String>,
-}
-
 const REVIEWS_KEY: &str = "reviews";
 
 #[portaki_sdk::command(name = "submitReview")]
@@ -83,17 +76,39 @@ pub fn submit_review(ctx: Context, args: SubmitReviewArgs) -> Result<()> {
         .as_ref()
         .and_then(|g| g.display_name.clone())
         .map(|name| name.trim().to_string())
-        .filter(|name| !name.is_empty());
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| "Voyageur".to_string());
 
-    events::emit(
-        crate::ids::SUBMITTED,
-        &ReviewSubmittedPayload {
-            property_id: ctx.property_id,
-            rating: args.rating,
-            comment,
-            guest_name,
+    let stars = "★".repeat(args.rating as usize) + &"☆".repeat(5 - args.rating as usize);
+    let mut body = format!("{guest_name} — {stars} ({}/5)", args.rating);
+    if !comment.is_empty() {
+        body.push_str("\n\n");
+        body.push_str(&comment);
+    }
+
+    let stay_id = ctx.guest.as_ref().map(|g| g.session_id);
+
+    email::send(&SendEmailArgs {
+        email_id: "review-submitted".into(),
+        audience: EmailAudience::Host,
+        content: ModuleEmailSdui {
+            subject: LocalizedEmailText::new(
+                "Vous avez reçu un nouvel avis",
+                "You received a new review",
+            ),
+            eyebrow: Some(LocalizedEmailText::both("Avis")),
+            title: Some(LocalizedEmailText::new("Nouvel avis voyageur", "New guest review")),
+            body: LocalizedEmailText::both(body),
+            cta: Some(ModuleEmailCta {
+                label: LocalizedEmailText::new("Voir le logement", "View property"),
+                url: None,
+                portaki_action: None,
+            }),
         },
-    )?;
+        stay_id,
+        property_id: Some(ctx.property_id),
+        action_url: None,
+    })?;
 
     Ok(())
 }

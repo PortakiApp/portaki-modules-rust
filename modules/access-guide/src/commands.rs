@@ -1,6 +1,8 @@
 //! Module commands — configuration persistence (shared config + locale texts).
 
-use portaki_sdk::host::events;
+use portaki_sdk::host::email::{
+    self, EmailAudience, LocalizedEmailText, ModuleEmailCta, ModuleEmailSdui, SendEmailArgs,
+};
 use portaki_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -10,11 +12,6 @@ use crate::config::{
     RevealPolicy, StaffKind,
 };
 use crate::texts::{lang_code, save_texts, ModuleTexts, StepText};
-
-#[portaki_sdk::wire(serialize)]
-struct AccessCodeChangedPayload {
-    property_id: Uuid,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct StepInput {
@@ -555,14 +552,35 @@ pub fn update_config(ctx: Context, args: UpdateConfigArgs) -> Result<()> {
     save_config(&config)?;
     save_texts(&lang, &texts)?;
 
-    // Guest new-code mail — platform fans out to UPCOMING / ACTIVE stays.
+    // Guest mail — orchestrator fans out to UPCOMING / ACTIVE stays (generic host email path).
     if entry_codes_fingerprint(&previous) != entry_codes_fingerprint(&config) {
-        events::emit(
-            crate::ids::CODE_CHANGED,
-            &AccessCodeChangedPayload {
-                property_id: ctx.property_id,
+        email::send(&SendEmailArgs {
+            email_id: "code-changed".into(),
+            audience: EmailAudience::PropertyEligibleGuests,
+            content: ModuleEmailSdui {
+                subject: LocalizedEmailText::new(
+                    "Votre code d'accès a été mis à jour",
+                    "Your access code was updated",
+                ),
+                eyebrow: Some(LocalizedEmailText::both("Accès")),
+                title: Some(LocalizedEmailText::new(
+                    "Nouveau code d'accès",
+                    "New access code",
+                )),
+                body: LocalizedEmailText::new(
+                    "L'hôte a mis à jour les codes d'accès du logement. Ouvrez votre livret pour consulter les nouvelles instructions.",
+                    "The host updated the property access codes. Open your booklet for the latest instructions.",
+                ),
+                cta: Some(ModuleEmailCta {
+                    label: LocalizedEmailText::new("Voir mon accès", "View access"),
+                    url: None,
+                    portaki_action: Some("open-module:access-guide:default".into()),
+                }),
             },
-        )?;
+            stay_id: None,
+            property_id: Some(ctx.property_id),
+            action_url: None,
+        })?;
     }
 
     Ok(())

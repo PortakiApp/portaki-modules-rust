@@ -24,6 +24,7 @@ pub fn parse_status(raw: &str) -> Result<String> {
 }
 
 /// Resolves optional status — empty / missing → [`DEFAULT`].
+#[allow(dead_code)]
 pub fn parse_status_or_default(raw: Option<&str>) -> Result<String> {
     match raw.map(str::trim).filter(|s| !s.is_empty()) {
         None => Ok(DEFAULT.to_string()),

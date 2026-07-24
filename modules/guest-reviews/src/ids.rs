@@ -7,10 +7,6 @@ define_surface_ids! {
     HOST_MAIN = "main",
 }
 
-define_event_types! {
-    SUBMITTED = "guest-reviews.submitted",
-}
-
 define_operation_names! {
     GET_CONFIG = "getConfig",
     SUBMIT_REVIEW = "submitReview",

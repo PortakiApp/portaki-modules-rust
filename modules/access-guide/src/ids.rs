@@ -14,10 +14,6 @@ define_operation_names! {
     UPDATE_CONFIG = "updateConfig",
 }
 
-define_event_types! {
-    CODE_CHANGED = "access-guide.code-changed",
-}
-
 /// Catalog module id (`access-guide`).
 pub fn module_id() -> ModuleId {
     ModuleId::from_static("access-guide")
