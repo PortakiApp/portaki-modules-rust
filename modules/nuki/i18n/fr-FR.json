@@ -1,8 +1,6 @@
 {
   "module.displayName": "Nuki",
   "module.description": "Provider serrure connectée — codes clavier pour l’accès voyageur",
-  "surface.host.main.title": "Serrure Nuki",
-  "surface.host.main.subtitle": "Paramétrez la serrure pour le module Accès",
   "host.section.device": "Appareil Nuki",
   "host.section.device.help": "Identifiant et libellé de la serrure reliée au module Accès.",
   "host.smartlockId.label": "Identifiant serrure",

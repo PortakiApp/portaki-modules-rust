@@ -1,8 +1,6 @@
 {
   "module.displayName": "Nuki",
   "module.description": "Smart lock provider — keypad codes for guest access",
-  "surface.host.main.title": "Nuki smart lock",
-  "surface.host.main.subtitle": "Configure your lock for the Access module",
   "host.section.device": "Nuki device",
   "host.section.device.help": "Lock id and label wired into the Access module.",
   "host.smartlockId.label": "Smart lock ID",

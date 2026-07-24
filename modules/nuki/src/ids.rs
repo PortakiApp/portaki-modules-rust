@@ -16,6 +16,7 @@ define_operation_names! {
 }
 
 /// Catalog module id (`nuki`).
+#[allow(dead_code)]
 pub fn module_id() -> ModuleId {
     ModuleId::from_static("nuki")
 }

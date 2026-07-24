@@ -1,8 +1,6 @@
 {
   "module.displayName": "Calendriers iCal / Airbnb",
   "module.description": "Importe les séjours depuis un export calendrier .ics",
-  "surface.host.main.title": "Calendriers iCal",
-  "surface.host.main.subtitle": "Collez vos liens d’export calendrier pour importer les séjours automatiquement.",
   "host.alert.title": "Exporter depuis Airbnb",
   "host.alert.message": "Airbnb → Calendrier → Disponibilité → Exporter le calendrier → copier le lien (.ics). Ne le partagez jamais publiquement.",
   "host.section.feeds": "Flux calendrier",

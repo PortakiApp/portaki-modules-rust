@@ -1,8 +1,6 @@
 {
   "module.displayName": "iCal / Airbnb calendars",
   "module.description": "Import stays from a .ics calendar export URL",
-  "surface.host.main.title": "iCal calendars",
-  "surface.host.main.subtitle": "Paste your calendar export links to import stays automatically.",
   "host.alert.title": "Export from Airbnb",
   "host.alert.message": "Airbnb → Calendar → Availability → Export calendar → copy the .ics link. Never share it publicly.",
   "host.section.feeds": "Calendar feeds",

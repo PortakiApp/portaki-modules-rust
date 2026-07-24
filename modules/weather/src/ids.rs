@@ -21,7 +21,8 @@ define_event_types! {
     BOOKING_CONFIRMED = "core.booking.confirmed",
 }
 
-/// Catalog module id (`weather`).
+/// Catalog module id — kept for SDUI action builders.
+#[allow(dead_code)]
 pub fn module_id() -> ModuleId {
     ModuleId::from_static("weather")
 }

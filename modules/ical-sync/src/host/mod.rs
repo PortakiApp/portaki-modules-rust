@@ -1,8 +1,7 @@
 //! Host dashboard surface — config cards in the module sheet.
 
 use portaki_sdk::prelude::*;
-use portaki_sdk::sdui::common::Tone;
-use portaki_sdk::sdui::primitives::{Button, Card, Field, Form, InfoBanner, Page, Text, TextInput};
+use portaki_sdk::sdui::primitives::{Card, Field, Form, InfoBanner, Page, Text, TextInput};
 use portaki_sdk::sdui::surface::Surface;
 
 use crate::config::load_config;
@@ -10,14 +9,6 @@ use crate::config::load_config;
 #[portaki_sdk::surface(host, id = "main")]
 pub fn render_host_main(_ctx: HostContext) -> Surface {
     let config = load_config().unwrap_or_default();
-
-    let save_action = crate::ids::module_id().command(
-        crate::ids::UPDATE_CONFIG,
-        crate::commands::UpdateConfigArgs {
-            ical_url_primary: config.ical_url_primary.clone(),
-            ical_url_secondary: config.ical_url_secondary.clone(),
-        },
-    );
 
     let last_sync = config
         .last_sync_at
@@ -83,22 +74,9 @@ pub fn render_host_main(_ctx: HostContext) -> Surface {
             .text("i18n:host.main.help")
             .variant(TextVariant::Caption)
             .into(),
-        Button::new()
-            .label("i18n:host.save")
-            .action(save_action)
-            .tone(Tone::Primary)
-            .into(),
     ];
 
-    Surface::new(
-        Page::new()
-            .title("i18n:surface.host.main.title")
-            .child(
-                Text::new()
-                    .text("i18n:surface.host.main.subtitle")
-                    .variant(TextVariant::Body),
-            )
-            .child(Form::new().children(form_children)),
-    )
-    .with_id(crate::ids::HOST_MAIN)
+    // No Page title / Save — the modules sheet owns chrome + footer Save.
+    Surface::new(Page::new().child(Form::new().children(form_children)))
+        .with_id(crate::ids::HOST_MAIN)
 }

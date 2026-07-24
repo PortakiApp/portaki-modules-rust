@@ -1,9 +1,8 @@
 //! Host dashboard surfaces — config cards embedded in the module sheet.
 
 use portaki_sdk::prelude::*;
-use portaki_sdk::sdui::common::Tone;
 use portaki_sdk::sdui::primitives::{
-    Button, Card, ChoiceList, Field, Form, Page, SecretInput, Text, TextInput,
+    Card, ChoiceList, Field, Form, Page, SecretInput, Text, TextInput,
 };
 use portaki_sdk::sdui::surface::Surface;
 
@@ -12,14 +11,6 @@ use crate::config::{load_config, RevealPolicy};
 #[portaki_sdk::surface(host, id = "main")]
 pub fn render_host_main(_ctx: HostContext) -> Surface {
     let config = load_config().unwrap_or_default();
-
-    let submit_args = crate::commands::UpdateConfigArgs {
-        ssid: config.ssid.clone(),
-        password: String::new(),
-        hint: config.hint.clone().unwrap_or_default(),
-        reveal_policy: config.reveal_policy,
-    };
-    let save_action = crate::ids::module_id().command(crate::ids::UPDATE_CONFIG, submit_args);
 
     let form_children: Vec<Component> = vec![
         Card::new()
@@ -74,24 +65,11 @@ pub fn render_host_main(_ctx: HostContext) -> Surface {
             .text("i18n:host.main.help")
             .variant(TextVariant::Caption)
             .into(),
-        Button::new()
-            .label("i18n:host.save")
-            .action(save_action)
-            .tone(Tone::Primary)
-            .into(),
     ];
 
-    Surface::new(
-        Page::new()
-            .title("i18n:surface.host.main.title")
-            .child(
-                Text::new()
-                    .text("i18n:surface.host.main.subtitle")
-                    .variant(TextVariant::Body),
-            )
-            .child(Form::new().children(form_children)),
-    )
-    .with_id(crate::ids::HOST_MAIN)
+    // No Page title / Save — the modules sheet owns chrome + footer Save.
+    Surface::new(Page::new().child(Form::new().children(form_children)))
+        .with_id(crate::ids::HOST_MAIN)
 }
 
 fn reveal_choice_list(policy: RevealPolicy) -> ChoiceList {

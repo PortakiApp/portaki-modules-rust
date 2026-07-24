@@ -15,6 +15,7 @@ define_operation_names! {
 }
 
 /// Catalog module id (`wifi-guest`).
+#[allow(dead_code)]
 pub fn module_id() -> ModuleId {
     ModuleId::from_static("wifi-guest")
 }

@@ -1,8 +1,8 @@
 {
   "module.displayName": "Weather",
   "module.description": "Current conditions and 5-day forecast",
-  "surface.host.main.title": "Weather",
-  "surface.host.main.subtitle": "Configure weather display for the guest booklet",
+  "host.section.display": "Display",
+  "host.section.display.help": "Units and refresh cadence for the guest booklet.",
   "capability.openWeather.purpose": "Shows weather using Portaki's OpenWeather pool",
   "capability.openWeather.fallback": "Upgrade your plan or add an OpenWeather API key",
   "capability.openWeather.byok.purpose": "Uses your OpenWeather API key (BYOK)",

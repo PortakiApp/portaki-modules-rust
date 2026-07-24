@@ -13,7 +13,8 @@ define_operation_names! {
     APPLY_FEEDS = "applyFeeds",
 }
 
-/// Catalog module id (`ical-sync`).
+/// Catalog module id — kept for SDUI action builders.
+#[allow(dead_code)]
 pub fn module_id() -> ModuleId {
     ModuleId::from_static("ical-sync")
 }

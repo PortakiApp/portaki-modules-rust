@@ -21,7 +21,7 @@ portaki_sdk::portaki_module!(
     id = "nuki",
     display_name_key = "module.displayName",
     description_key = "module.description",
-    author = "Syntax Labs",
+    author = "Portaki",
 );
 
 #[portaki_sdk::capability(provided, id = "access.smart_lock")]

@@ -2,8 +2,6 @@
   "module.displayName": "Wi-Fi invité",
   "module.description": "Nom du réseau et mot de passe Wi-Fi pour le livret",
   "nav.wifi-guest": "Wi-Fi invité",
-  "surface.host.main.title": "Wi-Fi invité",
-  "surface.host.main.subtitle": "SSID et mot de passe affichés dans le livret (synchronisés avec la fiche logement)",
   "host.section.network": "Réseau Wi-Fi",
   "host.section.network.help": "Le nom et le mot de passe que les voyageurs voient dans le livret.",
   "host.ssid.label": "Nom du réseau (SSID)",

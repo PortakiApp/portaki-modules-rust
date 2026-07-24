@@ -2,8 +2,6 @@
   "module.displayName": "Guest Wi-Fi",
   "module.description": "Wi-Fi network name and password for the guest booklet",
   "nav.wifi-guest": "Guest Wi-Fi",
-  "surface.host.main.title": "Guest Wi-Fi",
-  "surface.host.main.subtitle": "SSID and password shown in the guest booklet (synced to property Wi-Fi fields)",
   "host.section.network": "Wi-Fi network",
   "host.section.network.help": "Name and password guests see in the booklet.",
   "host.ssid.label": "Network name (SSID)",

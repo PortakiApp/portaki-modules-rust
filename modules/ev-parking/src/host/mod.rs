@@ -1,9 +1,8 @@
-//! Host dashboard surfaces.
+//! Host dashboard surfaces — config cards embedded in the module sheet.
 
 use portaki_sdk::prelude::*;
-use portaki_sdk::sdui::common::Tone;
 use portaki_sdk::sdui::primitives::{
-    Button, Card, ChoiceList, Field, Form, Page, SecretInput, Text, TextInput,
+    Card, ChoiceList, Field, Form, Page, SecretInput, Text, TextInput,
 };
 use portaki_sdk::sdui::surface::Surface;
 
@@ -13,66 +12,70 @@ use crate::config::{load_config, RevealPolicy};
 pub fn render_host_main(_ctx: HostContext) -> Surface {
     let config = load_config().unwrap_or_default();
 
-    let submit_args = crate::commands::UpdateConfigArgs {
-        spot_label: config.spot_label.clone(),
-        charger_pin: String::new(),
-        parking_code: String::new(),
-        map_url: config.map_url.clone().unwrap_or_default(),
-        instructions: config.instructions.clone().unwrap_or_default(),
-        reveal_policy: config.reveal_policy,
-    };
-    let save_action = crate::ids::module_id().command(crate::ids::UPDATE_CONFIG, submit_args);
-
     let form_children: Vec<Component> = vec![
-        Field::new()
-            .name("spot_label")
-            .label("i18n:host.spotLabel.label")
-            .child(
-                TextInput::new()
+        Card::new()
+            .title("i18n:host.section.spot")
+            .subtitle("i18n:host.section.spot.help")
+            .icon("parking")
+            .children(vec![
+                Field::new()
                     .name("spot_label")
-                    .value(config.spot_label.clone())
-                    .placeholder("i18n:host.spotLabel.placeholder"),
-            )
-            .into(),
-        Field::new()
-            .name("parking_code")
-            .label("i18n:host.parkingCode.label")
-            .child(
-                SecretInput::new()
+                    .label("i18n:host.spotLabel.label")
+                    .child(
+                        TextInput::new()
+                            .name("spot_label")
+                            .value(config.spot_label.clone())
+                            .placeholder("i18n:host.spotLabel.placeholder"),
+                    )
+                    .into(),
+                Field::new()
                     .name("parking_code")
-                    .value(String::new())
-                    .placeholder("i18n:host.parkingCode.placeholder"),
-            )
-            .into(),
-        Field::new()
-            .name("charger_pin")
-            .label("i18n:host.chargerPin.label")
-            .child(
-                SecretInput::new()
+                    .label("i18n:host.parkingCode.label")
+                    .child(
+                        SecretInput::new()
+                            .name("parking_code")
+                            .value(String::new())
+                            .placeholder("i18n:host.parkingCode.placeholder"),
+                    )
+                    .into(),
+                Field::new()
                     .name("charger_pin")
-                    .value(String::new())
-                    .placeholder("i18n:host.chargerPin.placeholder"),
-            )
+                    .label("i18n:host.chargerPin.label")
+                    .child(
+                        SecretInput::new()
+                            .name("charger_pin")
+                            .value(String::new())
+                            .placeholder("i18n:host.chargerPin.placeholder"),
+                    )
+                    .into(),
+            ])
             .into(),
-        Field::new()
-            .name("map_url")
-            .label("i18n:host.mapUrl.label")
-            .child(
-                TextInput::new()
+        Card::new()
+            .title("i18n:host.section.directions")
+            .subtitle("i18n:host.section.directions.help")
+            .icon("map-pin")
+            .children(vec![
+                Field::new()
                     .name("map_url")
-                    .value(config.map_url.clone().unwrap_or_default())
-                    .placeholder("i18n:host.mapUrl.placeholder"),
-            )
-            .into(),
-        Field::new()
-            .name("instructions")
-            .label("i18n:host.instructions.label")
-            .child(
-                TextInput::new()
+                    .label("i18n:host.mapUrl.label")
+                    .child(
+                        TextInput::new()
+                            .name("map_url")
+                            .value(config.map_url.clone().unwrap_or_default())
+                            .placeholder("i18n:host.mapUrl.placeholder"),
+                    )
+                    .into(),
+                Field::new()
                     .name("instructions")
-                    .value(config.instructions.clone().unwrap_or_default())
-                    .placeholder("i18n:host.instructions.placeholder"),
-            )
+                    .label("i18n:host.instructions.label")
+                    .child(
+                        TextInput::new()
+                            .name("instructions")
+                            .value(config.instructions.clone().unwrap_or_default())
+                            .placeholder("i18n:host.instructions.placeholder"),
+                    )
+                    .into(),
+            ])
             .into(),
         Card::new()
             .title("i18n:host.section.reveal")
@@ -84,24 +87,11 @@ pub fn render_host_main(_ctx: HostContext) -> Surface {
             .text("i18n:host.main.help")
             .variant(TextVariant::Caption)
             .into(),
-        Button::new()
-            .label("i18n:host.save")
-            .action(save_action)
-            .tone(Tone::Primary)
-            .into(),
     ];
 
-    Surface::new(
-        Page::new()
-            .title("i18n:surface.host.main.title")
-            .child(
-                Text::new()
-                    .text("i18n:surface.host.main.subtitle")
-                    .variant(TextVariant::Body),
-            )
-            .child(Form::new().children(form_children)),
-    )
-    .with_id(crate::ids::HOST_MAIN)
+    // No Page title / Save — the modules sheet owns chrome + footer Save.
+    Surface::new(Page::new().child(Form::new().children(form_children)))
+        .with_id(crate::ids::HOST_MAIN)
 }
 
 fn reveal_choice_list(policy: RevealPolicy) -> ChoiceList {

@@ -1,8 +1,8 @@
 {
   "module.displayName": "Météo",
   "module.description": "Conditions actuelles et prévisions sur 5 jours",
-  "surface.host.main.title": "Météo",
-  "surface.host.main.subtitle": "Configurez l'affichage météo du livret invité",
+  "host.section.display": "Affichage",
+  "host.section.display.help": "Unités et fréquence de rafraîchissement pour le livret.",
   "capability.openWeather.purpose": "Affiche la météo via le pool OpenWeather de Portaki",
   "capability.openWeather.fallback": "Mettez à niveau votre offre ou ajoutez une clé OpenWeather",
   "capability.openWeather.byok.purpose": "Utilise votre clé OpenWeather (BYOK)",
